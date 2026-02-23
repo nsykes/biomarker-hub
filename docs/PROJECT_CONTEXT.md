@@ -100,6 +100,18 @@ Expose biomarker data as an MCP server so Claude/ChatGPT can:
 - Compare values against reference ranges
 - Summarize changes between reports
 
+### Biomarker Detail Pages (Next Up)
+
+Each biomarker in the Biomarkers tab should be clickable, opening a dedicated detail page with:
+
+1. **Summary** — What this biomarker is, why it matters, what's good/bad
+2. **Historical chart** — Line chart of all values over time from uploaded reports
+3. **Sources** — Which report each data point came from (linked back to the report)
+4. **Reference range** — The "correct" range, displayed visually (e.g. bar/zone chart showing where values fall)
+5. **Editable ranges** — User should be able to edit/override what the correct reference range is for each biomarker, and whether the goal is to be below, above, or within the range
+
+This is the next major feature after PDF storage. The Biomarkers tab already aggregates across reports — the detail page adds depth per biomarker.
+
 ### Other Future Items
 
 - Batch PDF processing (upload multiple files at once)

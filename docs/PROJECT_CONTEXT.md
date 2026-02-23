@@ -112,6 +112,27 @@ Each biomarker in the Biomarkers tab should be clickable, opening a dedicated de
 
 This is the next major feature after PDF storage. The Biomarkers tab already aggregates across reports — the detail page adds depth per biomarker.
 
+### Extraction UX Improvements
+
+Several changes to the upload/extraction flow:
+
+1. **Remove per-extraction model selector** — The model is already configurable in Settings. Showing it on every extraction is unnecessary clutter. Just use the default model from settings. Remove the model picker from the extraction UI entirely.
+
+2. **Remove lab-specific branding from upload UI** — Don't say "supports Function Health, Quest, BodySpec" etc. The extractor should work with any lab report PDF. Keep the UI generic.
+
+3. **Auto-extract date and vendor** — When a PDF is uploaded, the LLM should extract:
+   - **Collection date** — when the lab work was done (already partially done via `collectionDate`, but should be more prominent and always extracted)
+   - **Vendor/lab name** — who produced the report (Function Health, Quest, BodySpec, etc.) — already partially done via `source`/`labName`, but should be surfaced clearly in the UI
+   - Both fields should be **editable** by the user after extraction (the LLM will get it wrong sometimes)
+
+4. **Add/delete biomarkers after extraction** — Users need to correct extraction errors:
+   - **Delete** — Remove a biomarker the LLM hallucinated or extracted incorrectly
+   - **Add** — Add a biomarker the LLM missed. The biomarker name should be a **dropdown from the canonical biomarker list**, not free text, to maintain consistency across reports. (This requires a canonical biomarker registry — ties into the reference range work.)
+
+### Biomarkers Tab UX
+
+- **Expand all / Collapse all** — Add a toggle button to the Biomarkers tab to expand or collapse all biomarker category groups at once.
+
 ### Other Future Items
 
 - Batch PDF processing (upload multiple files at once)

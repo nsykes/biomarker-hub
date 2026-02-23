@@ -52,8 +52,12 @@ Return a JSON object with this exact structure:
    - "<200" → referenceRangeLow: null, referenceRangeHigh: 200
    - ">=5.5" optimal → referenceRangeLow: 5.5, referenceRangeHigh: null
    - No range shown → both null
+   - If no formal reference range is printed but an optimal/clinical cutoff is noted (e.g., "Optimal <1.0"), use that as the reference range
 
 10. **Categories:** Group into: Heart, Metabolic, Kidney, Liver, Electrolytes, Proteins, CBC, Inflammation, Thyroid, Endocrinology, Fatty Acids, Urinalysis, Prostate, Body Composition, Bone, Muscle Balance, Iron, Autoimmune, Celiac, Toxins, Blood Type, Vitamins
+    - Thyroid antibodies (Thyroglobulin Ab, TPO Ab) → "Thyroid" (not "Autoimmune")
+    - Insulin → "Metabolic" (group with Glucose, HbA1c)
+    - Leptin, Cortisol → "Endocrinology"
 
 11. **DEXA scans:** Use region field for body-region-specific metrics. Examples:
     - "Arms Fat Percentage" with region: "Arms"
@@ -63,11 +67,25 @@ Return a JSON object with this exact structure:
     - Skip marketing/cover pages
     - Skip regional trend report pages (pages with "Change vs. Baseline" tables)
 
-12. **Metric name normalization:** Use common clinical names:
+12. **Metric name normalization:** Use common clinical names. Always expand abbreviations to full clinical names:
     - "CHOLESTEROL, TOTAL" → "Total Cholesterol"
     - "UREA NITROGEN (BUN)" → "Blood Urea Nitrogen"
     - "HEMOGLOBIN A1c" → "Hemoglobin A1c"
     - "HS CRP" → "High-Sensitivity C-Reactive Protein"
+    - "AST" or "SGOT" → "Aspartate Aminotransferase"
+    - "ALT" or "SGPT" → "Alanine Aminotransferase"
+    - "TSH" → "Thyroid Stimulating Hormone"
+    - "EGFR" → "Estimated Glomerular Filtration Rate"
+    - "MCV" → "Mean Corpuscular Volume"
+    - "MCH" → "Mean Corpuscular Hemoglobin"
+    - "MCHC" → "Mean Corpuscular Hemoglobin Concentration"
+    - "RDW" → "Red Cell Distribution Width"
+    - "MPV" → "Mean Platelet Volume"
+    - "GGT" → "Gamma-Glutamyl Transferase"
+    - "PSA, TOTAL" → "PSA Total"
+    - "PSA, FREE" → "PSA Free"
+    - "PSA, % FREE" → "PSA Percent Free"
     - Keep the rawName field as the exact text from the PDF
+    - Strip "(calc)" from unit strings — use only the base unit (e.g., "mg/dL" not "mg/dL (calc)")
 
 Extract every result. Do not summarize or skip any biomarker that has a value.`;

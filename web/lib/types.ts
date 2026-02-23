@@ -71,6 +71,7 @@ export interface StoredFile {
   reportType: string | null;
   biomarkers: Biomarker[];
   meta: ExtractionMeta;
+  pdfSizeBytes: number | null;
 }
 
 export interface AppSettings {

@@ -96,8 +96,9 @@ export function SettingsTab() {
             </button>
           </div>
           <p className="text-xs text-gray-400">
-            Your OpenRouter API key. Stored securely in your database. Falls
-            back to server environment variable if not set.
+            Your OpenRouter API key. Stored as plaintext in your Neon database
+            (encrypted at rest by Neon). Falls back to server environment
+            variable if not set.
           </p>
         </div>
       </section>
@@ -146,11 +147,11 @@ export function SettingsTab() {
             </p>
           </div>
           <div>
-            <p className="font-medium text-gray-900">Local Storage</p>
+            <p className="font-medium text-gray-900">Storage</p>
             <p>
-              Extraction results are stored in your Neon PostgreSQL database.
-              PDFs are not stored — only the extracted biomarker data is
-              persisted.
+              Extraction results and uploaded PDFs are stored in your Neon
+              PostgreSQL database (encrypted at rest). You can re-open any
+              saved report with the original PDF in the split-pane viewer.
             </p>
           </div>
         </div>

@@ -85,7 +85,11 @@ Upload multiple health files per product/person. Track the same biomarkers over 
 
 ### Database Persistence
 
-Neon Postgres is provisioned and schema is live (profiles, reports, biomarker_results, settings). Drizzle ORM wiring is in place. The `actions.ts` layer now reads/writes the normalized schema (`reports` + `biomarker_results`) and assembles the flat `StoredFile` shape that components expect. Remaining work:
+Neon Postgres is provisioned and schema is live (profiles, reports, biomarker_results, settings). Drizzle ORM wiring is in place. The `actions.ts` layer now reads/writes the normalized schema (`reports` + `biomarker_results`) and assembles the flat `StoredFile` shape that components expect.
+
+**PDF storage:** Uploaded PDFs are stored as `bytea` in the `reports.pdf_data` column alongside extraction results. A dedicated API route (`/api/reports/[id]/pdf`) handles binary upload (PUT) and retrieval (GET), avoiding server action size limits. List/detail queries exclude the `pdfData` column to avoid loading multi-MB blobs unnecessarily — the `pdfSizeBytes` field tells the UI whether a PDF exists without loading it. When viewing a saved report, the PDF is fetched on demand and displayed in the split-pane viewer.
+
+Remaining work:
 - Enable trend queries across reports
 - Support re-extraction with improved prompts
 

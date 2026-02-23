@@ -7,6 +7,26 @@ import { Biomarker, ExtractionMeta, StoredFile, AppSettings } from "../types";
 
 // --- helpers ---
 
+/** All report columns except the pdfData blob (avoids loading multi-MB binary in list/detail queries). */
+const reportColumns = {
+  id: reports.id,
+  userId: reports.userId,
+  filename: reports.filename,
+  source: reports.source,
+  labName: reports.labName,
+  collectionDate: reports.collectionDate,
+  reportType: reports.reportType,
+  patientNameExtracted: reports.patientNameExtracted,
+  pdfSizeBytes: reports.pdfSizeBytes,
+  extractionModel: reports.extractionModel,
+  extractionTokens: reports.extractionTokens,
+  extractionDurationMs: reports.extractionDurationMs,
+  addedAt: reports.addedAt,
+  updatedAt: reports.updatedAt,
+};
+
+type ReportRow = Omit<typeof reports.$inferSelect, "pdfData">;
+
 function toBiomarker(r: typeof biomarkerResults.$inferSelect): Biomarker {
   return {
     id: r.id,
@@ -28,7 +48,7 @@ function toBiomarker(r: typeof biomarkerResults.$inferSelect): Biomarker {
   };
 }
 
-function toMeta(r: typeof reports.$inferSelect): ExtractionMeta {
+function toMeta(r: ReportRow): ExtractionMeta {
   return {
     model: r.extractionModel ?? "",
     tokensUsed: r.extractionTokens ?? null,
@@ -36,10 +56,7 @@ function toMeta(r: typeof reports.$inferSelect): ExtractionMeta {
   };
 }
 
-function toStoredFile(
-  r: typeof reports.$inferSelect,
-  biomarkers: Biomarker[]
-): StoredFile {
+function toStoredFile(r: ReportRow, biomarkers: Biomarker[]): StoredFile {
   return {
     id: r.id,
     filename: r.filename,
@@ -50,6 +67,7 @@ function toStoredFile(
     reportType: r.reportType,
     biomarkers,
     meta: toMeta(r),
+    pdfSizeBytes: r.pdfSizeBytes,
   };
 }
 
@@ -78,7 +96,7 @@ function biomarkerToRow(reportId: string, b: Biomarker) {
 
 export async function getFiles(): Promise<StoredFile[]> {
   const reportRows = await db
-    .select()
+    .select(reportColumns)
     .from(reports)
     .orderBy(desc(reports.addedAt));
 
@@ -101,7 +119,7 @@ export async function getFiles(): Promise<StoredFile[]> {
 }
 
 export async function getFile(id: string): Promise<StoredFile | null> {
-  const rows = await db.select().from(reports).where(eq(reports.id, id));
+  const rows = await db.select(reportColumns).from(reports).where(eq(reports.id, id));
   if (rows.length === 0) return null;
 
   const r = rows[0];

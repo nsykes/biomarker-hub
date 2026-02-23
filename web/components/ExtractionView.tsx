@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { SplitPane } from "@/components/SplitPane";
 import { ResultsPanel } from "@/components/ResultsPanel";
@@ -68,6 +68,19 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
     });
   }, []);
 
+  // Fetch stored PDF when viewing a report that has one
+  const pdfFetched = useRef(false);
+  useEffect(() => {
+    if (mode.type !== "view" || !mode.file.pdfSizeBytes || pdfFetched.current) return;
+    pdfFetched.current = true;
+    fetch(`/api/reports/${mode.file.id}/pdf`)
+      .then((res) => (res.ok ? res.blob() : null))
+      .then((blob) => {
+        if (blob) setFile(new File([blob], mode.file.filename, { type: "application/pdf" }));
+      })
+      .catch(console.error);
+  }, [mode]);
+
   const handleFileSelect = useCallback((f: File) => {
     setFile(f);
     setExtraction(null);
@@ -125,6 +138,8 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
             meta: data.meta,
           });
           setSavedFileId(id);
+          // Upload PDF to database
+          fetch(`/api/reports/${id}/pdf`, { method: "PUT", body: file }).catch(console.error);
         } catch (saveErr) {
           console.error("Failed to auto-save:", saveErr);
         }

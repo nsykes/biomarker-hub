@@ -85,8 +85,7 @@ Upload multiple health files per product/person. Track the same biomarkers over 
 
 ### Database Persistence
 
-Neon Postgres is provisioned and schema is live (profiles, reports, biomarker_results, settings). Drizzle ORM wiring is in place. Remaining work:
-- Wire up the app to read/write from Postgres instead of in-memory state
+Neon Postgres is provisioned and schema is live (profiles, reports, biomarker_results, settings). Drizzle ORM wiring is in place. The `actions.ts` layer now reads/writes the normalized schema (`reports` + `biomarker_results`) and assembles the flat `StoredFile` shape that components expect. Remaining work:
 - Enable trend queries across reports
 - Support re-extraction with improved prompts
 

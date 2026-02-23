@@ -1,29 +1,45 @@
 "use server";
 
 import { db } from "./index";
-import { files, settings } from "./schema";
-import { eq, desc } from "drizzle-orm";
+import { reports, biomarkerResults, settings } from "./schema";
+import { eq, desc, inArray } from "drizzle-orm";
 import { Biomarker, ExtractionMeta, StoredFile, AppSettings } from "../types";
 
-export async function getFiles(): Promise<StoredFile[]> {
-  const rows = await db.select().from(files).orderBy(desc(files.addedAt));
-  return rows.map((r) => ({
+// --- helpers ---
+
+function toBiomarker(r: typeof biomarkerResults.$inferSelect): Biomarker {
+  return {
     id: r.id,
-    filename: r.filename,
-    addedAt: r.addedAt.toISOString(),
-    source: r.source,
-    labName: r.labName,
-    collectionDate: r.collectionDate,
-    reportType: r.reportType,
-    biomarkers: r.biomarkers as Biomarker[],
-    meta: r.meta as ExtractionMeta,
-  }));
+    category: r.category,
+    metricName: r.metricName,
+    rawName: r.rawName,
+    value: r.value !== null ? Number(r.value) : null,
+    valueText: r.valueText,
+    valueModifier: r.valueModifier,
+    unit: r.unit,
+    referenceRangeLow:
+      r.referenceRangeLow !== null ? Number(r.referenceRangeLow) : null,
+    referenceRangeHigh:
+      r.referenceRangeHigh !== null ? Number(r.referenceRangeHigh) : null,
+    flag: r.flag,
+    page: r.page ?? 0,
+    region: r.region,
+    canonicalSlug: r.canonicalSlug,
+  };
 }
 
-export async function getFile(id: string): Promise<StoredFile | null> {
-  const rows = await db.select().from(files).where(eq(files.id, id));
-  if (rows.length === 0) return null;
-  const r = rows[0];
+function toMeta(r: typeof reports.$inferSelect): ExtractionMeta {
+  return {
+    model: r.extractionModel ?? "",
+    tokensUsed: r.extractionTokens ?? null,
+    duration: r.extractionDurationMs ?? null,
+  };
+}
+
+function toStoredFile(
+  r: typeof reports.$inferSelect,
+  biomarkers: Biomarker[]
+): StoredFile {
   return {
     id: r.id,
     filename: r.filename,
@@ -32,9 +48,69 @@ export async function getFile(id: string): Promise<StoredFile | null> {
     labName: r.labName,
     collectionDate: r.collectionDate,
     reportType: r.reportType,
-    biomarkers: r.biomarkers as Biomarker[],
-    meta: r.meta as ExtractionMeta,
+    biomarkers,
+    meta: toMeta(r),
   };
+}
+
+function biomarkerToRow(reportId: string, b: Biomarker) {
+  return {
+    reportId,
+    canonicalSlug: b.canonicalSlug,
+    category: b.category,
+    metricName: b.metricName,
+    rawName: b.rawName,
+    value: b.value !== null ? String(b.value) : null,
+    valueText: b.valueText,
+    valueModifier: b.valueModifier as "<" | ">" | null,
+    unit: b.unit,
+    referenceRangeLow:
+      b.referenceRangeLow !== null ? String(b.referenceRangeLow) : null,
+    referenceRangeHigh:
+      b.referenceRangeHigh !== null ? String(b.referenceRangeHigh) : null,
+    flag: b.flag,
+    page: b.page,
+    region: b.region,
+  };
+}
+
+// --- file / report CRUD ---
+
+export async function getFiles(): Promise<StoredFile[]> {
+  const reportRows = await db
+    .select()
+    .from(reports)
+    .orderBy(desc(reports.addedAt));
+
+  if (reportRows.length === 0) return [];
+
+  const reportIds = reportRows.map((r) => r.id);
+  const biomarkerRows = await db
+    .select()
+    .from(biomarkerResults)
+    .where(inArray(biomarkerResults.reportId, reportIds));
+
+  const byReport = new Map<string, Biomarker[]>();
+  for (const row of biomarkerRows) {
+    const list = byReport.get(row.reportId) ?? [];
+    list.push(toBiomarker(row));
+    byReport.set(row.reportId, list);
+  }
+
+  return reportRows.map((r) => toStoredFile(r, byReport.get(r.id) ?? []));
+}
+
+export async function getFile(id: string): Promise<StoredFile | null> {
+  const rows = await db.select().from(reports).where(eq(reports.id, id));
+  if (rows.length === 0) return null;
+
+  const r = rows[0];
+  const biomarkerRows = await db
+    .select()
+    .from(biomarkerResults)
+    .where(eq(biomarkerResults.reportId, id));
+
+  return toStoredFile(r, biomarkerRows.map(toBiomarker));
 }
 
 export async function saveFile(data: {
@@ -47,22 +123,34 @@ export async function saveFile(data: {
   meta: ExtractionMeta;
 }): Promise<string> {
   const [row] = await db
-    .insert(files)
+    .insert(reports)
     .values({
       filename: data.filename,
       source: data.source,
       labName: data.labName,
       collectionDate: data.collectionDate,
-      reportType: data.reportType,
-      biomarkers: data.biomarkers,
-      meta: data.meta,
+      reportType: data.reportType as
+        | "blood_panel"
+        | "dexa_scan"
+        | "other"
+        | null,
+      extractionModel: data.meta.model,
+      extractionTokens: data.meta.tokensUsed,
+      extractionDurationMs: data.meta.duration,
     })
-    .returning({ id: files.id });
+    .returning({ id: reports.id });
+
+  if (data.biomarkers.length > 0) {
+    await db
+      .insert(biomarkerResults)
+      .values(data.biomarkers.map((b) => biomarkerToRow(row.id, b)));
+  }
+
   return row.id;
 }
 
 export async function deleteFile(id: string): Promise<void> {
-  await db.delete(files).where(eq(files.id, id));
+  await db.delete(reports).where(eq(reports.id, id));
 }
 
 export async function updateFileBiomarkers(
@@ -70,18 +158,22 @@ export async function updateFileBiomarkers(
   biomarkers: Biomarker[]
 ): Promise<void> {
   await db
-    .update(files)
-    .set({ biomarkers })
-    .where(eq(files.id, id));
+    .delete(biomarkerResults)
+    .where(eq(biomarkerResults.reportId, id));
+
+  if (biomarkers.length > 0) {
+    await db
+      .insert(biomarkerResults)
+      .values(biomarkers.map((b) => biomarkerToRow(id, b)));
+  }
 }
+
+// --- settings ---
 
 export async function getSettings(): Promise<AppSettings> {
   const rows = await db.select().from(settings);
   if (rows.length === 0) {
-    const [row] = await db
-      .insert(settings)
-      .values({})
-      .returning();
+    const [row] = await db.insert(settings).values({}).returning();
     return {
       id: row.id,
       openRouterApiKey: row.openRouterApiKey,

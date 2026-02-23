@@ -24,6 +24,9 @@ yarn-debug.log*
 # Personal data
 example-pdfs/
 
+# Audit artifacts
+docs/audit/
+
 # Local Claude settings
 .claude/settings.local.json
 

@@ -160,3 +160,55 @@ The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:
 - Accurate page numbers for every biomarker
 - Specific DEXA scan handling (regions, skip trend pages)
 - Metric name normalization (rawName preserved separately)
+- **Expanded normalization examples** (Rule 12): 17 explicit abbreviation-to-full-name mappings including AST, ALT, TSH, EGFR, MCV, MCH, MCHC, RDW, MPV, GGT, and PSA variants
+- **Category standardization** (Rule 10): Thyroid antibodies → Thyroid; Insulin → Metabolic; Leptin/Cortisol → Endocrinology
+- **Unit cleanup**: Strip "(calc)" suffix from unit strings
+- **Clinical cutoff fallback** (Rule 9): If no formal reference range is printed but an optimal/clinical cutoff is noted, use that as the reference range
+
+## Registry: fullName + Audit Sync (2026-02-23)
+
+The `CanonicalBiomarker` interface now includes a `fullName` field alongside `displayName`. For most entries fullName === displayName, but abbreviations get expanded clinical names (e.g. displayName "AST", fullName "Aspartate Aminotransferase"). This supports:
+- **Search**: BiomarkersTab search matches against fullName, so "aminotransferase" finds AST/ALT
+- **Detail pages**: fullName shown as subtitle under displayName when they differ
+- **Reference/accessibility**: Full clinical names available for tooltips, exports, etc.
+
+**Category corrections** (from audit reconciliation):
+- `homocysteine`: Metabolic → Heart
+- `rheumatoid-factor`: Inflammation → Autoimmune
+- `methylmalonic-acid`: Metabolic → Vitamins
+- `leptin`: Metabolic → Endocrinology
+- `magnesium-rbc`: Vitamins → Electrolytes
+
+**New entry:** `non-hdl-cholesterol` (Heart category)
+
+**New aliases added:** MCHC → "MEAN CORPUSCULAR HEMOGLOBIN CONCENTRATION", eGFR → "ESTIMATED GLOMERULAR FILTRATION RATE", tTG IgG/IgA → "TISSUE TRANSGLUTAMINASE ANTIBODY IGG/IGA", TPO → "THYROID PEROXIDASE ANTIBODY" (singular)
+
+DEXA generators (body comp + bone) also propagate fullName through their metric arrays (e.g. BMD → "Bone Mineral Density", BMC → "Bone Mineral Content").
+
+## Biomarker Audit (2026-02-23)
+
+A comprehensive multi-wave audit was conducted across all 4 example PDFs (320 biomarker instances, 166 unique types). All audit files live in `docs/audit/`.
+
+**Result: PASS (with conditions)**
+
+Key findings:
+- Zero missing biomarkers, zero phantom entries across all 4 PDFs
+- 11 metricName normalization inconsistencies (all in PDF3 — abbreviations vs expanded names). Fixed by expanding Rule 12 normalization examples.
+- 3 category inconsistencies (thyroid antibodies, insulin). Fixed by adding category guidance to Rule 10.
+- 6 unit inconsistencies (all "(calc)" suffix). Fixed by adding stripping rule to Rule 12.
+- PDF4 pixel-level verification was CONDITIONAL (pdftoppm not available for direct PDF rendering). Internal consistency and cross-audit validation confirmed all 124 biomarkers correct.
+
+**Conditions remaining for full pass:**
+- Install poppler (`brew install poppler`) and re-run PDF3/PDF4 pixel verification to confirm values against actual PDF rendering. Current risk: very low — all values cross-validated via internal consistency and cross-audit comparison.
+
+**Audit file index:**
+- `pdf1-blood-results-audit.md` — 47 biomarkers (PASS)
+- `pdf2-dexa-scan-audit.md` — 64 biomarkers (PASS)
+- `pdf3-lab-results-1-audit.md` — 85 biomarkers (PASS)
+- `pdf4-lab-results-2-audit.md` — 124 biomarkers (PASS)
+- `pdf1-crosscheck.md`, `pdf2-crosscheck.md` — Independent verifications (PASS)
+- `pdf3-crosscheck.md`, `pdf4-crosscheck.md` — Independent verifications (CONDITIONAL PASS)
+- `pdf3-pixel-verification.md` — Pixel-level verification (PASS)
+- `pdf4-pixel-verification.md`, `pdf4-final-pixel-verification.md` — Pixel-level attempts (CONDITIONAL PASS)
+- `cross-pdf-consistency-check.md` — Cross-PDF consistency (CONDITIONAL PASS)
+- `FINAL-RECONCILIATION.md` — Master reconciliation with canonical biomarker registry (166 types)

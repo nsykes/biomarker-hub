@@ -305,17 +305,22 @@ export function BiomarkerDetailPage({ data }: { data: BiomarkerDetailData }) {
         >
           &larr; Biomarkers
         </Link>
-        <div className="flex items-center gap-3 mt-2">
-          <h1 className="text-xl font-bold text-gray-900">
-            {data.displayName}
-          </h1>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
-            {data.category}
-          </span>
-          {data.defaultUnit && (
-            <span className="text-sm text-gray-400">
-              {data.defaultUnit}
+        <div className="mt-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-gray-900">
+              {data.displayName}
+            </h1>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
+              {data.category}
             </span>
+            {data.defaultUnit && (
+              <span className="text-sm text-gray-400">
+                {data.defaultUnit}
+              </span>
+            )}
+          </div>
+          {data.fullName !== data.displayName && (
+            <p className="text-sm text-gray-500 mt-0.5">{data.fullName}</p>
           )}
         </div>
       </header>

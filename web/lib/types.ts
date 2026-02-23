@@ -106,6 +106,7 @@ export interface ReferenceRange {
 export interface BiomarkerDetailData {
   slug: string;
   displayName: string;
+  fullName: string;
   category: string;
   defaultUnit: string | null;
   history: BiomarkerHistoryPoint[];

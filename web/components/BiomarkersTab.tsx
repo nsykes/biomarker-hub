@@ -76,6 +76,7 @@ export function BiomarkersTab() {
       const matching = entries.filter(
         (e) =>
           e.displayName.toLowerCase().includes(q) ||
+          e.fullName.toLowerCase().includes(q) ||
           e.slug.toLowerCase().includes(q) ||
           e.aliases.some((a) => a.toLowerCase().includes(q))
       );
@@ -174,6 +175,11 @@ export function BiomarkersTab() {
                     >
                       <span className="text-sm text-gray-900 flex-1 min-w-0">
                         {entry.displayName}
+                        {entry.fullName !== entry.displayName && (
+                          <span className="text-xs text-gray-400 ml-1.5">
+                            {entry.fullName}
+                          </span>
+                        )}
                         {entry.region && (
                           <span className="text-xs text-gray-400 ml-1">
                             ({entry.region})

@@ -19,6 +19,7 @@ export default async function BiomarkerPage({
       data={{
         slug: entry.slug,
         displayName: entry.displayName,
+        fullName: entry.fullName,
         category: entry.category,
         defaultUnit: entry.defaultUnit,
         history,

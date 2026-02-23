@@ -1,0 +1,82 @@
+export interface ReportInfo {
+  source: string;
+  labName: string | null;
+  collectionDate: string;
+  reportType: "blood_panel" | "dexa_scan" | "other";
+  patientName?: string;
+}
+
+export type BiomarkerFlag =
+  | "NORMAL"
+  | "LOW"
+  | "HIGH"
+  | "ABNORMAL"
+  | "CRITICAL_LOW"
+  | "CRITICAL_HIGH";
+
+export interface Biomarker {
+  id: string;
+  category: string;
+  metricName: string;
+  rawName: string;
+  value: number | null;
+  valueText: string | null;
+  valueModifier: "<" | ">" | null;
+  unit: string | null;
+  referenceRangeLow: number | null;
+  referenceRangeHigh: number | null;
+  flag: BiomarkerFlag;
+  page: number;
+  region: string | null;
+  canonicalSlug: string | null;
+}
+
+export interface ExtractionResult {
+  reportInfo: ReportInfo;
+  biomarkers: Biomarker[];
+}
+
+export interface ExtractionMeta {
+  model: string;
+  tokensUsed: number | null;
+  duration: number | null;
+}
+
+export interface ExtractionResponse {
+  extraction: ExtractionResult;
+  meta: ExtractionMeta;
+}
+
+export interface HighlightTarget {
+  page: number;
+  rawName: string;
+  value: string | null;
+  unit: string | null;
+}
+
+export interface ModelOption {
+  id: string;
+  name: string;
+  description: string;
+  default?: boolean;
+}
+
+export interface StoredFile {
+  id: string;
+  filename: string;
+  addedAt: string;
+  source: string | null;
+  labName: string | null;
+  collectionDate: string | null;
+  reportType: string | null;
+  biomarkers: Biomarker[];
+  meta: ExtractionMeta;
+}
+
+export interface AppSettings {
+  id: string;
+  openRouterApiKey: string | null;
+  defaultModel: string;
+}
+
+export type TabId = "files" | "biomarkers" | "settings";

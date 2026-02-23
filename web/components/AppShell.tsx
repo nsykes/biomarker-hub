@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { TabId, StoredFile } from "@/lib/types";
 import { FilesTab } from "./FilesTab";
@@ -21,8 +22,17 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "settings", label: "Settings" },
 ];
 
+const VALID_TABS: TabId[] = ["files", "biomarkers", "settings"];
+
 export function AppShell() {
-  const [activeTab, setActiveTab] = useState<TabId>("files");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const initialTab: TabId =
+    tabParam && VALID_TABS.includes(tabParam as TabId)
+      ? (tabParam as TabId)
+      : "files";
+
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [extractionMode, setExtractionMode] = useState<
     | { type: "new" }
     | { type: "view"; file: StoredFile }

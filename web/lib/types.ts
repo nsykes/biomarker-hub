@@ -81,3 +81,33 @@ export interface AppSettings {
 }
 
 export type TabId = "files" | "biomarkers" | "settings";
+
+export interface BiomarkerHistoryPoint {
+  collectionDate: string | null;
+  value: number | null;
+  valueText: string | null;
+  valueModifier: "<" | ">" | null;
+  unit: string | null;
+  flag: BiomarkerFlag;
+  reportId: string;
+  filename: string;
+  labName: string | null;
+  referenceRangeLow: number | null;
+  referenceRangeHigh: number | null;
+}
+
+export interface ReferenceRange {
+  rangeLow: number | null;
+  rangeHigh: number | null;
+  goalDirection: "below" | "above" | "within";
+  unit: string | null;
+}
+
+export interface BiomarkerDetailData {
+  slug: string;
+  displayName: string;
+  category: string;
+  defaultUnit: string | null;
+  history: BiomarkerHistoryPoint[];
+  referenceRange: ReferenceRange | null;
+}

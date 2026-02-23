@@ -85,7 +85,7 @@ Upload multiple health files per product/person. Track the same biomarkers over 
 
 ### Database Persistence
 
-Neon Postgres is provisioned and schema is live (profiles, reports, biomarker_results, settings). Drizzle ORM wiring is in place. The `actions.ts` layer now reads/writes the normalized schema (`reports` + `biomarker_results`) and assembles the flat `StoredFile` shape that components expect.
+Neon Postgres is provisioned and schema is live (profiles, reports, biomarker_results, reference_ranges, settings). Drizzle ORM wiring is in place. The `actions.ts` layer now reads/writes the normalized schema (`reports` + `biomarker_results`) and assembles the flat `StoredFile` shape that components expect.
 
 **PDF storage:** Uploaded PDFs are stored as `bytea` in the `reports.pdf_data` column alongside extraction results. A dedicated API route (`/api/reports/[id]/pdf`) handles binary upload (PUT) and retrieval (GET), avoiding server action size limits. List/detail queries exclude the `pdfData` column to avoid loading multi-MB blobs unnecessarily — the `pdfSizeBytes` field tells the UI whether a PDF exists without loading it. When viewing a saved report, the PDF is fetched on demand and displayed in the split-pane viewer.
 
@@ -100,17 +100,27 @@ Expose biomarker data as an MCP server so Claude/ChatGPT can:
 - Compare values against reference ranges
 - Summarize changes between reports
 
-### Biomarker Detail Pages (Next Up)
+### Biomarker Detail Pages (Implemented)
 
-Each biomarker in the Biomarkers tab should be clickable, opening a dedicated detail page with:
+Each biomarker in the Biomarkers tab links to a dedicated detail page at `/biomarkers/[slug]`:
 
-1. **Summary** — What this biomarker is, why it matters, what's good/bad
-2. **Historical chart** — Line chart of all values over time from uploaded reports
-3. **Sources** — Which report each data point came from (linked back to the report)
-4. **Reference range** — The "correct" range, displayed visually (e.g. bar/zone chart showing where values fall)
-5. **Editable ranges** — User should be able to edit/override what the correct reference range is for each biomarker, and whether the goal is to be below, above, or within the range
+1. **Historical chart** — Recharts `LineChart` showing all numeric values over time, with data points colored by flag status. Reference range displayed as a shaded zone when available.
+2. **History table** — All data points (newest first) with date, value, unit, flag, and source (filename + lab name).
+3. **Reference range section** — Shows custom range from `reference_ranges` table if set, otherwise "No custom reference range set" with disabled Edit button (future). Also shows unique lab-reported ranges from extraction data.
 
-This is the next major feature after PDF storage. The Biomarkers tab already aggregates across reports — the detail page adds depth per biomarker.
+**Architecture:**
+- Route: `web/app/biomarkers/[slug]/page.tsx` (server component — looks up registry entry, fetches data via `getBiomarkerDetail()`)
+- Client component: `web/components/BiomarkerDetailPage.tsx` (chart, table, reference range section)
+- Server action: `getBiomarkerDetail(slug)` joins `biomarker_results` with `reports`, sorted by `collection_date ASC`. Uses `idx_biomarker_results_slug_report` index.
+- `reference_ranges` DB table exists but is empty — infrastructure ready for future editing UI.
+- BiomarkersTab rows are now `<Link>` elements pointing to `/biomarkers/[slug]` (replaced inline expand/collapse).
+- AppShell reads `?tab=` query param on mount for back-navigation from detail pages (`/?tab=biomarkers`).
+- Charting: `recharts` library added as dependency.
+
+**Remaining work:**
+- Biomarker summary/explanation text (what it is, why it matters)
+- Editable reference ranges UI (currently disabled Edit button)
+- Link from history table rows back to the source report
 
 ### Extraction UX Improvements
 

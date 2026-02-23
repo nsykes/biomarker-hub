@@ -100,7 +100,27 @@ export const biomarkerResults = pgTable(
   ]
 );
 
-// 4. Settings (kept from before)
+// 4. Reference ranges — global per-biomarker reference ranges (empty for now, populated later)
+export const referenceRanges = pgTable("reference_ranges", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  canonicalSlug: text("canonical_slug").notNull().unique(),
+  rangeLow: numeric("range_low"),
+  rangeHigh: numeric("range_high"),
+  goalDirection: text("goal_direction", {
+    enum: ["below", "above", "within"],
+  })
+    .notNull()
+    .default("within"),
+  unit: text("unit"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+// 5. Settings (kept from before)
 export const settings = pgTable("settings", {
   id: uuid("id").primaryKey().defaultRandom(),
   openRouterApiKey: text("openrouter_api_key"),

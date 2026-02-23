@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { StoredFile, Biomarker } from "@/lib/types";
 import {
   REGISTRY,
@@ -25,7 +26,6 @@ export function BiomarkersTab() {
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
     new Set()
   );
-  const [expandedSlugs, setExpandedSlugs] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -91,15 +91,6 @@ export function BiomarkersTab() {
       const next = new Set(prev);
       if (next.has(cat)) next.delete(cat);
       else next.add(cat);
-      return next;
-    });
-  };
-
-  const toggleExpanded = (slug: string) => {
-    setExpandedSlugs((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug);
-      else next.add(slug);
       return next;
     });
   };
@@ -174,87 +165,41 @@ export function BiomarkersTab() {
               <div className="divide-y divide-gray-50">
                 {entries.map((entry) => {
                   const latest = getLatestValue(entry.slug);
-                  const history = historyMap.get(entry.slug) || [];
-                  const isExpanded = expandedSlugs.has(entry.slug);
 
                   return (
-                    <div key={entry.slug}>
-                      <button
-                        onClick={() => toggleExpanded(entry.slug)}
-                        className="w-full flex items-center gap-4 px-5 py-2 text-left hover:bg-gray-50 transition-colors"
-                      >
-                        <span className="text-sm text-gray-900 flex-1 min-w-0">
-                          {entry.displayName}
-                          {entry.region && (
-                            <span className="text-xs text-gray-400 ml-1">
-                              ({entry.region})
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-sm text-gray-600 w-24 text-right flex-shrink-0">
-                          {latest
-                            ? latest.valueText ??
-                              (latest.value !== null
-                                ? String(latest.value)
-                                : "\u2014")
-                            : "\u2014"}
-                        </span>
-                        <span className="text-xs text-gray-400 w-16 text-right flex-shrink-0">
-                          {entry.defaultUnit || ""}
-                        </span>
-                        {latest && (
-                          <span className="flex-shrink-0">
-                            <FlagBadge flag={latest.flag} />
+                    <Link
+                      key={entry.slug}
+                      href={`/biomarkers/${entry.slug}`}
+                      className="flex items-center gap-4 px-5 py-2 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="text-sm text-gray-900 flex-1 min-w-0">
+                        {entry.displayName}
+                        {entry.region && (
+                          <span className="text-xs text-gray-400 ml-1">
+                            ({entry.region})
                           </span>
                         )}
-                        {history.length > 0 && (
-                          <span className="w-3 text-xs text-gray-300 flex-shrink-0">
-                            {isExpanded ? "\u25BC" : "\u25B6"}
-                          </span>
-                        )}
-                      </button>
-
-                      {/* Expanded history */}
-                      {isExpanded && history.length > 0 && (
-                        <div className="bg-gray-50 border-t border-b border-gray-100 px-5 py-2">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="text-gray-400 uppercase">
-                                <th className="text-left py-1 font-medium">Date</th>
-                                <th className="text-right py-1 font-medium">Value</th>
-                                <th className="text-right py-1 font-medium">Unit</th>
-                                <th className="text-left py-1 pl-3 font-medium">Flag</th>
-                                <th className="text-left py-1 font-medium">Source</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {history.map((h, i) => (
-                                <tr key={i} className="text-gray-600">
-                                  <td className="py-1">
-                                    {h.collectionDate || "\u2014"}
-                                  </td>
-                                  <td className="text-right py-1">
-                                    {h.valueText ??
-                                      (h.value !== null
-                                        ? String(h.value)
-                                        : "\u2014")}
-                                  </td>
-                                  <td className="text-right py-1">
-                                    {h.unit || "\u2014"}
-                                  </td>
-                                  <td className="py-1 pl-3">
-                                    <FlagBadge flag={h.flag} />
-                                  </td>
-                                  <td className="py-1 truncate max-w-[200px]">
-                                    {h.filename}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                      </span>
+                      <span className="text-sm text-gray-600 w-24 text-right flex-shrink-0">
+                        {latest
+                          ? latest.valueText ??
+                            (latest.value !== null
+                              ? String(latest.value)
+                              : "\u2014")
+                          : "\u2014"}
+                      </span>
+                      <span className="text-xs text-gray-400 w-16 text-right flex-shrink-0">
+                        {entry.defaultUnit || ""}
+                      </span>
+                      {latest && (
+                        <span className="flex-shrink-0">
+                          <FlagBadge flag={latest.flag} />
+                        </span>
                       )}
-                    </div>
+                      <span className="w-3 text-xs text-gray-300 flex-shrink-0">
+                        &#x203A;
+                      </span>
+                    </Link>
                   );
                 })}
               </div>

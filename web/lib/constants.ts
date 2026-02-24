@@ -6,7 +6,7 @@ export const OPENROUTER_API_URL =
 export const DEFAULT_MODEL = "google/gemini-2.5-pro";
 
 // Extraction
-export const EXTRACTION_MAX_TOKENS = 16000;
+export const EXTRACTION_MAX_TOKENS = 32000;
 export const EXTRACTION_TEMPERATURE = 0;
 
 // PDF highlight (row-based matching)

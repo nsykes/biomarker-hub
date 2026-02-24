@@ -98,10 +98,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const finishReason = data.choices[0].finish_reason;
+    if (finishReason === "length") {
+      console.error("Extraction truncated: output hit max_tokens limit");
+      return NextResponse.json(
+        { error: "The extraction output was truncated because the report contains too many results. Please try a shorter report." },
+        { status: 502 }
+      );
+    }
+
     let extraction: ExtractionResult;
     try {
       extraction = JSON.parse(data.choices[0].message.content);
     } catch {
+      const contentLength = data.choices[0].message.content?.length ?? 0;
+      console.error("JSON parse failed — finish_reason:", finishReason, "content length:", contentLength);
       return NextResponse.json(
         { error: "Failed to parse LLM response as JSON" },
         { status: 502 }

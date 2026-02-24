@@ -14,7 +14,7 @@ import {
   FETCH_TIMEOUT_MS,
 } from "@/lib/constants";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 async function extractChunk(
   pdfBuffer: Buffer,

@@ -180,11 +180,9 @@ export function BiomarkersTab() {
                       <span className="text-xs text-gray-400 w-16 text-right flex-shrink-0">
                         {entry.defaultUnit || ""}
                       </span>
-                      {latest && (
-                        <span className="flex-shrink-0">
-                          <FlagBadge flag={latest.flag} />
-                        </span>
-                      )}
+                      <span className="flex-shrink-0 w-24 text-right">
+                        {latest && <FlagBadge flag={latest.flag} />}
+                      </span>
                       <span className="w-3 text-xs text-gray-300 flex-shrink-0">
                         &#x203A;
                       </span>

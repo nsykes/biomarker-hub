@@ -85,7 +85,7 @@ export function applyHighlights(
     .map((el) => ({
       el,
       text: (el.textContent || "").trim(),
-      top: el.getBoundingClientRect().top,
+      top: el.offsetTop,
     }))
     .filter((s) => s.text.length > 0);
 

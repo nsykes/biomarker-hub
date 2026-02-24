@@ -76,7 +76,7 @@ export function applyHighlights(
   if (!textLayer) return () => {};
 
   const spans = Array.from(
-    textLayer.querySelectorAll("span")
+    textLayer.querySelectorAll("span:not(.markedContent)")
   ) as HTMLElement[];
   if (spans.length === 0) return () => {};
 

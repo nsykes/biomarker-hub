@@ -18,4 +18,9 @@ export {
   updateSettingsSafe,
 } from "./actions/settings";
 
-export { getBiomarkerDetail, getReferenceRange } from "./actions/biomarkers";
+export {
+  getBiomarkerDetail,
+  getReferenceRange,
+  reconcileReferenceRanges,
+  updateReferenceRange,
+} from "./actions/biomarkers";

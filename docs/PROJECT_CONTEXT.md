@@ -39,8 +39,7 @@ Reference ranges should be defined in a central lookup table, not extracted per-
 - Ranges change over time as guidelines update
 - We want consistent flagging across all reports
 
-**Current behavior:** Ranges are extracted from the PDF (whatever the lab printed).
-**Future behavior:** Compare extracted ranges against our internal definitions. If they disagree, flag for review but use internal ranges for flagging.
+**Current behavior:** Ranges are extracted from the PDF. On first extraction, PDF ranges are auto-saved to `reference_ranges` as canonical. On subsequent extractions, if the PDF range differs from stored, a conflict modal lets the user choose which to keep.
 
 ### rawName vs metricName
 
@@ -112,7 +111,7 @@ Each biomarker in the Biomarkers tab links to a dedicated detail page at `/bioma
 - Route: `web/app/biomarkers/[slug]/page.tsx` (server component — looks up registry entry, fetches data via `getBiomarkerDetail()`)
 - Client component: `web/components/BiomarkerDetailPage.tsx` (chart, table, reference range section)
 - Server action: `getBiomarkerDetail(slug)` joins `biomarker_results` with `reports`, sorted by `collection_date ASC`. Uses `idx_biomarker_results_slug_report` index.
-- `reference_ranges` DB table exists but is empty — infrastructure ready for future editing UI.
+- `reference_ranges` DB table is auto-populated from PDF extractions (see "Extraction View Improvements" section).
 - BiomarkersTab rows are now `<Link>` elements pointing to `/biomarkers/[slug]` (replaced inline expand/collapse).
 - AppShell reads `?tab=` query param on mount for back-navigation from detail pages (`/?tab=biomarkers`).
 - Charting: `recharts` library added as dependency.
@@ -121,6 +120,24 @@ Each biomarker in the Biomarkers tab links to a dedicated detail page at `/bioma
 - Biomarker summary/explanation text (what it is, why it matters)
 - Editable reference ranges UI (currently disabled Edit button)
 - Link from history table rows back to the source report
+
+### Extraction View Improvements (Implemented — 2026-02-23)
+
+Four changes to the extraction step UI:
+
+1. **Page column removed** — The "Page" column and `onPageClick` handler removed from the results table. Row click already navigates to the correct page via `handleSelectBiomarker` → `buildHighlightTarget` → PdfViewer page-change effect, making the separate page button redundant. Column count reduced from 7 to 6.
+
+2. **Re-attempt extraction button** — After extraction completes, the "Extract Biomarkers" button changes to gray "Re-attempt Extraction" with a `window.confirm()` guard. Before first extraction, the button remains blue.
+
+3. **Reference range auto-population** — When biomarkers are extracted from a PDF, their reference ranges are automatically saved to the `reference_ranges` table if no stored range exists. If a stored range already exists and differs from the PDF, a conflict modal appears letting the user choose "Keep stored" or "Use PDF range" per biomarker.
+   - New server actions: `reconcileReferenceRanges()` (batch compare + auto-insert), `updateReferenceRange()` (upsert single range)
+   - New component: `RangeConflictModal.tsx`
+   - New type: `ReferenceRangeConflict` in `types.ts`
+
+4. **Highlight scroll jump-back fix** — The `handleTextLayerSuccess` callback in PdfViewer previously depended on `[highlightTarget, currentPage]`, causing react-pdf to re-render the text layer when clicking different biomarkers. This interrupted `scrollIntoView` smooth animations. Fixed by storing highlight target and current page in refs, making the callback stable (empty dependency array), and adding a separate `useEffect` for same-page highlight changes using `requestAnimationFrame`.
+
+**Files changed:** `ResultsPanel.tsx`, `BiomarkerRow.tsx`, `ExtractionView.tsx`, `PdfViewer.tsx`, `types.ts`, `lib/db/actions/biomarkers.ts`, `lib/db/actions.ts`
+**New files:** `components/RangeConflictModal.tsx`
 
 ### Extraction UX Improvements (Implemented — 2026-02-23)
 

@@ -103,6 +103,13 @@ export interface ReferenceRange {
   unit: string | null;
 }
 
+export interface ReferenceRangeConflict {
+  slug: string;
+  metricName: string;
+  stored: { low: number | null; high: number | null; unit: string | null };
+  pdf: { low: number | null; high: number | null; unit: string | null };
+}
+
 export interface BiomarkerDetailData {
   slug: string;
   displayName: string;

@@ -6,6 +6,7 @@ import { eq, asc, and } from "drizzle-orm";
 import {
   BiomarkerHistoryPoint,
   ReferenceRange,
+  ReferenceRangeConflict,
 } from "@/lib/types";
 import { requireUser } from "./auth";
 
@@ -76,4 +77,89 @@ export async function getBiomarkerDetail(
   }));
 
   return { history, referenceRange };
+}
+
+export async function reconcileReferenceRanges(
+  items: Array<{
+    canonicalSlug: string;
+    referenceRangeLow: number | null;
+    referenceRangeHigh: number | null;
+    unit: string | null;
+    metricName: string;
+  }>
+): Promise<ReferenceRangeConflict[]> {
+  const conflicts: ReferenceRangeConflict[] = [];
+
+  for (const item of items) {
+    if (!item.canonicalSlug) continue;
+    if (item.referenceRangeLow === null && item.referenceRangeHigh === null) continue;
+
+    const rows = await db
+      .select()
+      .from(referenceRanges)
+      .where(eq(referenceRanges.canonicalSlug, item.canonicalSlug));
+
+    if (rows.length === 0) {
+      // No stored range — insert the PDF's range
+      await db.insert(referenceRanges).values({
+        canonicalSlug: item.canonicalSlug,
+        rangeLow: item.referenceRangeLow !== null ? String(item.referenceRangeLow) : null,
+        rangeHigh: item.referenceRangeHigh !== null ? String(item.referenceRangeHigh) : null,
+        unit: item.unit,
+        goalDirection: "within",
+      });
+    } else {
+      const stored = rows[0];
+      const storedLow = stored.rangeLow !== null ? Number(stored.rangeLow) : null;
+      const storedHigh = stored.rangeHigh !== null ? Number(stored.rangeHigh) : null;
+
+      const rangesMatch =
+        storedLow === item.referenceRangeLow &&
+        storedHigh === item.referenceRangeHigh &&
+        stored.unit === item.unit;
+
+      if (!rangesMatch) {
+        conflicts.push({
+          slug: item.canonicalSlug,
+          metricName: item.metricName,
+          stored: { low: storedLow, high: storedHigh, unit: stored.unit },
+          pdf: { low: item.referenceRangeLow, high: item.referenceRangeHigh, unit: item.unit },
+        });
+      }
+    }
+  }
+
+  return conflicts;
+}
+
+export async function updateReferenceRange(
+  slug: string,
+  rangeLow: number | null,
+  rangeHigh: number | null,
+  unit: string | null
+): Promise<void> {
+  const rows = await db
+    .select()
+    .from(referenceRanges)
+    .where(eq(referenceRanges.canonicalSlug, slug));
+
+  if (rows.length === 0) {
+    await db.insert(referenceRanges).values({
+      canonicalSlug: slug,
+      rangeLow: rangeLow !== null ? String(rangeLow) : null,
+      rangeHigh: rangeHigh !== null ? String(rangeHigh) : null,
+      unit,
+      goalDirection: "within",
+    });
+  } else {
+    await db
+      .update(referenceRanges)
+      .set({
+        rangeLow: rangeLow !== null ? String(rangeLow) : null,
+        rangeHigh: rangeHigh !== null ? String(rangeHigh) : null,
+        unit,
+        updatedAt: new Date(),
+      })
+      .where(eq(referenceRanges.canonicalSlug, slug));
+  }
 }

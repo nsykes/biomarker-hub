@@ -17,7 +17,6 @@ interface ResultsPanelProps {
   onExtract: () => void;
   onSelectBiomarker: (biomarker: Biomarker) => void;
   onUpdateBiomarker: (id: string, field: keyof Biomarker, value: unknown) => void;
-  onPageClick: (page: number) => void;
   onUpdateReportInfo: (field: string, value: string) => void;
   onDeleteBiomarker: (id: string) => void;
   onAddBiomarker: (biomarker: Biomarker) => void;
@@ -101,7 +100,6 @@ export function ResultsPanel({
   onExtract,
   onSelectBiomarker,
   onUpdateBiomarker,
-  onPageClick,
   onUpdateReportInfo,
   onDeleteBiomarker,
   onAddBiomarker,
@@ -137,16 +135,29 @@ export function ResultsPanel({
       {/* Header bar */}
       <div className="flex items-center gap-3 px-3 py-2 border-b bg-gray-50 flex-shrink-0 flex-wrap">
         <button
-          onClick={() => onExtract()}
+          onClick={() => {
+            if (extraction && !isExtracting) {
+              if (!window.confirm("Are you sure? This will re-run extraction.")) return;
+            }
+            onExtract();
+          }}
           disabled={!file || isExtracting || noApiKey}
-          className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm font-medium
-                     hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
-                     flex items-center gap-2 cursor-pointer"
+          className={`px-4 py-1.5 text-white rounded text-sm font-medium
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     flex items-center gap-2 cursor-pointer ${
+                       extraction && !isExtracting
+                         ? "bg-gray-500 hover:bg-gray-600"
+                         : "bg-blue-600 hover:bg-blue-700"
+                     }`}
         >
           {isExtracting && (
             <Spinner size="sm" className="border-white border-t-transparent" />
           )}
-          {isExtracting ? "Extracting..." : "Extract Biomarkers"}
+          {isExtracting
+            ? "Extracting..."
+            : extraction
+              ? "Re-attempt Extraction"
+              : "Extract Biomarkers"}
         </button>
         {noApiKey && (
           <span className="text-xs text-amber-600">
@@ -212,7 +223,6 @@ export function ResultsPanel({
                   <th className="px-2 py-2">Unit</th>
                   <th className="px-2 py-2">Ref Range</th>
                   <th className="px-2 py-2">Flag</th>
-                  <th className="px-2 py-2">Page</th>
                   <th className="px-1 py-2"></th>
                 </tr>
               </thead>
@@ -225,7 +235,7 @@ export function ResultsPanel({
                         className="bg-gray-100 cursor-pointer hover:bg-gray-200"
                       >
                         <td
-                          colSpan={7}
+                          colSpan={6}
                           className="px-2 py-1.5 font-semibold text-sm"
                         >
                           <span className="mr-1 inline-block w-3">
@@ -242,7 +252,6 @@ export function ResultsPanel({
                             isSelected={selectedBiomarker?.id === b.id}
                             onSelect={onSelectBiomarker}
                             onUpdate={onUpdateBiomarker}
-                            onPageClick={onPageClick}
                             onDelete={onDeleteBiomarker}
                           />
                         ))}

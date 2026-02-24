@@ -12,9 +12,11 @@ import {
   ExtractionResponse,
   HighlightTarget,
   StoredFile,
+  ReferenceRangeConflict,
 } from "@/lib/types";
 import { buildHighlightTarget } from "@/lib/highlight";
-import { saveFile, getSettingsSafe, updateFileBiomarkers, updateReportInfo } from "@/lib/db/actions";
+import { saveFile, getSettingsSafe, updateFileBiomarkers, updateReportInfo, reconcileReferenceRanges } from "@/lib/db/actions";
+import { RangeConflictModal } from "@/components/RangeConflictModal";
 import { DEFAULT_MODEL } from "@/lib/constants";
 
 const PdfViewer = dynamic(
@@ -58,6 +60,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
 
   const [selectedBiomarker, setSelectedBiomarker] = useState<Biomarker | null>(null);
   const [highlightTarget, setHighlightTarget] = useState<HighlightTarget | null>(null);
+  const [rangeConflicts, setRangeConflicts] = useState<ReferenceRangeConflict[] | null>(null);
 
   const [defaultModel, setDefaultModel] = useState<string>(DEFAULT_MODEL);
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -146,6 +149,27 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         } catch (saveErr) {
           console.error("Failed to auto-save:", saveErr);
         }
+
+        // Reconcile reference ranges from PDF
+        try {
+          const reconcileInput = data.extraction.biomarkers
+            .filter((b) => b.canonicalSlug && (b.referenceRangeLow !== null || b.referenceRangeHigh !== null))
+            .map((b) => ({
+              canonicalSlug: b.canonicalSlug!,
+              referenceRangeLow: b.referenceRangeLow,
+              referenceRangeHigh: b.referenceRangeHigh,
+              unit: b.unit,
+              metricName: b.metricName,
+            }));
+          if (reconcileInput.length > 0) {
+            const conflicts = await reconcileReferenceRanges(reconcileInput);
+            if (conflicts.length > 0) {
+              setRangeConflicts(conflicts);
+            }
+          }
+        } catch (reconcileErr) {
+          console.error("Failed to reconcile reference ranges:", reconcileErr);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Extraction failed");
       } finally {
@@ -233,11 +257,6 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
     [savedFileId]
   );
 
-  const handlePageClick = useCallback((page: number) => {
-    setCurrentPage(page);
-    setHighlightTarget(null);
-  }, []);
-
   const isViewMode = mode.type === "view" && !file;
 
   const leftPane =
@@ -273,7 +292,6 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       onExtract={handleExtract}
       onSelectBiomarker={handleSelectBiomarker}
       onUpdateBiomarker={handleUpdateBiomarker}
-      onPageClick={handlePageClick}
       onUpdateReportInfo={handleUpdateReportInfo}
       onDeleteBiomarker={handleDeleteBiomarker}
       onAddBiomarker={handleAddBiomarker}
@@ -282,6 +300,13 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
 
   return (
     <>
+      {rangeConflicts && rangeConflicts.length > 0 && (
+        <RangeConflictModal
+          conflicts={rangeConflicts}
+          onClose={() => setRangeConflicts(null)}
+        />
+      )}
+
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-2 border-b bg-white flex-shrink-0">
         <button

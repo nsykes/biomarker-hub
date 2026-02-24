@@ -29,6 +29,12 @@ export function PdfViewer({
   const pageRef = useRef<HTMLDivElement>(null);
   const cleanupHighlightRef = useRef<(() => void) | null>(null);
 
+  // Keep refs in sync so the stable callback can access current values
+  const highlightTargetRef = useRef(highlightTarget);
+  highlightTargetRef.current = highlightTarget;
+  const currentPageRef = useRef(currentPage);
+  currentPageRef.current = currentPage;
+
   // Convert File to object URL for react-pdf
   useEffect(() => {
     if (file) {
@@ -47,22 +53,32 @@ export function PdfViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightTarget]);
 
-  // Apply highlights after text layer renders
+  // Stable callback — never changes, so <Page> doesn't re-render the text layer
   const handleTextLayerSuccess = useCallback(() => {
     if (cleanupHighlightRef.current) {
       cleanupHighlightRef.current();
       cleanupHighlightRef.current = null;
     }
 
-    if (
-      highlightTarget &&
-      highlightTarget.page === currentPage &&
-      pageRef.current
-    ) {
-      cleanupHighlightRef.current = applyHighlights(
-        pageRef.current,
-        highlightTarget
-      );
+    const target = highlightTargetRef.current;
+    if (target && target.page === currentPageRef.current && pageRef.current) {
+      cleanupHighlightRef.current = applyHighlights(pageRef.current, target);
+    }
+  }, []);
+
+  // Handle highlight changes on the current page (text layer won't re-render for same-page clicks)
+  useEffect(() => {
+    if (cleanupHighlightRef.current) {
+      cleanupHighlightRef.current();
+      cleanupHighlightRef.current = null;
+    }
+    if (highlightTarget && highlightTarget.page === currentPage && pageRef.current) {
+      const raf = requestAnimationFrame(() => {
+        if (pageRef.current && highlightTargetRef.current) {
+          cleanupHighlightRef.current = applyHighlights(pageRef.current, highlightTargetRef.current);
+        }
+      });
+      return () => cancelAnimationFrame(raf);
     }
   }, [highlightTarget, currentPage]);
 

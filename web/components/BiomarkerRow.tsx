@@ -11,7 +11,6 @@ interface BiomarkerRowProps {
   isSelected: boolean;
   onSelect: (biomarker: Biomarker) => void;
   onUpdate: (id: string, field: keyof Biomarker, value: unknown) => void;
-  onPageClick: (page: number) => void;
   onDelete: (id: string) => void;
 }
 
@@ -20,7 +19,6 @@ export function BiomarkerRow({
   isSelected,
   onSelect,
   onUpdate,
-  onPageClick,
   onDelete,
 }: BiomarkerRowProps) {
   const [editingField, setEditingField] = useState<keyof Biomarker | null>(
@@ -178,17 +176,6 @@ export function BiomarkerRow({
             <FlagBadge flag={biomarker.flag} />
           )}
         </td>
-        <td className="px-2 py-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onPageClick(biomarker.page);
-            }}
-            className="text-blue-600 hover:underline text-xs"
-          >
-            p.{biomarker.page}
-          </button>
-        </td>
         <td className="px-1 py-1">
           <button
             onClick={(e) => {
@@ -206,7 +193,7 @@ export function BiomarkerRow({
       </tr>
       {showRemap && (
         <tr className="border-b bg-amber-50/50">
-          <td colSpan={7} className="px-3 py-2">
+          <td colSpan={6} className="px-3 py-2">
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500 shrink-0">Remap to:</span>
               <BiomarkerCombobox

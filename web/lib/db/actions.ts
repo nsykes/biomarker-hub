@@ -11,6 +11,11 @@ export {
   updateReportInfo,
 } from "./actions/reports";
 
-export { getSettings, updateSettings } from "./actions/settings";
+export {
+  getSettings,
+  updateSettings,
+  getSettingsSafe,
+  updateSettingsSafe,
+} from "./actions/settings";
 
 export { getBiomarkerDetail, getReferenceRange } from "./actions/biomarkers";

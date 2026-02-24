@@ -77,7 +77,7 @@ export function AppShell() {
           ))}
         </nav>
         <div className="ml-auto">
-          <UserButton />
+          <UserButton disableDefaultLinks />
         </div>
       </header>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppSettings } from "@/lib/types";
-import { getSettings, updateSettings } from "@/lib/db/actions";
+import { getSettingsSafe, updateSettingsSafe } from "@/lib/db/actions";
 import { AVAILABLE_MODELS } from "@/lib/models";
 import { DEFAULT_MODEL } from "@/lib/constants";
 import { PageSpinner } from "./Spinner";
@@ -20,37 +20,41 @@ export function SettingsTab() {
   const [keyDirty, setKeyDirty] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  useEffect(() => {
-    getSettings()
-      .then((s) => {
-        setSettings(s);
-        setApiKeyInput(s.openRouterApiKey || "");
-        setKeyStored(!!s.openRouterApiKey);
-      })
-      .catch((err) => {
-        console.error("Failed to load settings:", err);
-        setLoadError("Failed to load settings. Please try refreshing the page.");
-      })
-      .finally(() => setLoading(false));
+  const loadSettings = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    const result = await getSettingsSafe();
+    if (result.error) {
+      setLoadError(result.error);
+    } else {
+      const s = result.data!;
+      setSettings(s);
+      setApiKeyInput(s.openRouterApiKey || "");
+      setKeyStored(!!s.openRouterApiKey);
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   const saveApiKey = useCallback(async () => {
     setSaving("apiKey");
     setSaveError(null);
-    try {
-      const saved = await updateSettings({ openRouterApiKey: apiKeyInput || null });
-      setSettings(saved);
-      setApiKeyInput(saved.openRouterApiKey || "");
-      setKeyStored(!!saved.openRouterApiKey);
+    const result = await updateSettingsSafe({ openRouterApiKey: apiKeyInput || null });
+    if (result.error) {
+      setSaveError(result.error);
+    } else {
+      const s = result.data!;
+      setSettings(s);
+      setApiKeyInput(s.openRouterApiKey || "");
+      setKeyStored(!!s.openRouterApiKey);
       setKeyDirty(false);
       setSaved(true);
-      setSaving(null);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      console.error("Failed to save API key:", err);
-      setSaveError("Failed to save. Please try again.");
-      setSaving(null);
     }
+    setSaving(null);
   }, [apiKeyInput]);
 
   const handleModelChange = useCallback(
@@ -59,13 +63,9 @@ export function SettingsTab() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
         setSaving("model");
-        try {
-          await updateSettings({ defaultModel: model });
-        } catch (err) {
-          console.error("Failed to save model:", err);
-        } finally {
-          setSaving(null);
-        }
+        const result = await updateSettingsSafe({ defaultModel: model });
+        if (result.error) console.error("Failed to save model:", result.error);
+        setSaving(null);
       }, 300);
     },
     []
@@ -78,8 +78,14 @@ export function SettingsTab() {
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-8">
       {loadError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
-          {loadError}
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 flex items-center justify-between">
+          <span>{loadError}</span>
+          <button
+            onClick={loadSettings}
+            className="ml-4 px-3 py-1 text-xs font-medium bg-red-100 hover:bg-red-200 rounded transition-colors flex-shrink-0"
+          >
+            Retry
+          </button>
         </div>
       )}
 

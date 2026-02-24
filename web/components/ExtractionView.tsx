@@ -14,7 +14,7 @@ import {
   StoredFile,
 } from "@/lib/types";
 import { buildHighlightTarget } from "@/lib/highlight";
-import { saveFile, getSettings, updateFileBiomarkers, updateReportInfo } from "@/lib/db/actions";
+import { saveFile, getSettingsSafe, updateFileBiomarkers, updateReportInfo } from "@/lib/db/actions";
 import { DEFAULT_MODEL } from "@/lib/constants";
 
 const PdfViewer = dynamic(
@@ -63,10 +63,12 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
   const [apiKey, setApiKey] = useState<string | null>(null);
 
   useEffect(() => {
-    getSettings().then((s) => {
-      setDefaultModel(s.defaultModel);
-      setApiKey(s.openRouterApiKey);
-    }).catch(console.error);
+    getSettingsSafe().then((result) => {
+      if (result.data) {
+        setDefaultModel(result.data.defaultModel);
+        setApiKey(result.data.openRouterApiKey);
+      }
+    });
   }, []);
 
   // Fetch stored PDF when viewing a report that has one

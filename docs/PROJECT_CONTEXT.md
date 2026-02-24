@@ -167,6 +167,18 @@ Before sharing the app with friends/family, do a thorough review of the full dat
 
 Goal: be able to confidently explain to a non-technical user exactly what happens with their health data.
 
+### New Extraction Empty State & Settings Link Fix (Implemented — 2026-02-23)
+
+Two UX fixes:
+
+1. **Single-column empty state** — When no file is selected on the New Extraction page, the awkward two-panel split pane is replaced with a full-width centered upload zone. The `<SplitPane>` only renders after a file is selected. An API key warning shows below the upload zone if no key is configured.
+
+2. **Broken Settings link removed** — `<UserButton disableDefaultLinks />` prevents the profile dropdown from rendering a "Settings" link to the nonexistent `/account/settings` route. Sign Out still works.
+
+3. **Upload zone visual polish** — Added an upload icon (inline SVG) above the text, refined padding and typography.
+
+**Files changed:** `ExtractionView.tsx`, `UploadZone.tsx`, `AppShell.tsx`
+
 ### UI Polish Pass
 
 The current UI is functional but needs a comprehensive visual polish pass — better spacing, typography, color palette, component styling, and overall design quality. This applies across the whole app (extraction view, biomarkers tab, detail pages, settings, etc.).
@@ -367,6 +379,14 @@ Key findings:
 
 **Conditions remaining for full pass:**
 - Install poppler (`brew install poppler`) and re-run PDF3/PDF4 pixel verification to confirm values against actual PDF rendering. Current risk: very low — all values cross-validated via internal consistency and cross-audit comparison.
+
+### Server Action Error Sanitization Fix (Implemented — 2026-02-23)
+
+Next.js production builds sanitize errors thrown by server actions — the client receives a generic "An unexpected response was received from the server" instead of the actual error message. This made the Settings tab show "Failed to load settings" with no diagnostic information.
+
+**Fix:** Added `getSettingsSafe()` and `updateSettingsSafe()` wrapper functions that catch errors server-side and return them as `{ data, error }` discriminated unions. Returned data is properly serialized by Next.js (only thrown errors are sanitized). SettingsTab and ExtractionView now use the safe wrappers, so real error messages (e.g., "Unauthorized", "column user_id does not exist") propagate to the UI. The load error banner includes a Retry button.
+
+**Files changed:** `lib/db/actions/settings.ts`, `lib/db/actions.ts`, `components/SettingsTab.tsx`, `components/ExtractionView.tsx`
 
 **Audit file index:**
 - `pdf1-blood-results-audit.md` — 47 biomarkers (PASS)

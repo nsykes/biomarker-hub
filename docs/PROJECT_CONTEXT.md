@@ -388,6 +388,16 @@ Next.js production builds sanitize errors thrown by server actions — the clien
 
 **Files changed:** `lib/db/actions/settings.ts`, `lib/db/actions.ts`, `components/SettingsTab.tsx`, `components/ExtractionView.tsx`
 
+### Middleware Server Action Bypass (Implemented — 2026-02-23)
+
+The Neon Auth middleware (`auth.middleware()`) was intercepting ALL requests matching the middleware config — including server action POST requests to `/`. When the upstream session check failed or timed out, it redirected to `/auth/sign-in`. The redirect response was HTML, which the server action client couldn't parse as React Flight data, producing the generic "An unexpected response was received from the server" error. This affected the Settings and Files tabs.
+
+**Root cause:** The middleware auth check was redundant for server actions — every server action already authenticates independently via `requireUser()` → `auth.getSession()`. The middleware intercepts requests BEFORE the server action function executes, so the `getSettingsSafe()` try/catch couldn't catch this failure.
+
+**Fix:** The middleware now detects server action requests via the `next-action` header and passes them through immediately with `NextResponse.next()`. Page-level auth protection is unchanged — unauthenticated users visiting `/` are still redirected to sign-in. Also added explicit `size="icon"` prop to `<UserButton>` to suppress a console warning.
+
+**Files changed:** `middleware.ts`, `components/AppShell.tsx`
+
 **Audit file index:**
 - `pdf1-blood-results-audit.md` — 47 biomarkers (PASS)
 - `pdf2-dexa-scan-audit.md` — 64 biomarkers (PASS)

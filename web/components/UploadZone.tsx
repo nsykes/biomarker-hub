@@ -80,7 +80,7 @@ export function UploadZone({ onFileSelect, currentFile }: UploadZoneProps) {
         Drop a PDF here or click to upload
       </p>
       <p className="text-gray-400 text-sm">
-        Supports Function Health, Goodlabs, BodySpec lab reports
+        Upload any lab report PDF
       </p>
       <input
         ref={inputRef}

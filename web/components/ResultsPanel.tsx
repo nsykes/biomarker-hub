@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Biomarker, ExtractionResult, ExtractionMeta } from "@/lib/types";
 import { BiomarkerRow } from "./BiomarkerRow";
-import { ModelSelector } from "./ModelSelector";
+import { BiomarkerCombobox } from "./BiomarkerCombobox";
 import { Spinner } from "./Spinner";
 import { useCategoryCollapse } from "@/hooks/useCategoryCollapse";
-import { getDefaultModel } from "@/lib/models";
 
 interface ResultsPanelProps {
   file: File | null;
@@ -14,11 +13,81 @@ interface ResultsPanelProps {
   meta: ExtractionMeta | null;
   isExtracting: boolean;
   selectedBiomarker: Biomarker | null;
-  onExtract: (model: string) => void;
+  onExtract: () => void;
   onSelectBiomarker: (biomarker: Biomarker) => void;
   onUpdateBiomarker: (id: string, field: keyof Biomarker, value: unknown) => void;
   onPageClick: (page: number) => void;
-  defaultModel?: string;
+  onUpdateReportInfo: (field: string, value: string) => void;
+  onDeleteBiomarker: (id: string) => void;
+  onAddBiomarker: (biomarker: Biomarker) => void;
+}
+
+function ReportInfoField({
+  label,
+  value,
+  type,
+  onSave,
+}: {
+  label: string;
+  value: string;
+  type: "text" | "date";
+  onSave: (value: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [editing]);
+
+  const save = () => {
+    onSave(editValue);
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setEditValue(value);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <span className="inline-flex items-center gap-1">
+        <span className="text-gray-500 text-xs font-medium">{label}:</span>
+        <input
+          ref={inputRef}
+          type={type}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") save();
+            if (e.key === "Escape") cancel();
+          }}
+          onBlur={save}
+          className="border rounded px-1.5 py-0.5 text-xs w-auto min-w-[80px]"
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-gray-500 text-xs font-medium">{label}:</span>
+      <span
+        onClick={() => {
+          setEditValue(value);
+          setEditing(true);
+        }}
+        className="text-xs cursor-text hover:bg-blue-100 px-1.5 py-0.5 rounded"
+        title="Click to edit"
+      >
+        {value || "\u2014"}
+      </span>
+    </span>
+  );
 }
 
 export function ResultsPanel({
@@ -31,10 +100,12 @@ export function ResultsPanel({
   onSelectBiomarker,
   onUpdateBiomarker,
   onPageClick,
-  defaultModel,
+  onUpdateReportInfo,
+  onDeleteBiomarker,
+  onAddBiomarker,
 }: ResultsPanelProps) {
-  const [model, setModel] = useState(defaultModel || getDefaultModel());
   const { toggle: toggleCategory, isCollapsed } = useCategoryCollapse();
+  const [showCombobox, setShowCombobox] = useState(false);
 
   const groupedBiomarkers = useMemo(() => {
     if (!extraction) return new Map<string, Biomarker[]>();
@@ -63,17 +134,12 @@ export function ResultsPanel({
     <div className="flex flex-col h-full">
       {/* Header bar */}
       <div className="flex items-center gap-3 px-3 py-2 border-b bg-gray-50 flex-shrink-0 flex-wrap">
-        <ModelSelector
-          value={model}
-          onChange={setModel}
-          disabled={isExtracting}
-        />
         <button
-          onClick={() => onExtract(model)}
+          onClick={() => onExtract()}
           disabled={!file || isExtracting}
           className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm font-medium
                      hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
-                     flex items-center gap-2"
+                     flex items-center gap-2 cursor-pointer"
         >
           {isExtracting && (
             <Spinner size="sm" className="border-white border-t-transparent" />
@@ -83,12 +149,36 @@ export function ResultsPanel({
         {extraction && (
           <button
             onClick={handleExport}
-            className="ml-auto px-3 py-1.5 border rounded text-sm hover:bg-gray-100"
+            className="ml-auto px-3 py-1.5 border rounded text-sm hover:bg-gray-100 cursor-pointer"
           >
             Export JSON
           </button>
         )}
       </div>
+
+      {/* Report info bar */}
+      {extraction && (
+        <div className="flex items-center gap-4 px-3 py-1.5 border-b bg-blue-50 flex-shrink-0 flex-wrap">
+          <ReportInfoField
+            label="Date"
+            value={extraction.reportInfo.collectionDate || ""}
+            type="date"
+            onSave={(v) => onUpdateReportInfo("collectionDate", v)}
+          />
+          <ReportInfoField
+            label="Source"
+            value={extraction.reportInfo.source || ""}
+            type="text"
+            onSave={(v) => onUpdateReportInfo("source", v)}
+          />
+          <ReportInfoField
+            label="Lab"
+            value={extraction.reportInfo.labName || ""}
+            type="text"
+            onSave={(v) => onUpdateReportInfo("labName", v)}
+          />
+        </div>
+      )}
 
       {/* Results table or empty state */}
       <div className="flex-1 overflow-auto">
@@ -106,51 +196,91 @@ export function ResultsPanel({
         )}
 
         {extraction && (
-          <table className="w-full text-left">
-            <thead className="sticky top-0 bg-white border-b z-10">
-              <tr className="text-xs text-gray-500 uppercase">
-                <th className="px-2 py-2">Metric</th>
-                <th className="px-2 py-2">Value</th>
-                <th className="px-2 py-2">Unit</th>
-                <th className="px-2 py-2">Ref Range</th>
-                <th className="px-2 py-2">Flag</th>
-                <th className="px-2 py-2">Page</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from(groupedBiomarkers.entries()).map(
-                ([category, biomarkers]) => (
-                  <React.Fragment key={category}>
-                    <tr
-                      onClick={() => toggleCategory(category)}
-                      className="bg-gray-100 cursor-pointer hover:bg-gray-200"
-                    >
-                      <td
-                        colSpan={6}
-                        className="px-2 py-1.5 font-semibold text-sm"
+          <>
+            <table className="w-full text-left">
+              <thead className="sticky top-0 bg-white border-b z-10">
+                <tr className="text-xs text-gray-500 uppercase">
+                  <th className="px-2 py-2">Metric</th>
+                  <th className="px-2 py-2">Value</th>
+                  <th className="px-2 py-2">Unit</th>
+                  <th className="px-2 py-2">Ref Range</th>
+                  <th className="px-2 py-2">Flag</th>
+                  <th className="px-2 py-2">Page</th>
+                  <th className="px-1 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from(groupedBiomarkers.entries()).map(
+                  ([category, biomarkers]) => (
+                    <React.Fragment key={category}>
+                      <tr
+                        onClick={() => toggleCategory(category)}
+                        className="bg-gray-100 cursor-pointer hover:bg-gray-200"
                       >
-                        <span className="mr-1 inline-block w-3">
-                          {isCollapsed(category) ? "\u25B6" : "\u25BC"}
-                        </span>
-                        {category} ({biomarkers.length})
-                      </td>
-                    </tr>
-                    {!isCollapsed(category) &&
-                      biomarkers.map((b) => (
-                        <BiomarkerRow
-                          key={b.id}
-                          biomarker={b}
-                          isSelected={selectedBiomarker?.id === b.id}
-                          onSelect={onSelectBiomarker}
-                          onUpdate={onUpdateBiomarker}
-                          onPageClick={onPageClick}
-                        />
-                      ))}
-                  </React.Fragment>
-                )
+                        <td
+                          colSpan={7}
+                          className="px-2 py-1.5 font-semibold text-sm"
+                        >
+                          <span className="mr-1 inline-block w-3">
+                            {isCollapsed(category) ? "\u25B6" : "\u25BC"}
+                          </span>
+                          {category} ({biomarkers.length})
+                        </td>
+                      </tr>
+                      {!isCollapsed(category) &&
+                        biomarkers.map((b) => (
+                          <BiomarkerRow
+                            key={b.id}
+                            biomarker={b}
+                            isSelected={selectedBiomarker?.id === b.id}
+                            onSelect={onSelectBiomarker}
+                            onUpdate={onUpdateBiomarker}
+                            onPageClick={onPageClick}
+                            onDelete={onDeleteBiomarker}
+                          />
+                        ))}
+                    </React.Fragment>
+                  )
+                )}
+              </tbody>
+            </table>
+
+            {/* Add Biomarker */}
+            <div className="px-3 py-2 border-t">
+              {showCombobox ? (
+                <BiomarkerCombobox
+                  onSelect={(entry) => {
+                    const newBiomarker: Biomarker = {
+                      id: crypto.randomUUID(),
+                      category: entry.category,
+                      metricName: entry.displayName,
+                      rawName: entry.displayName,
+                      value: null,
+                      valueText: null,
+                      valueModifier: null,
+                      unit: entry.defaultUnit,
+                      referenceRangeLow: null,
+                      referenceRangeHigh: null,
+                      flag: "NORMAL",
+                      page: 0,
+                      region: entry.region,
+                      canonicalSlug: entry.slug,
+                    };
+                    onAddBiomarker(newBiomarker);
+                    setShowCombobox(false);
+                  }}
+                  onClose={() => setShowCombobox(false)}
+                />
+              ) : (
+                <button
+                  onClick={() => setShowCombobox(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+                >
+                  + Add Biomarker
+                </button>
               )}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 

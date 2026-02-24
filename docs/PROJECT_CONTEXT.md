@@ -122,22 +122,23 @@ Each biomarker in the Biomarkers tab links to a dedicated detail page at `/bioma
 - Editable reference ranges UI (currently disabled Edit button)
 - Link from history table rows back to the source report
 
-### Extraction UX Improvements
+### Extraction UX Improvements (Implemented — 2026-02-23)
 
-Several changes to the upload/extraction flow:
+Four changes to clean up the extraction experience:
 
-1. **Remove per-extraction model selector** — The model is already configurable in Settings. Showing it on every extraction is unnecessary clutter. Just use the default model from settings. Remove the model picker from the extraction UI entirely.
+1. **Per-extraction model selector removed** — The model is configured in Settings and used automatically. `ModelSelector.tsx` deleted; `SettingsTab` uses an inline `<select>` from `AVAILABLE_MODELS`.
 
-2. **Remove lab-specific branding from upload UI** — Don't say "supports Function Health, Quest, BodySpec" etc. The extractor should work with any lab report PDF. Keep the UI generic.
+2. **Lab-specific branding removed** — Upload zone now says "Upload any lab report PDF" instead of listing specific labs.
 
-3. **Auto-extract date and vendor** — When a PDF is uploaded, the LLM should extract:
-   - **Collection date** — when the lab work was done (already partially done via `collectionDate`, but should be more prominent and always extracted)
-   - **Vendor/lab name** — who produced the report (Function Health, Quest, BodySpec, etc.) — already partially done via `source`/`labName`, but should be surfaced clearly in the UI
-   - Both fields should be **editable** by the user after extraction (the LLM will get it wrong sometimes)
+3. **Editable report info bar** — After extraction, a blue info bar shows collection date, source, and lab name — all inline-editable (click-to-edit, blur/Enter saves, Escape cancels). Edits persist to DB via `updateReportInfo` server action.
 
-4. **Add/delete biomarkers after extraction** — Users need to correct extraction errors:
-   - **Delete** — Remove a biomarker the LLM hallucinated or extracted incorrectly
-   - **Add** — Add a biomarker the LLM missed. The biomarker name should be a **dropdown from the canonical biomarker list**, not free text, to maintain consistency across reports. (This requires a canonical biomarker registry — ties into the reference range work.)
+4. **Add/delete biomarkers** — Users can correct extraction errors:
+   - **Delete** — X button on each biomarker row removes it from state and syncs to DB.
+   - **Add** — "Add Biomarker" button below the table opens a `BiomarkerCombobox` that searches the canonical registry (134+ entries) by displayName, fullName, and aliases. Selecting an entry creates a new biomarker row with registry defaults.
+
+**New files:** `components/BiomarkerCombobox.tsx`
+**Deleted files:** `components/ModelSelector.tsx`
+**New server action:** `updateReportInfo(id, { source?, labName?, collectionDate? })` in `lib/db/actions/reports.ts`
 
 ### Biomarkers Tab UX
 

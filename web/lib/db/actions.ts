@@ -8,6 +8,7 @@ export {
   saveFile,
   deleteFile,
   updateFileBiomarkers,
+  updateReportInfo,
 } from "./actions/reports";
 
 export { getSettings, updateSettings } from "./actions/settings";

@@ -195,6 +195,29 @@ export async function deleteFile(id: string): Promise<void> {
     .where(and(eq(reports.id, id), eq(reports.userId, userId)));
 }
 
+export async function updateReportInfo(
+  id: string,
+  fields: { source?: string; labName?: string; collectionDate?: string }
+): Promise<void> {
+  const userId = await requireUser();
+
+  // Verify ownership
+  const rows = await db
+    .select({ id: reports.id })
+    .from(reports)
+    .where(and(eq(reports.id, id), eq(reports.userId, userId)));
+  if (rows.length === 0) throw new Error("Unauthorized");
+
+  const updates: Record<string, string> = {};
+  if (fields.source !== undefined) updates.source = fields.source;
+  if (fields.labName !== undefined) updates.labName = fields.labName;
+  if (fields.collectionDate !== undefined) updates.collectionDate = fields.collectionDate;
+
+  if (Object.keys(updates).length > 0) {
+    await db.update(reports).set(updates).where(eq(reports.id, id));
+  }
+}
+
 export async function updateFileBiomarkers(
   id: string,
   biomarkers: Biomarker[]

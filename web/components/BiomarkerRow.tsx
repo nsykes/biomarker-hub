@@ -11,6 +11,7 @@ interface BiomarkerRowProps {
   onSelect: (biomarker: Biomarker) => void;
   onUpdate: (id: string, field: keyof Biomarker, value: unknown) => void;
   onPageClick: (page: number) => void;
+  onDelete: (id: string) => void;
 }
 
 export function BiomarkerRow({
@@ -19,6 +20,7 @@ export function BiomarkerRow({
   onSelect,
   onUpdate,
   onPageClick,
+  onDelete,
 }: BiomarkerRowProps) {
   const [editingField, setEditingField] = useState<keyof Biomarker | null>(
     null
@@ -166,6 +168,20 @@ export function BiomarkerRow({
           className="text-blue-600 hover:underline text-xs"
         >
           p.{biomarker.page}
+        </button>
+      </td>
+      <td className="px-1 py-1">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(biomarker.id);
+          }}
+          className="text-gray-400 hover:text-red-500 transition-colors p-0.5"
+          title="Remove biomarker"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </td>
     </tr>

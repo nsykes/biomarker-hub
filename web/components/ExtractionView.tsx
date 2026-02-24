@@ -14,7 +14,7 @@ import {
   StoredFile,
 } from "@/lib/types";
 import { buildHighlightTarget } from "@/lib/highlight";
-import { saveFile, getSettings, updateFileBiomarkers } from "@/lib/db/actions";
+import { saveFile, getSettings, updateFileBiomarkers, updateReportInfo } from "@/lib/db/actions";
 import { DEFAULT_MODEL } from "@/lib/constants";
 
 const PdfViewer = dynamic(
@@ -94,7 +94,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
   }, []);
 
   const handleExtract = useCallback(
-    async (model: string) => {
+    async () => {
       if (!file) return;
       setIsExtracting(true);
       setError(null);
@@ -106,7 +106,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       try {
         const formData = new FormData();
         formData.append("pdf", file);
-        formData.append("model", model);
+        formData.append("model", defaultModel);
         if (apiKey) {
           formData.append("apiKey", apiKey);
         }
@@ -150,7 +150,58 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         setIsExtracting(false);
       }
     },
-    [file, apiKey]
+    [file, apiKey, defaultModel]
+  );
+
+  const handleUpdateReportInfo = useCallback(
+    (field: string, value: string) => {
+      setExtraction((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          reportInfo: { ...prev.reportInfo, [field]: value },
+        };
+        if (savedFileId) {
+          updateReportInfo(savedFileId, { [field]: value }).catch(console.error);
+        }
+        return updated;
+      });
+    },
+    [savedFileId]
+  );
+
+  const handleDeleteBiomarker = useCallback(
+    (id: string) => {
+      setExtraction((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          biomarkers: prev.biomarkers.filter((b) => b.id !== id),
+        };
+        if (savedFileId) {
+          updateFileBiomarkers(savedFileId, updated.biomarkers).catch(console.error);
+        }
+        return updated;
+      });
+    },
+    [savedFileId]
+  );
+
+  const handleAddBiomarker = useCallback(
+    (biomarker: Biomarker) => {
+      setExtraction((prev) => {
+        if (!prev) return prev;
+        const updated = {
+          ...prev,
+          biomarkers: [...prev.biomarkers, biomarker],
+        };
+        if (savedFileId) {
+          updateFileBiomarkers(savedFileId, updated.biomarkers).catch(console.error);
+        }
+        return updated;
+      });
+    },
+    [savedFileId]
   );
 
   const handleSelectBiomarker = useCallback((biomarker: Biomarker) => {
@@ -220,7 +271,9 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       onSelectBiomarker={handleSelectBiomarker}
       onUpdateBiomarker={handleUpdateBiomarker}
       onPageClick={handlePageClick}
-      defaultModel={defaultModel}
+      onUpdateReportInfo={handleUpdateReportInfo}
+      onDeleteBiomarker={handleDeleteBiomarker}
+      onAddBiomarker={handleAddBiomarker}
     />
   );
 

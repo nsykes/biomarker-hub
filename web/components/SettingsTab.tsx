@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppSettings } from "@/lib/types";
 import { getSettings, updateSettings } from "@/lib/db/actions";
-import { ModelSelector } from "./ModelSelector";
+import { AVAILABLE_MODELS } from "@/lib/models";
 import { DEFAULT_MODEL } from "@/lib/constants";
 import { PageSpinner } from "./Spinner";
 
@@ -107,15 +107,22 @@ export function SettingsTab() {
           Default Model
         </h2>
         <div className="space-y-2">
-          <ModelSelector
+          <select
             value={settings?.defaultModel || DEFAULT_MODEL}
-            onChange={handleModelChange}
-          />
+            onChange={(e) => handleModelChange(e.target.value)}
+            className="border rounded px-2 py-1.5 text-sm bg-white"
+          >
+            {AVAILABLE_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
           {saving === "model" && (
             <p className="text-xs text-gray-400">Saving...</p>
           )}
           <p className="text-xs text-gray-400">
-            The model used for new extractions. Can be overridden per extraction.
+            The model used for new extractions.
           </p>
         </div>
       </section>

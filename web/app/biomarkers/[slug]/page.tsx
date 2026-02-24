@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { REGISTRY } from "@/lib/biomarker-registry";
-import { getBiomarkerDetail } from "@/lib/db/actions";
+import { getBiomarkerDetail, backfillReferenceRange } from "@/lib/db/actions";
 import { BiomarkerDetailPage } from "@/components/BiomarkerDetailPage";
 
 export default async function BiomarkerPage({
@@ -14,6 +14,9 @@ export default async function BiomarkerPage({
 
   const { history, referenceRange } = await getBiomarkerDetail(slug);
 
+  // If no global range exists yet, try to backfill from historical lab data
+  const finalRange = referenceRange ?? (await backfillReferenceRange(slug));
+
   return (
     <BiomarkerDetailPage
       data={{
@@ -23,7 +26,7 @@ export default async function BiomarkerPage({
         category: entry.category,
         defaultUnit: entry.defaultUnit,
         history,
-        referenceRange,
+        referenceRange: finalRange,
       }}
     />
   );

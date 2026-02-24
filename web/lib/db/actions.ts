@@ -23,4 +23,5 @@ export {
   getReferenceRange,
   reconcileReferenceRanges,
   updateReferenceRange,
+  backfillReferenceRange,
 } from "./actions/biomarkers";

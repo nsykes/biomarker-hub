@@ -3,6 +3,14 @@
 import { BiomarkerDetailData } from "@/lib/types";
 import { convertToCanonical } from "@/lib/unit-conversions";
 
+/** Format a range as "< X", "> X", or "X – Y" depending on which bounds exist. */
+function formatRange(low: number | null, high: number | null): string {
+  if (low !== null && high !== null) return `${low} – ${high}`;
+  if (high !== null) return `< ${high}`;
+  if (low !== null) return `> ${low}`;
+  return "\u2014";
+}
+
 export function ReferenceRangeSection({ data }: { data: BiomarkerDetailData }) {
   // Collect lab-reported ranges, normalizing to canonical unit
   const labRanges = data.history
@@ -34,30 +42,13 @@ export function ReferenceRangeSection({ data }: { data: BiomarkerDetailData }) {
     <div className="space-y-3">
       {data.referenceRange ? (
         <div className="flex items-center gap-4 text-sm">
-          <div>
-            <span className="text-gray-500">Low:</span>{" "}
-            <span className="font-medium">
-              {data.referenceRange.rangeLow ?? "\u2014"}
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-500">High:</span>{" "}
-            <span className="font-medium">
-              {data.referenceRange.rangeHigh ?? "\u2014"}
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-500">Goal:</span>{" "}
-            <span className="font-medium capitalize">
-              {data.referenceRange.goalDirection}
-            </span>
-          </div>
-          {data.referenceRange.unit && (
-            <div>
-              <span className="text-gray-500">Unit:</span>{" "}
-              <span className="font-medium">{data.referenceRange.unit}</span>
-            </div>
-          )}
+          <span className="font-medium">
+            {formatRange(data.referenceRange.rangeLow, data.referenceRange.rangeHigh)}
+            {data.referenceRange.unit ? ` ${data.referenceRange.unit}` : ""}
+          </span>
+          <span className="text-gray-500">
+            (goal: {data.referenceRange.goalDirection})
+          </span>
         </div>
       ) : (
         <div className="flex items-center gap-3">
@@ -81,9 +72,7 @@ export function ReferenceRangeSection({ data }: { data: BiomarkerDetailData }) {
           <div className="space-y-1">
             {uniqueLabRanges.map((r, i) => (
               <div key={i} className="text-xs text-gray-500 flex gap-3">
-                <span>
-                  {r.low ?? "?"} – {r.high ?? "?"}
-                </span>
+                <span>{formatRange(r.low, r.high)}</span>
                 <span className="text-gray-400">
                   {r.labName || r.filename}
                 </span>

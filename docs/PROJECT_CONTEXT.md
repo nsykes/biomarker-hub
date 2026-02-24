@@ -39,7 +39,9 @@ Reference ranges should be defined in a central lookup table, not extracted per-
 - Ranges change over time as guidelines update
 - We want consistent flagging across all reports
 
-**Current behavior:** Ranges are extracted from the PDF. On first extraction, PDF ranges are auto-saved to `reference_ranges` as canonical. On subsequent extractions, if the PDF range differs from stored, a conflict modal lets the user choose which to keep.
+**Current behavior:** Ranges are extracted from the PDF. On first extraction, PDF ranges are auto-saved to `reference_ranges` as canonical. On subsequent extractions, if the PDF range differs from stored, a conflict modal lets the user choose which to keep. Additionally, visiting a biomarker detail page will auto-backfill the global range from historical lab data if no range exists yet (covers reports uploaded before auto-population was added).
+
+**Goal direction inference:** `goalDirection` is automatically inferred from range bounds — both bounds → "within", only high → "below", only low → "above". This applies to all insert/update paths (extraction reconciliation, manual updates, and backfill).
 
 ### rawName vs metricName
 
@@ -105,7 +107,7 @@ Each biomarker in the Biomarkers tab links to a dedicated detail page at `/bioma
 
 1. **Historical chart** — Recharts `LineChart` showing all numeric values over time, with data points colored by flag status. Reference range displayed as a shaded zone when available.
 2. **History table** — All data points (newest first) with date, value, unit, flag, and source (filename + lab name).
-3. **Reference range section** — Shows custom range from `reference_ranges` table if set, otherwise "No custom reference range set" with disabled Edit button (future). Also shows unique lab-reported ranges from extraction data.
+3. **Reference range section** — Shows custom range from `reference_ranges` table (auto-backfilled from lab data on first visit if needed). One-sided ranges display as "< X" or "> X" instead of "? – X". Goal direction shown inline (e.g., "< 200 mg/dL (goal: below)"). Falls back to "No custom reference range set" only if no lab data exists at all. Also shows unique lab-reported ranges from extraction data.
 
 **Architecture:**
 - Route: `web/app/biomarkers/[slug]/page.tsx` (server component — looks up registry entry, fetches data via `getBiomarkerDetail()`)
@@ -251,7 +253,7 @@ The monolithic `lib/db/actions.ts` has been split into focused sub-modules under
 - `lib/db/actions/auth.ts` — `requireUser()` helper (session guard)
 - `lib/db/actions/reports.ts` — File/report CRUD (`getFiles`, `getFile`, `saveFile`, `deleteFile`, `updateFileBiomarkers`) plus internal helpers (`reportColumns`, `ReportRow`, `toBiomarker`, `toMeta`, `toStoredFile`, `biomarkerToRow`)
 - `lib/db/actions/settings.ts` — `getSettings`, `updateSettings`
-- `lib/db/actions/biomarkers.ts` — `getBiomarkerDetail`, `getReferenceRange`
+- `lib/db/actions/biomarkers.ts` — `getBiomarkerDetail`, `getReferenceRange`, `backfillReferenceRange`
 - `lib/db/actions.ts` — Barrel file re-exporting all public functions
 
 Each sub-module has its own `"use server"` directive. Internal helpers in `reports.ts` are not exported.

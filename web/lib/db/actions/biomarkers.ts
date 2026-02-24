@@ -2,13 +2,24 @@
 
 import { db } from "../index";
 import { biomarkerResults, reports, referenceRanges } from "../schema";
-import { eq, asc, and } from "drizzle-orm";
+import { eq, asc, and, desc, isNotNull, or } from "drizzle-orm";
 import {
   BiomarkerHistoryPoint,
   ReferenceRange,
   ReferenceRangeConflict,
 } from "@/lib/types";
 import { requireUser } from "./auth";
+
+/** Infer goal direction from one-sided or two-sided bounds. */
+function inferGoalDirection(
+  low: number | null,
+  high: number | null
+): "below" | "above" | "within" {
+  if (low !== null && high !== null) return "within";
+  if (high !== null) return "below";
+  if (low !== null) return "above";
+  return "within"; // fallback (shouldn't be reached if caller filters nulls)
+}
 
 export async function getReferenceRange(
   slug: string
@@ -106,7 +117,7 @@ export async function reconcileReferenceRanges(
         rangeLow: item.referenceRangeLow !== null ? String(item.referenceRangeLow) : null,
         rangeHigh: item.referenceRangeHigh !== null ? String(item.referenceRangeHigh) : null,
         unit: item.unit,
-        goalDirection: "within",
+        goalDirection: inferGoalDirection(item.referenceRangeLow, item.referenceRangeHigh),
       });
     } else {
       const stored = rows[0];
@@ -149,7 +160,7 @@ export async function updateReferenceRange(
       rangeLow: rangeLow !== null ? String(rangeLow) : null,
       rangeHigh: rangeHigh !== null ? String(rangeHigh) : null,
       unit,
-      goalDirection: "within",
+      goalDirection: inferGoalDirection(rangeLow, rangeHigh),
     });
   } else {
     await db
@@ -158,8 +169,68 @@ export async function updateReferenceRange(
         rangeLow: rangeLow !== null ? String(rangeLow) : null,
         rangeHigh: rangeHigh !== null ? String(rangeHigh) : null,
         unit,
+        goalDirection: inferGoalDirection(rangeLow, rangeHigh),
         updatedAt: new Date(),
       })
       .where(eq(referenceRanges.canonicalSlug, slug));
   }
+}
+
+/**
+ * Backfill a global reference range from historical biomarker_results data.
+ * Called on detail page load so pre-existing reports auto-seed the range.
+ */
+export async function backfillReferenceRange(
+  slug: string
+): Promise<ReferenceRange | null> {
+  // Already has a global range — return it as-is
+  const existing = await getReferenceRange(slug);
+  if (existing) return existing;
+
+  const userId = await requireUser();
+
+  // Find the most recent result that has at least one range bound
+  const rows = await db
+    .select({
+      referenceRangeLow: biomarkerResults.referenceRangeLow,
+      referenceRangeHigh: biomarkerResults.referenceRangeHigh,
+      unit: biomarkerResults.unit,
+      collectionDate: reports.collectionDate,
+      addedAt: reports.addedAt,
+    })
+    .from(biomarkerResults)
+    .innerJoin(reports, eq(biomarkerResults.reportId, reports.id))
+    .where(
+      and(
+        eq(biomarkerResults.canonicalSlug, slug),
+        eq(reports.userId, userId),
+        or(
+          isNotNull(biomarkerResults.referenceRangeLow),
+          isNotNull(biomarkerResults.referenceRangeHigh)
+        )
+      )
+    )
+    .orderBy(desc(reports.collectionDate), desc(reports.addedAt))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+
+  const r = rows[0];
+  const low = r.referenceRangeLow !== null ? Number(r.referenceRangeLow) : null;
+  const high = r.referenceRangeHigh !== null ? Number(r.referenceRangeHigh) : null;
+
+  await db.insert(referenceRanges).values({
+    canonicalSlug: slug,
+    rangeLow: r.referenceRangeLow,
+    rangeHigh: r.referenceRangeHigh,
+    unit: r.unit,
+    goalDirection: inferGoalDirection(low, high),
+  });
+
+  return {
+    rangeLow: low,
+    rangeHigh: high,
+    goalDirection: inferGoalDirection(low, high),
+    unit: r.unit,
+  };
 }

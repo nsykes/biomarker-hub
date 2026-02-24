@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { StoredFile } from "@/lib/types";
 import { getFiles, deleteFile } from "@/lib/db/actions";
+import { PageSpinner } from "./Spinner";
 
 interface FilesTabProps {
   onNewExtraction: () => void;
@@ -50,11 +51,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <span className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   if (files.length === 0) {

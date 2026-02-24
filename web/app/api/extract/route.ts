@@ -3,6 +3,12 @@ import { auth } from "@/lib/auth/server";
 import { EXTRACTION_PROMPT } from "@/lib/prompt";
 import { ExtractionResult, ExtractionResponse } from "@/lib/types";
 import { matchBiomarker } from "@/lib/biomarker-registry";
+import {
+  OPENROUTER_API_URL,
+  DEFAULT_MODEL,
+  EXTRACTION_MAX_TOKENS,
+  EXTRACTION_TEMPERATURE,
+} from "@/lib/constants";
 
 export const maxDuration = 120;
 
@@ -18,7 +24,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("pdf") as File | null;
     const model =
-      (formData.get("model") as string) || "google/gemini-2.5-pro";
+      (formData.get("model") as string) || DEFAULT_MODEL;
 
     if (!file) {
       return NextResponse.json(
@@ -40,7 +46,7 @@ export async function POST(request: NextRequest) {
     const base64Pdf = pdfBuffer.toString("base64");
 
     const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
+      OPENROUTER_API_URL,
       {
         method: "POST",
         headers: {
@@ -69,8 +75,8 @@ export async function POST(request: NextRequest) {
             },
           ],
           response_format: { type: "json_object" },
-          temperature: 0,
-          max_tokens: 16000,
+          temperature: EXTRACTION_TEMPERATURE,
+          max_tokens: EXTRACTION_MAX_TOKENS,
         }),
       }
     );

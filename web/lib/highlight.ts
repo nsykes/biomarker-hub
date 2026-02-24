@@ -1,4 +1,9 @@
 import { HighlightTarget } from "./types";
+import {
+  HIGHLIGHT_ROW_TOLERANCE,
+  HIGHLIGHT_MIN_SCORE,
+  HIGHLIGHT_COLOR,
+} from "./constants";
 
 interface SpanInfo {
   el: HTMLElement;
@@ -89,8 +94,8 @@ export function applyHighlights(
   // Sort by vertical position
   spanInfos.sort((a, b) => a.top - b.top);
 
-  // Group into rows by Y-position (3px tolerance for minor alignment diffs)
-  const ROW_TOLERANCE = 3;
+  // Group into rows by Y-position
+  const ROW_TOLERANCE = HIGHLIGHT_ROW_TOLERANCE;
   const rows: Row[] = [];
   let currentSpans: SpanInfo[] = [spanInfos[0]];
   let currentTop = spanInfos[0].top;
@@ -124,13 +129,13 @@ export function applyHighlights(
     }
   }
 
-  // Require at least a partial name match (score >= 5)
-  if (!bestRow || bestScore < 5) return () => {};
+  // Require at least a partial name match
+  if (!bestRow || bestScore < HIGHLIGHT_MIN_SCORE) return () => {};
 
   // Highlight only the best row's spans
   const highlighted: HTMLElement[] = [];
   for (const span of bestRow.spans) {
-    span.el.style.backgroundColor = "rgba(250, 204, 21, 0.4)";
+    span.el.style.backgroundColor = HIGHLIGHT_COLOR;
     span.el.style.borderRadius = "2px";
     highlighted.push(span.el);
   }

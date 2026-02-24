@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Biomarker, BiomarkerFlag } from "@/lib/types";
+import { Biomarker } from "@/lib/types";
 import { FlagBadge } from "./FlagBadge";
+import { FLAG_OPTIONS } from "@/lib/constants";
 
 interface BiomarkerRowProps {
   biomarker: Biomarker;
@@ -11,15 +12,6 @@ interface BiomarkerRowProps {
   onUpdate: (id: string, field: keyof Biomarker, value: unknown) => void;
   onPageClick: (page: number) => void;
 }
-
-const FLAG_OPTIONS: BiomarkerFlag[] = [
-  "NORMAL",
-  "LOW",
-  "HIGH",
-  "ABNORMAL",
-  "CRITICAL_LOW",
-  "CRITICAL_HIGH",
-];
 
 export function BiomarkerRow({
   biomarker,

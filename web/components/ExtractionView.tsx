@@ -15,6 +15,7 @@ import {
 } from "@/lib/types";
 import { buildHighlightTarget } from "@/lib/highlight";
 import { saveFile, getSettings, updateFileBiomarkers } from "@/lib/db/actions";
+import { DEFAULT_MODEL } from "@/lib/constants";
 
 const PdfViewer = dynamic(
   () =>
@@ -58,7 +59,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
   const [selectedBiomarker, setSelectedBiomarker] = useState<Biomarker | null>(null);
   const [highlightTarget, setHighlightTarget] = useState<HighlightTarget | null>(null);
 
-  const [defaultModel, setDefaultModel] = useState<string>("google/gemini-2.5-pro");
+  const [defaultModel, setDefaultModel] = useState<string>(DEFAULT_MODEL);
   const [apiKey, setApiKey] = useState<string | null>(null);
 
   useEffect(() => {

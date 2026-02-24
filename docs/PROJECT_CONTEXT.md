@@ -196,6 +196,41 @@ Auth is live using **`@neondatabase/auth@^0.2.0-beta.1`** (standalone package, p
 - `app/layout.tsx` — wraps children with `<AuthProvider>`
 - `components/AppShell.tsx` — `<UserButton>` in header
 
+### Codebase Refactor (2026-02-23)
+
+Full structural cleanup — no functionality changes.
+
+**Shared foundation:**
+- `lib/constants.ts` — consolidated magic values (API URLs, model defaults, highlight params, flag colors/options) previously scattered across 7+ files
+- `lib/utils.ts` — shared `formatDate` utility (previously duplicated in BiomarkerDetailPage)
+- `hooks/useCategoryCollapse.ts` — shared hook for collapsible category sections (previously duplicated in ResultsPanel and BiomarkersTab)
+- `components/Spinner.tsx` — shared `Spinner` and `PageSpinner` components (previously duplicated inline in 4 files)
+- `.env.example` — documents required env vars
+
+**BiomarkerDetailPage split (362 → 73 lines):**
+- `components/biomarker-detail/HistoryChart.tsx` — chart with CustomDot, CustomTooltip
+- `components/biomarker-detail/HistoryTable.tsx` — history table
+- `components/biomarker-detail/ReferenceRangeSection.tsx` — reference range display
+- `components/biomarker-detail/helpers.ts` — `formatValue` utility
+- `components/BiomarkerDetailPage.tsx` — thin composer importing subcomponents
+
+**Type cleanup:** BiomarkersTab local `BiomarkerHistory` interface replaced with `BiomarkerHistoryPoint` from types.ts (was a subset duplicate).
+
+**AppShell cleanup:** Removed unnecessary `dynamic()` import for ExtractionView (PdfViewer handles its own `ssr: false`). Derived `VALID_TABS` from `TABS` array instead of maintaining duplicate.
+
+### DB Actions: Modular Barrel Re-export (2026-02-23)
+
+The monolithic `lib/db/actions.ts` has been split into focused sub-modules under `lib/db/actions/`. The original file is now a barrel re-export, so all existing imports (`import { ... } from '@/lib/db/actions'`) continue to work unchanged.
+
+**Sub-modules:**
+- `lib/db/actions/auth.ts` — `requireUser()` helper (session guard)
+- `lib/db/actions/reports.ts` — File/report CRUD (`getFiles`, `getFile`, `saveFile`, `deleteFile`, `updateFileBiomarkers`) plus internal helpers (`reportColumns`, `ReportRow`, `toBiomarker`, `toMeta`, `toStoredFile`, `biomarkerToRow`)
+- `lib/db/actions/settings.ts` — `getSettings`, `updateSettings`
+- `lib/db/actions/biomarkers.ts` — `getBiomarkerDetail`, `getReferenceRange`
+- `lib/db/actions.ts` — Barrel file re-exporting all public functions
+
+Each sub-module has its own `"use server"` directive. Internal helpers in `reports.ts` are not exported.
+
 **Env vars:**
 - `NEON_AUTH_BASE_URL` — from Neon dashboard Auth tab
 - `NEON_AUTH_COOKIE_SECRET` — 32+ chars, generate with `openssl rand -base64 32`

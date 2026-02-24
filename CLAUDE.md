@@ -12,7 +12,14 @@ Monorepo for biomarker extraction and health data tools.
 - `web/lib/prompt.ts` — LLM extraction prompt (critical — changes affect all extractions)
 - `web/lib/highlight.ts` — PDF text highlighting (row-based matching algorithm)
 - `web/lib/types.ts` — Shared TypeScript interfaces
+- `web/lib/constants.ts` — Shared magic values (API URLs, model defaults, highlight params, flag colors/options)
+- `web/lib/utils.ts` — Shared utilities (formatDate)
 - `web/app/api/extract/route.ts` — OpenRouter API route
+- `web/lib/db/actions.ts` — Barrel re-export for all server actions (do not add code here — add to sub-modules)
+- `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers)
+- `web/components/biomarker-detail/` — BiomarkerDetailPage subcomponents (HistoryChart, HistoryTable, ReferenceRangeSection, helpers)
+- `web/components/Spinner.tsx` — Shared loading spinner (Spinner, PageSpinner)
+- `web/hooks/useCategoryCollapse.ts` — Shared hook for collapsible category sections
 
 ## Dev Commands
 

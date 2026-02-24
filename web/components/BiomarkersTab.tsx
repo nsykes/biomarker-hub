@@ -2,30 +2,21 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { StoredFile, Biomarker } from "@/lib/types";
+import { StoredFile, BiomarkerHistoryPoint } from "@/lib/types";
 import {
   REGISTRY,
   CanonicalBiomarker,
   BiomarkerCategory,
 } from "@/lib/biomarker-registry";
 import { FlagBadge } from "./FlagBadge";
+import { PageSpinner } from "./Spinner";
+import { useCategoryCollapse } from "@/hooks/useCategoryCollapse";
 import { getFiles } from "@/lib/db/actions";
-
-interface BiomarkerHistory {
-  collectionDate: string | null;
-  value: number | null;
-  valueText: string | null;
-  unit: string | null;
-  flag: Biomarker["flag"];
-  filename: string;
-}
 
 export function BiomarkersTab() {
   const [files, setFiles] = useState<StoredFile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
-    new Set()
-  );
+  const { toggle: toggleCategory, isCollapsed } = useCategoryCollapse();
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -35,9 +26,9 @@ export function BiomarkersTab() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Build a map: canonicalSlug -> BiomarkerHistory[]
+  // Build a map: canonicalSlug -> BiomarkerHistoryPoint[]
   const historyMap = useMemo(() => {
-    const map = new Map<string, BiomarkerHistory[]>();
+    const map = new Map<string, BiomarkerHistoryPoint[]>();
     for (const file of files) {
       for (const b of file.biomarkers) {
         if (!b.canonicalSlug) continue;
@@ -46,9 +37,14 @@ export function BiomarkersTab() {
           collectionDate: file.collectionDate,
           value: b.value,
           valueText: b.valueText,
+          valueModifier: b.valueModifier,
           unit: b.unit,
           flag: b.flag,
+          reportId: file.id,
           filename: file.filename,
+          labName: file.labName,
+          referenceRangeLow: b.referenceRangeLow,
+          referenceRangeHigh: b.referenceRangeHigh,
         });
         map.set(b.canonicalSlug, existing);
       }
@@ -87,27 +83,14 @@ export function BiomarkersTab() {
     return filtered;
   }, [groupedRegistry, searchQuery]);
 
-  const toggleCategory = (cat: string) => {
-    setCollapsedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
-      return next;
-    });
-  };
-
-  const getLatestValue = (slug: string): BiomarkerHistory | null => {
+  const getLatestValue = (slug: string): BiomarkerHistoryPoint | null => {
     const entries = historyMap.get(slug);
     if (!entries || entries.length === 0) return null;
     return entries[0]; // files are sorted by addedAt desc
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <span className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   return (
@@ -151,7 +134,7 @@ export function BiomarkersTab() {
               className="w-full flex items-center gap-2 px-5 py-2.5 bg-gray-50 border-b text-left hover:bg-gray-100 transition-colors sticky top-0 z-10"
             >
               <span className="w-3 text-xs text-gray-400">
-                {collapsedCategories.has(category) ? "\u25B6" : "\u25BC"}
+                {isCollapsed(category) ? "\u25B6" : "\u25BC"}
               </span>
               <span className="font-semibold text-sm text-gray-900">
                 {category}
@@ -162,7 +145,7 @@ export function BiomarkersTab() {
             </button>
 
             {/* Biomarker rows */}
-            {!collapsedCategories.has(category) && (
+            {!isCollapsed(category) && (
               <div className="divide-y divide-gray-50">
                 {entries.map((entry) => {
                   const latest = getLatestValue(entry.slug);

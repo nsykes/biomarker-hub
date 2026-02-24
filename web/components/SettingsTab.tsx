@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { AppSettings } from "@/lib/types";
 import { getSettings, updateSettings } from "@/lib/db/actions";
 import { ModelSelector } from "./ModelSelector";
+import { DEFAULT_MODEL } from "@/lib/constants";
+import { PageSpinner } from "./Spinner";
 
 export function SettingsTab() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -56,11 +58,7 @@ export function SettingsTab() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <span className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   return (
@@ -110,7 +108,7 @@ export function SettingsTab() {
         </h2>
         <div className="space-y-2">
           <ModelSelector
-            value={settings?.defaultModel || "google/gemini-2.5-pro"}
+            value={settings?.defaultModel || DEFAULT_MODEL}
             onChange={handleModelChange}
           />
           {saving === "model" && (

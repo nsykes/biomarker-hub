@@ -2,20 +2,12 @@
 
 import { useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import dynamic from "next/dynamic";
 import { UserButton } from "@neondatabase/auth/react";
 import { TabId, StoredFile } from "@/lib/types";
 import { FilesTab } from "./FilesTab";
 import { BiomarkersTab } from "./BiomarkersTab";
 import { SettingsTab } from "./SettingsTab";
-
-const ExtractionView = dynamic(
-  () =>
-    import("@/components/ExtractionView").then((mod) => ({
-      default: mod.ExtractionView,
-    })),
-  { ssr: false }
-);
+import { ExtractionView } from "./ExtractionView";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "files", label: "Files" },
@@ -23,7 +15,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "settings", label: "Settings" },
 ];
 
-const VALID_TABS: TabId[] = ["files", "biomarkers", "settings"];
+const VALID_TABS = TABS.map((t) => t.id);
 
 export function AppShell() {
   const searchParams = useSearchParams();

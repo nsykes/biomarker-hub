@@ -9,6 +9,7 @@ import {
   index,
   customType,
 } from "drizzle-orm/pg-core";
+import { DEFAULT_MODEL } from "@/lib/constants";
 
 const bytea = customType<{ data: Buffer }>({
   dataType() {
@@ -127,5 +128,5 @@ export const settings = pgTable("settings", {
   openRouterApiKey: text("openrouter_api_key"),
   defaultModel: text("default_model")
     .notNull()
-    .default("google/gemini-2.5-pro"),
+    .default(DEFAULT_MODEL),
 });

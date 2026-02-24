@@ -4,6 +4,8 @@ import React, { useState, useMemo } from "react";
 import { Biomarker, ExtractionResult, ExtractionMeta } from "@/lib/types";
 import { BiomarkerRow } from "./BiomarkerRow";
 import { ModelSelector } from "./ModelSelector";
+import { Spinner } from "./Spinner";
+import { useCategoryCollapse } from "@/hooks/useCategoryCollapse";
 import { getDefaultModel } from "@/lib/models";
 
 interface ResultsPanelProps {
@@ -32,9 +34,7 @@ export function ResultsPanel({
   defaultModel,
 }: ResultsPanelProps) {
   const [model, setModel] = useState(defaultModel || getDefaultModel());
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
-    new Set()
-  );
+  const { toggle: toggleCategory, isCollapsed } = useCategoryCollapse();
 
   const groupedBiomarkers = useMemo(() => {
     if (!extraction) return new Map<string, Biomarker[]>();
@@ -46,15 +46,6 @@ export function ResultsPanel({
     }
     return groups;
   }, [extraction]);
-
-  const toggleCategory = (category: string) => {
-    setCollapsedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(category)) next.delete(category);
-      else next.add(category);
-      return next;
-    });
-  };
 
   const handleExport = () => {
     if (!extraction) return;
@@ -85,7 +76,7 @@ export function ResultsPanel({
                      flex items-center gap-2"
         >
           {isExtracting && (
-            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <Spinner size="sm" className="border-white border-t-transparent" />
           )}
           {isExtracting ? "Extracting..." : "Extract Biomarkers"}
         </button>
@@ -109,7 +100,7 @@ export function ResultsPanel({
 
         {isExtracting && !extraction && (
           <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
-            <span className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <Spinner size="lg" className="border-blue-600 border-t-transparent" />
             <p>Extracting biomarkers... this may take 30-90 seconds</p>
           </div>
         )}
@@ -139,12 +130,12 @@ export function ResultsPanel({
                         className="px-2 py-1.5 font-semibold text-sm"
                       >
                         <span className="mr-1 inline-block w-3">
-                          {collapsedCategories.has(category) ? "\u25B6" : "\u25BC"}
+                          {isCollapsed(category) ? "\u25B6" : "\u25BC"}
                         </span>
                         {category} ({biomarkers.length})
                       </td>
                     </tr>
-                    {!collapsedCategories.has(category) &&
+                    {!isCollapsed(category) &&
                       biomarkers.map((b) => (
                         <BiomarkerRow
                           key={b.id}

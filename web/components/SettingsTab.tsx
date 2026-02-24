@@ -23,16 +23,21 @@ export function SettingsTab() {
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
-    const result = await getSettingsSafe();
-    if (result.error) {
-      setLoadError(result.error);
-    } else {
-      const s = result.data!;
-      setSettings(s);
-      setApiKeyInput(s.openRouterApiKey || "");
-      setKeyStored(!!s.openRouterApiKey);
+    try {
+      const result = await getSettingsSafe();
+      if (result.error) {
+        setLoadError(result.error);
+      } else {
+        const s = result.data!;
+        setSettings(s);
+        setApiKeyInput(s.openRouterApiKey || "");
+        setKeyStored(!!s.openRouterApiKey);
+      }
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load settings");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -42,19 +47,24 @@ export function SettingsTab() {
   const saveApiKey = useCallback(async () => {
     setSaving("apiKey");
     setSaveError(null);
-    const result = await updateSettingsSafe({ openRouterApiKey: apiKeyInput || null });
-    if (result.error) {
-      setSaveError(result.error);
-    } else {
-      const s = result.data!;
-      setSettings(s);
-      setApiKeyInput(s.openRouterApiKey || "");
-      setKeyStored(!!s.openRouterApiKey);
-      setKeyDirty(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+    try {
+      const result = await updateSettingsSafe({ openRouterApiKey: apiKeyInput || null });
+      if (result.error) {
+        setSaveError(result.error);
+      } else {
+        const s = result.data!;
+        setSettings(s);
+        setApiKeyInput(s.openRouterApiKey || "");
+        setKeyStored(!!s.openRouterApiKey);
+        setKeyDirty(false);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save");
+    } finally {
+      setSaving(null);
     }
-    setSaving(null);
   }, [apiKeyInput]);
 
   const handleModelChange = useCallback(
@@ -63,9 +73,14 @@ export function SettingsTab() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
         setSaving("model");
-        const result = await updateSettingsSafe({ defaultModel: model });
-        if (result.error) console.error("Failed to save model:", result.error);
-        setSaving(null);
+        try {
+          const result = await updateSettingsSafe({ defaultModel: model });
+          if (result.error) console.error("Failed to save model:", result.error);
+        } catch (err) {
+          console.error("Failed to save model:", err);
+        } finally {
+          setSaving(null);
+        }
       }, 300);
     },
     []

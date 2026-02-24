@@ -13,6 +13,7 @@ Monorepo for biomarker extraction and health data tools.
 - `web/lib/highlight.ts` — PDF text highlighting (row-based matching algorithm)
 - `web/lib/types.ts` — Shared TypeScript interfaces
 - `web/lib/constants.ts` — Shared magic values (API URLs, model defaults, highlight params, flag colors/options)
+- `web/lib/unit-conversions.ts` — Display-time unit normalization (converts alternate units to registry canonical units)
 - `web/lib/utils.ts` — Shared utilities (formatDate)
 - `web/app/api/extract/route.ts` — OpenRouter API route
 - `web/lib/db/actions.ts` — Barrel re-export for all server actions (do not add code here — add to sub-modules)

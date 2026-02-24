@@ -1,19 +1,30 @@
 "use client";
 
 import { BiomarkerDetailData } from "@/lib/types";
+import { convertToCanonical } from "@/lib/unit-conversions";
 
 export function ReferenceRangeSection({ data }: { data: BiomarkerDetailData }) {
-  // Collect unique lab-reported ranges from history
+  // Collect lab-reported ranges, normalizing to canonical unit
   const labRanges = data.history
     .filter((h) => h.referenceRangeLow !== null || h.referenceRangeHigh !== null)
-    .map((h) => ({
-      low: h.referenceRangeLow,
-      high: h.referenceRangeHigh,
-      filename: h.filename,
-      labName: h.labName,
-    }));
+    .map((h) => {
+      const low =
+        h.referenceRangeLow !== null
+          ? convertToCanonical(data.slug, h.referenceRangeLow, h.unit)
+          : null;
+      const high =
+        h.referenceRangeHigh !== null
+          ? convertToCanonical(data.slug, h.referenceRangeHigh, h.unit)
+          : null;
+      return {
+        low: low ? parseFloat(low.value.toFixed(2)) : null,
+        high: high ? parseFloat(high.value.toFixed(2)) : null,
+        filename: h.filename,
+        labName: h.labName,
+      };
+    });
 
-  // Deduplicate by low/high
+  // Deduplicate by normalized low/high
   const uniqueLabRanges = labRanges.filter(
     (r, i, arr) =>
       arr.findIndex((o) => o.low === r.low && o.high === r.high) === i

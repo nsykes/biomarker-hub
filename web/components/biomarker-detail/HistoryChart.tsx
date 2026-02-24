@@ -4,6 +4,7 @@ import { BiomarkerDetailData, BiomarkerHistoryPoint } from "@/lib/types";
 import { FLAG_COLORS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { formatValue } from "./helpers";
+import { convertToCanonical } from "@/lib/unit-conversions";
 import {
   LineChart,
   Line,
@@ -67,14 +68,23 @@ export function HistoryChart({
     );
   }
 
-  const chartData: ChartPoint[] = numericPoints.map((h) => ({
-    date: formatDate(h.collectionDate),
-    value: h.value,
-    flag: h.flag,
-    label: `${formatValue(h)} ${h.unit || data.defaultUnit || ""}`.trim(),
+  // Normalize values to canonical unit
+  const convertedPoints = numericPoints.map((h) => {
+    const c = convertToCanonical(data.slug, h.value!, h.unit);
+    return { point: h, value: c.value, unit: c.unit };
+  });
+
+  const canonicalUnit =
+    convertedPoints.find((c) => c.unit)?.unit || data.defaultUnit || "";
+
+  const chartData: ChartPoint[] = convertedPoints.map(({ point, value }) => ({
+    date: formatDate(point.collectionDate),
+    value,
+    flag: point.flag,
+    label: `${point.valueModifier ?? ""}${parseFloat(value.toFixed(2))} ${canonicalUnit}`.trim(),
   }));
 
-  const values = numericPoints.map((h) => h.value!);
+  const values = convertedPoints.map((c) => c.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const padding = max === min ? Math.max(max * 0.1, 1) : (max - min) * 0.15;
@@ -89,6 +99,18 @@ export function HistoryChart({
     }
     if (data.referenceRange.rangeHigh !== null) {
       yMax = Math.max(yMax, data.referenceRange.rangeHigh + padding);
+    }
+  }
+
+  // Extend Y-axis to include lab-reported reference ranges (normalized)
+  for (const { point } of convertedPoints) {
+    if (point.referenceRangeLow !== null) {
+      const c = convertToCanonical(data.slug, point.referenceRangeLow, point.unit);
+      yMin = Math.min(yMin, c.value - padding);
+    }
+    if (point.referenceRangeHigh !== null) {
+      const c = convertToCanonical(data.slug, point.referenceRangeHigh, point.unit);
+      yMax = Math.max(yMax, c.value + padding);
     }
   }
 

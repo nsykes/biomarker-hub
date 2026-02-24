@@ -245,17 +245,24 @@ Each sub-module has its own `"use server"` directive. Internal helpers in `repor
 2. Neon dashboard → Auth tab → copy `NEON_AUTH_BASE_URL`
 3. Add `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET` to `.env.local` (local) and Vercel project env vars (production)
 
-### Unit Normalization Across Labs (High Priority)
+### Unit Normalization Across Labs (Implemented — 2026-02-23)
 
-Different labs report the same biomarker in different units (e.g., glucose in mg/dL vs mmol/L, calcium in mg/dL vs mmol/L). For trend tracking across multiple reports to work correctly, we need a unit conversion strategy. Without this, plotting values from different labs on the same chart will produce nonsensical trends. Questions to resolve:
+Different labs report the same biomarker in different units (e.g., glucose in mg/dL vs mmol/L). The app now normalizes values to the registry's canonical unit at display time using a deterministic conversion table based on molecular weights.
 
-- Do we normalize all values to a single canonical unit per biomarker at ingestion time?
-- Or store the original and convert at display time?
-- Where does the conversion factor table live? (registry, DB, or hardcoded?)
-- How do we handle cases where the unit is missing or unrecognized?
-- Edge case: some biomarkers have legitimately different units depending on the test method — how do we distinguish?
+**Design decisions:**
+- **Display-time normalization, not ingestion-time** — originals stored in DB untouched, conversion applied when rendering charts/tables. This preserves source data fidelity and makes conversions reversible.
+- **Hardcoded lookup table** (`web/lib/unit-conversions.ts`) — ~17 conversion entries covering all common biomarkers. Conversion factors are well-established medical constants (based on molecular weights), so a static table is appropriate. No DB storage needed.
+- **Missing/unrecognized units pass through unchanged** — if unit is null or not in the conversion table, the original value is shown as-is. No data is ever lost or corrupted.
 
-This is a prerequisite for reliable multi-file trend tracking.
+**What's normalized:**
+- **History chart** — Y-axis plots all values in canonical unit, tooltip shows canonical unit
+- **History table** — converted rows show normalized value with original in gray parentheses (e.g., "95.0 (5.27 mmol/L)")
+- **Reference range section** — lab-reported ranges normalized before deduplication, so equivalent ranges in different units collapse into one
+- **Y-axis bounds** — lab-reported reference ranges from history points are normalized before computing chart bounds
+
+**Covered conversions:** Glucose, Total/HDL/LDL/Non-HDL Cholesterol, Triglycerides, Calcium, Creatinine, Uric Acid, BUN, Bilirubin Total, Iron Total, Ferritin, TIBC, Testosterone Total/Free, Cortisol, Insulin, Homocysteine, Vitamin D.
+
+**New file:** `web/lib/unit-conversions.ts` — `normalizeUnitString()` and `convertToCanonical()` functions.
 
 ### Bad PDF Handling
 

@@ -52,7 +52,11 @@ export function BiomarkerDetailPage({ data }: { data: BiomarkerDetailData }) {
             All Results ({data.history.length})
           </h2>
           {data.history.length > 0 ? (
-            <HistoryTable history={data.history} />
+            <HistoryTable
+              history={data.history}
+              slug={data.slug}
+              defaultUnit={data.defaultUnit}
+            />
           ) : (
             <p className="text-sm text-gray-400">
               No results found for this biomarker across your reports.

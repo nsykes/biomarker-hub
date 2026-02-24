@@ -3,14 +3,96 @@ import { auth } from "@/lib/auth/server";
 import { EXTRACTION_PROMPT } from "@/lib/prompt";
 import { ExtractionResult, ExtractionResponse } from "@/lib/types";
 import { matchBiomarker } from "@/lib/biomarker-registry";
+import { PDFDocument } from "pdf-lib";
 import {
   OPENROUTER_API_URL,
   DEFAULT_MODEL,
   EXTRACTION_MAX_TOKENS,
   EXTRACTION_TEMPERATURE,
+  CHUNK_PAGE_THRESHOLD,
+  CHUNK_SIZE,
+  FETCH_TIMEOUT_MS,
 } from "@/lib/constants";
 
 export const maxDuration = 120;
+
+async function extractChunk(
+  pdfBuffer: Buffer,
+  filename: string,
+  model: string,
+  apiKey: string,
+  signal: AbortSignal
+): Promise<{ extraction: ExtractionResult; usage: any }> {
+  const base64Pdf = pdfBuffer.toString("base64");
+
+  const response = await fetch(OPENROUTER_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "X-Title": "Biomarker Extract",
+    },
+    body: JSON.stringify({
+      model,
+      provider: { data_collection: "deny" },
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: EXTRACTION_PROMPT },
+            {
+              type: "file",
+              file: {
+                filename,
+                file_data: `data:application/pdf;base64,${base64Pdf}`,
+              },
+            },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: EXTRACTION_TEMPERATURE,
+      max_tokens: EXTRACTION_MAX_TOKENS,
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("OpenRouter error:", response.status, errorText);
+    throw new Error(`OpenRouter API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (!data.choices?.[0]?.message?.content) {
+    throw new Error("No content in LLM response");
+  }
+
+  const finishReason = data.choices[0].finish_reason;
+  if (finishReason === "length") {
+    console.error("Extraction truncated: output hit max_tokens limit");
+    throw new Error(
+      "The extraction output was truncated because the report contains too many results. Please try a shorter report."
+    );
+  }
+
+  let extraction: ExtractionResult;
+  try {
+    extraction = JSON.parse(data.choices[0].message.content);
+  } catch {
+    const contentLength = data.choices[0].message.content?.length ?? 0;
+    console.error(
+      "JSON parse failed — finish_reason:",
+      finishReason,
+      "content length:",
+      contentLength
+    );
+    throw new Error("Failed to parse LLM response as JSON");
+  }
+
+  return { extraction, usage: data.usage };
+}
 
 export async function POST(request: NextRequest) {
   const { data: session } = await auth.getSession();
@@ -23,8 +105,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("pdf") as File | null;
-    const model =
-      (formData.get("model") as string) || DEFAULT_MODEL;
+    const model = (formData.get("model") as string) || DEFAULT_MODEL;
 
     if (!file) {
       return NextResponse.json(
@@ -36,87 +117,106 @@ export async function POST(request: NextRequest) {
     const apiKey = formData.get("apiKey") as string;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "No API key configured. Add your OpenRouter API key in Settings." },
+        {
+          error:
+            "No API key configured. Add your OpenRouter API key in Settings.",
+        },
         { status: 400 }
       );
     }
 
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
-    const base64Pdf = pdfBuffer.toString("base64");
+    const filename = file.name || "lab-report.pdf";
 
-    const response = await fetch(
-      OPENROUTER_API_URL,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "X-Title": "Biomarker Extract",
-        },
-        body: JSON.stringify({
-          model,
-          provider: {
-            data_collection: "deny",
-          },
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: EXTRACTION_PROMPT },
-                {
-                  type: "file",
-                  file: {
-                    filename: file.name || "lab-report.pdf",
-                    file_data: `data:application/pdf;base64,${base64Pdf}`,
-                  },
-                },
-              ],
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: EXTRACTION_TEMPERATURE,
-          max_tokens: EXTRACTION_MAX_TOKENS,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenRouter error:", response.status, errorText);
-      return NextResponse.json(
-        { error: `OpenRouter API error: ${response.status}` },
-        { status: 502 }
-      );
-    }
-
-    const data = await response.json();
-
-    if (!data.choices?.[0]?.message?.content) {
-      return NextResponse.json(
-        { error: "No content in LLM response" },
-        { status: 502 }
-      );
-    }
-
-    const finishReason = data.choices[0].finish_reason;
-    if (finishReason === "length") {
-      console.error("Extraction truncated: output hit max_tokens limit");
-      return NextResponse.json(
-        { error: "The extraction output was truncated because the report contains too many results. Please try a shorter report." },
-        { status: 502 }
-      );
-    }
+    // Determine if we need to chunk
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const pageCount = pdfDoc.getPageCount();
 
     let extraction: ExtractionResult;
-    try {
-      extraction = JSON.parse(data.choices[0].message.content);
-    } catch {
-      const contentLength = data.choices[0].message.content?.length ?? 0;
-      console.error("JSON parse failed — finish_reason:", finishReason, "content length:", contentLength);
-      return NextResponse.json(
-        { error: "Failed to parse LLM response as JSON" },
-        { status: 502 }
+    let totalTokens: number | null = null;
+
+    if (pageCount <= CHUNK_PAGE_THRESHOLD) {
+      // Small PDF — single extraction call
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      try {
+        const result = await extractChunk(
+          pdfBuffer,
+          filename,
+          model,
+          apiKey,
+          controller.signal
+        );
+        extraction = result.extraction;
+        totalTokens = result.usage?.total_tokens ?? null;
+      } finally {
+        clearTimeout(timeout);
+      }
+    } else {
+      // Large PDF — split into chunks and extract in parallel
+      const chunks: { buffer: Buffer; startPage: number }[] = [];
+      for (let i = 0; i < pageCount; i += CHUNK_SIZE) {
+        const chunkDoc = await PDFDocument.create();
+        const end = Math.min(i + CHUNK_SIZE, pageCount);
+        const pageIndices = Array.from(
+          { length: end - i },
+          (_, idx) => i + idx
+        );
+        const copiedPages = await chunkDoc.copyPages(pdfDoc, pageIndices);
+        copiedPages.forEach((page) => chunkDoc.addPage(page));
+        const chunkBytes = await chunkDoc.save();
+        chunks.push({
+          buffer: Buffer.from(chunkBytes),
+          startPage: i + 1, // 1-indexed
+        });
+      }
+
+      console.log(
+        `Chunked extraction: ${pageCount} pages → ${chunks.length} chunks`
       );
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      try {
+        const results = await Promise.all(
+          chunks.map((chunk, idx) =>
+            extractChunk(
+              chunk.buffer,
+              `${filename} (chunk ${idx + 1}/${chunks.length})`,
+              model,
+              apiKey,
+              controller.signal
+            )
+          )
+        );
+
+        // Merge: reportInfo from first chunk, concatenate biomarkers with page offset
+        extraction = {
+          reportInfo: results[0].extraction.reportInfo,
+          biomarkers: [],
+        };
+
+        const seen = new Set<string>();
+        for (let i = 0; i < results.length; i++) {
+          const offset = chunks[i].startPage - 1;
+          for (const b of results[i].extraction.biomarkers) {
+            const adjusted = { ...b, page: b.page + offset };
+            const dedupKey = `${b.rawName}|${b.value}`;
+            if (!seen.has(dedupKey)) {
+              seen.add(dedupKey);
+              extraction.biomarkers.push(adjusted);
+            }
+          }
+        }
+
+        // Aggregate tokens
+        totalTokens = results.reduce(
+          (sum, r) => sum + (r.usage?.total_tokens ?? 0),
+          0
+        );
+      } finally {
+        clearTimeout(timeout);
+      }
     }
 
     // Add UUIDs to each biomarker
@@ -151,17 +251,23 @@ export async function POST(request: NextRequest) {
     const result: ExtractionResponse = {
       extraction,
       meta: {
-        model: data.model || model,
-        tokensUsed: data.usage?.total_tokens ?? null,
+        model: model,
+        tokensUsed: totalTokens,
         duration,
       },
     };
 
     return NextResponse.json(result);
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      return NextResponse.json(
+        { error: "Extraction timed out. Please try a shorter report." },
+        { status: 504 }
+      );
+    }
     console.error("Extraction error:", err);
     return NextResponse.json(
-      { error: "Internal extraction error" },
+      { error: err?.message || "Internal extraction error" },
       { status: 500 }
     );
   }

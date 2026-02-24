@@ -120,7 +120,6 @@ Each biomarker in the Biomarkers tab links to a dedicated detail page at `/bioma
 
 **Remaining work:**
 - Biomarker summary/explanation text (what it is, why it matters)
-- Editable reference ranges UI (currently disabled Edit button)
 - Link from history table rows back to the source report
 
 ### Extraction View Improvements (Implemented — 2026-02-23)
@@ -159,9 +158,13 @@ Four changes to clean up the extraction experience:
 **Deleted files:** `components/ModelSelector.tsx`
 **New server action:** `updateReportInfo(id, { source?, labName?, collectionDate? })` in `lib/db/actions/reports.ts`
 
-### Biomarkers Tab UX
+### Editable Reference Ranges + Expand/Collapse All (Implemented — 2026-02-23)
 
-- **Expand all / Collapse all** — Add a toggle button to the Biomarkers tab to expand or collapse all biomarker category groups at once.
+**Editable reference ranges:** The biomarker detail page's Reference Range card now has a working Edit/Set Range button. When a range exists, clicking "Edit" opens an inline form with Low, High, and Unit fields. When no range exists, "Set Range" opens the same form. Save calls `updateReferenceRange()` server action with optimistic local state update. Goal direction is auto-inferred client-side via `inferGoalDirection()`. Clearing both Low and High clears the range entirely. Cancel discards edits.
+
+**Expand/Collapse All:** Both the Biomarkers tab and ResultsPanel extraction table have a toggle button. Shows "Collapse All" when all categories are expanded, "Expand All" when any are collapsed. The `useCategoryCollapse` hook now exposes `expandAll()`, `collapseAll(categories)`, and `anyCollapsed` boolean.
+
+**Files changed:** `components/biomarker-detail/ReferenceRangeSection.tsx`, `components/BiomarkerDetailPage.tsx`, `hooks/useCategoryCollapse.ts`, `components/BiomarkersTab.tsx`, `components/ResultsPanel.tsx`
 
 ### Unknown Biomarker Remapping (Implemented — 2026-02-23)
 
@@ -319,6 +322,22 @@ Different labs report the same biomarker in different units (e.g., glucose in mg
 **Covered conversions:** Glucose, Total/HDL/LDL/Non-HDL Cholesterol, Triglycerides, Calcium, Creatinine, Uric Acid, BUN, Bilirubin Total, Iron Total, Ferritin, TIBC, Testosterone Total/Free, Cortisol, Insulin, Homocysteine, Vitamin D.
 
 **New file:** `web/lib/unit-conversions.ts` — `normalizeUnitString()` and `convertToCanonical()` functions.
+
+### Chunked PDF Extraction for Large Reports (Implemented — 2026-02-24)
+
+Large PDFs (17+ pages, 150+ biomarkers) caused 504 gateway timeouts on Vercel because a single LLM call generating ~20K+ output tokens took longer than the function timeout allowed.
+
+**Solution:** PDFs exceeding `CHUNK_PAGE_THRESHOLD` (8 pages) are split into chunks of `CHUNK_SIZE` (6 pages) using `pdf-lib`. Each chunk is extracted in parallel via `Promise.all()`, then results are merged:
+- `reportInfo` taken from the first chunk (page 1 has patient/lab info)
+- Biomarker page numbers adjusted by chunk offset to preserve correct PDF page references
+- Lightweight dedup by `rawName|value` handles page-boundary overlaps
+- Token usage aggregated across all chunks
+
+A `FETCH_TIMEOUT_MS` (55s) `AbortController` wraps all fetch calls as a safety net before Vercel kills the function. Small PDFs (≤8 pages) use the single-call path unchanged.
+
+**Dependency added:** `pdf-lib` (lightweight, zero-dependency PDF manipulation)
+
+**Files changed:** `web/app/api/extract/route.ts`, `web/lib/constants.ts`
 
 ### Bad PDF Handling
 

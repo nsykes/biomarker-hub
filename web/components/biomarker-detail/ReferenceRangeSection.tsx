@@ -11,6 +11,12 @@ function formatRange(low: number | null, high: number | null): string {
   return "\u2014";
 }
 
+const GOAL_BADGE_COLORS: Record<string, string> = {
+  within: "bg-[#E8FAF0] text-[#1B7F37]",
+  below: "bg-[#E8F4FD] text-[#0A84FF]",
+  above: "bg-[#FFF3E0] text-[#B36B00]",
+};
+
 export function ReferenceRangeSection({ data }: { data: BiomarkerDetailData }) {
   // Collect lab-reported ranges, normalizing to canonical unit
   const labRanges = data.history
@@ -39,25 +45,25 @@ export function ReferenceRangeSection({ data }: { data: BiomarkerDetailData }) {
   );
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {data.referenceRange ? (
-        <div className="flex items-center gap-4 text-sm">
-          <span className="font-medium">
+        <div className="flex items-center gap-3 text-sm">
+          <span className="font-semibold text-[var(--color-text-primary)]">
             {formatRange(data.referenceRange.rangeLow, data.referenceRange.rangeHigh)}
             {data.referenceRange.unit ? ` ${data.referenceRange.unit}` : ""}
           </span>
-          <span className="text-gray-500">
-            (goal: {data.referenceRange.goalDirection})
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${GOAL_BADGE_COLORS[data.referenceRange.goalDirection] || "bg-[var(--color-surface-tertiary)] text-[var(--color-text-secondary)]"}`}>
+            Goal: {data.referenceRange.goalDirection}
           </span>
         </div>
       ) : (
         <div className="flex items-center gap-3">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-[var(--color-text-tertiary)]">
             No custom reference range set
           </p>
           <button
             disabled
-            className="text-xs px-2.5 py-1 rounded border border-gray-200 text-gray-300 cursor-not-allowed"
+            className="text-xs px-2.5 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-text-tertiary)] cursor-not-allowed"
           >
             Edit
           </button>
@@ -66,14 +72,14 @@ export function ReferenceRangeSection({ data }: { data: BiomarkerDetailData }) {
 
       {uniqueLabRanges.length > 0 && (
         <div>
-          <h4 className="text-xs font-medium text-gray-400 uppercase mb-1.5">
+          <h4 className="text-xs font-medium text-[var(--color-text-tertiary)] uppercase mb-2">
             Lab-reported ranges
           </h4>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {uniqueLabRanges.map((r, i) => (
-              <div key={i} className="text-xs text-gray-500 flex gap-3">
-                <span>{formatRange(r.low, r.high)}</span>
-                <span className="text-gray-400">
+              <div key={i} className="text-xs text-[var(--color-text-secondary)] flex gap-3 items-center pl-3 border-l-2 border-[var(--color-primary)] py-0.5">
+                <span className="font-medium">{formatRange(r.low, r.high)}</span>
+                <span className="text-[var(--color-text-tertiary)]">
                   {r.labName || r.filename}
                 </span>
               </div>

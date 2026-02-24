@@ -31,8 +31,8 @@ function CustomDot(props: {
 }) {
   const { cx, cy, payload } = props;
   if (cx == null || cy == null || !payload || payload.value === null) return null;
-  const color = FLAG_COLORS[payload.flag] ?? "#6b7280";
-  return <circle cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={2} />;
+  const color = FLAG_COLORS[payload.flag] ?? "#AEAEB2";
+  return <circle cx={cx} cy={cy} r={6} fill={color} stroke="#fff" strokeWidth={2.5} />;
 }
 
 function CustomTooltip({
@@ -45,9 +45,9 @@ function CustomTooltip({
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-sm">
-      <p className="font-medium text-gray-900">{p.label}</p>
-      <p className="text-gray-500">{p.date}</p>
+    <div className="bg-white border border-[var(--color-border-light)] rounded-xl shadow-lg px-3 py-2 text-sm">
+      <p className="font-medium text-[var(--color-text-primary)]">{p.label}</p>
+      <p className="text-[var(--color-text-secondary)]">{p.date}</p>
     </div>
   );
 }
@@ -58,11 +58,11 @@ function buildRangeZones(
   yMax: number,
 ) {
   const zones: React.ReactNode[] = [];
-  const green = "#16a34a";
-  const red = "#dc2626";
+  const green = "#34C759";
+  const red = "#FF3B30";
   const greenOpacity = 0.06;
   const redOpacity = 0.05;
-  const lineColor = "#9ca3af";
+  const lineColor = "#AEAEB2";
 
   const { goalDirection, rangeLow, rangeHigh } = referenceRange;
 
@@ -100,8 +100,8 @@ export function HistoryChart({
 
   if (numericPoints.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-        <p className="text-sm text-gray-400">
+      <div className="flex items-center justify-center h-48 bg-[var(--color-surface-tertiary)] rounded-xl border border-dashed border-[var(--color-border)]">
+        <p className="text-sm text-[var(--color-text-tertiary)]">
           No numeric values to chart
         </p>
       </div>
@@ -157,18 +157,18 @@ export function HistoryChart({
   return (
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F5" />
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 12, fill: "#9ca3af" }}
+          tick={{ fontSize: 12, fill: "#AEAEB2" }}
           tickLine={false}
-          axisLine={{ stroke: "#e5e7eb" }}
+          axisLine={{ stroke: "#E5E5EA" }}
         />
         <YAxis
           domain={[yMin, yMax]}
-          tick={{ fontSize: 12, fill: "#9ca3af" }}
+          tick={{ fontSize: 12, fill: "#AEAEB2" }}
           tickLine={false}
-          axisLine={{ stroke: "#e5e7eb" }}
+          axisLine={{ stroke: "#E5E5EA" }}
           width={50}
         />
         <Tooltip content={<CustomTooltip />} />
@@ -176,10 +176,10 @@ export function HistoryChart({
         <Line
           type="monotone"
           dataKey="value"
-          stroke="#6b7280"
-          strokeWidth={2}
+          stroke="#0A84FF"
+          strokeWidth={2.5}
           dot={<CustomDot />}
-          activeDot={{ r: 7, stroke: "#6b7280", strokeWidth: 2 }}
+          activeDot={{ r: 8, stroke: "#0A84FF", strokeWidth: 2.5, fill: "#fff" }}
           connectNulls
         />
       </LineChart>

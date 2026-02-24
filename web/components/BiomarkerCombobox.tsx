@@ -48,24 +48,24 @@ export function BiomarkerCombobox({ onSelect, onClose }: BiomarkerComboboxProps)
           if (e.key === "Escape") onClose();
         }}
         placeholder="Search biomarkers..."
-        className="w-full border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="input-base rounded-xl"
       />
       {filtered.length > 0 && (
-        <ul className="absolute z-20 mt-1 w-full max-h-60 overflow-auto bg-white border rounded shadow-lg">
+        <ul className="absolute z-20 mt-1.5 w-full max-h-60 overflow-auto bg-white rounded-xl shadow-lg border border-[var(--color-border-light)]">
           {filtered.map((entry) => (
             <li
               key={entry.slug}
               onClick={() => onSelect(entry)}
-              className="px-3 py-1.5 text-sm cursor-pointer hover:bg-blue-50 flex justify-between items-baseline"
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-[var(--color-primary-light)] transition-colors flex justify-between items-baseline"
             >
-              <span>{entry.displayName}</span>
-              <span className="text-xs text-gray-400 ml-2">{entry.category}</span>
+              <span className="text-[var(--color-text-primary)]">{entry.displayName}</span>
+              <span className="text-xs text-[var(--color-text-tertiary)] ml-2">{entry.category}</span>
             </li>
           ))}
         </ul>
       )}
       {filtered.length === 0 && query.trim() && (
-        <div className="absolute z-20 mt-1 w-full bg-white border rounded shadow-lg px-3 py-2 text-sm text-gray-400">
+        <div className="absolute z-20 mt-1.5 w-full bg-white rounded-xl shadow-lg border border-[var(--color-border-light)] px-3 py-3 text-sm text-[var(--color-text-tertiary)]">
           No matching biomarkers
         </div>
       )}

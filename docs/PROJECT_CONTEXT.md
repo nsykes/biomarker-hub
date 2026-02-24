@@ -198,9 +198,39 @@ Two UX fixes:
 
 **Files changed:** `ExtractionView.tsx`, `UploadZone.tsx`, `AppShell.tsx`
 
-### UI Polish Pass
+### UI Polish Pass (Implemented — 2026-02-23)
 
-The current UI is functional but needs a comprehensive visual polish pass — better spacing, typography, color palette, component styling, and overall design quality. This applies across the whole app (extraction view, biomarkers tab, detail pages, settings, etc.).
+Comprehensive visual overhaul across all 22 component files, inspired by Apple Health / Apple system design. Changes:
+
+**Design system foundations (`globals.css`):**
+- Full CSS custom property system: primary accent (Apple system blue `#0A84FF`), health status flag colors (Apple system colors), warmer Apple-style neutrals, shadow/radius tokens
+- Base utility classes: `.card`, `.btn-primary`, `.btn-secondary`, `.input-base` for consistent styling
+- Body font fixed from hardcoded Arial to `var(--font-sans)` (Geist Sans)
+- Body background changed to off-white `--color-surface-secondary`
+
+**Color palette:**
+- Primary: `#0A84FF` (Apple system blue) with hover `#0070E0` and light bg `#E8F4FD`
+- Flag colors updated to Apple system colors: Normal `#34C759`, Low `#5856D6`, High `#FF3B30`, Abnormal `#FF9500`, Critical Low `#3634A3`, Critical High `#C5221F`
+- Warmer neutrals: borders `#E5E5EA`, text primary `#1C1C1E`, secondary `#636366`, tertiary `#AEAEB2`
+
+**Component changes:**
+- **AppShell:** Frosted-glass header (`bg-white/80 backdrop-blur-lg`), pill-style tab navigation with primary-light active state
+- **FilesTab:** Card-wrapped table, tertiary header bg, primary-light row hover, gradient blue FAB with scale animation
+- **BiomarkersTab:** Primary focus ring search input, chevron SVG icons (replacing unicode), primary-light count badges and row hover
+- **SettingsTab:** Card-wrapped sections, softer section titles, blue-tinted privacy FAQ card
+- **BiomarkerDetailPage:** Off-white page bg, arrow-icon back link, `text-2xl` title, primary-light category badge, card-wrapped sections
+- **HistoryChart:** Primary blue data line, larger dots (r=6), updated grid/zone/tooltip colors
+- **HistoryTable:** Card-wrapped with rounded border, tertiary header bg, primary-light row hover
+- **ReferenceRangeSection:** Goal direction colored badges, left-border accent on lab ranges
+- **ExtractionView:** Frosted-glass header, rounded error banner with icon, amber API key warning card
+- **ResultsPanel:** Primary/secondary button styles, subtle action bar shadow, chevron category icons
+- **BiomarkerRow:** Primary-light selected state with primary left border (replacing yellow), rounded hover states
+- **SplitPane:** Wider handle (`w-1.5`), grip indicator dots, primary color on hover/drag
+- **PdfViewer:** Clean white toolbar, chevron nav icons, consistent rounded button style
+- **UploadZone:** Rounded-2xl container, primary-tinted icon, hover/drag states in primary colors
+- **RangeConflictModal:** Frosted backdrop, `rounded-2xl` modal, close X button, primary selection styling
+- **Auth page:** Off-white bg, app name branding above auth form
+- **FlagBadge/Spinner:** Updated to Apple system colors
 
 ### Neon Auth (Implemented — 2026-02-23)
 

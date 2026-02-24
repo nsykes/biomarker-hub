@@ -14,14 +14,14 @@ export const HIGHLIGHT_ROW_TOLERANCE = 3;
 export const HIGHLIGHT_MIN_SCORE = 5;
 export const HIGHLIGHT_COLOR = "rgba(250, 204, 21, 0.4)";
 
-// Biomarker flags
+// Biomarker flags (Apple system colors)
 export const FLAG_COLORS: Record<string, string> = {
-  NORMAL: "#16a34a",
-  LOW: "#2563eb",
-  HIGH: "#dc2626",
-  ABNORMAL: "#ca8a04",
-  CRITICAL_LOW: "#1e40af",
-  CRITICAL_HIGH: "#991b1b",
+  NORMAL: "#34C759",
+  LOW: "#5856D6",
+  HIGH: "#FF3B30",
+  ABNORMAL: "#FF9500",
+  CRITICAL_LOW: "#3634A3",
+  CRITICAL_HIGH: "#C5221F",
 };
 
 export const FLAG_OPTIONS = [

@@ -94,55 +94,65 @@ export function PdfViewer({
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b bg-gray-50 text-sm flex-shrink-0">
-        <button
-          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage <= 1}
-          className="px-2 py-1 border rounded disabled:opacity-30 hover:bg-gray-200"
-        >
-          Prev
-        </button>
-        <span className="flex items-center gap-1">
-          Page
-          <input
-            type="number"
-            value={currentPage}
-            onChange={(e) => {
-              const p = parseInt(e.target.value, 10);
-              if (p >= 1 && p <= numPages) onPageChange(p);
-            }}
-            className="w-12 text-center border rounded px-1"
-            min={1}
-            max={numPages}
-          />
-          of {numPages}
-        </span>
-        <button
-          onClick={() => onPageChange(Math.min(numPages, currentPage + 1))}
-          disabled={currentPage >= numPages}
-          className="px-2 py-1 border rounded disabled:opacity-30 hover:bg-gray-200"
-        >
-          Next
-        </button>
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--color-border-light)] bg-white text-sm flex-shrink-0" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+        <div className="flex items-center">
+          <button
+            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+            disabled={currentPage <= 1}
+            className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] disabled:opacity-30 transition-colors"
+          >
+            <svg className="w-4 h-4 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span className="flex items-center gap-1 text-[var(--color-text-secondary)]">
+            <input
+              type="number"
+              value={currentPage}
+              onChange={(e) => {
+                const p = parseInt(e.target.value, 10);
+                if (p >= 1 && p <= numPages) onPageChange(p);
+              }}
+              className="w-10 text-center border border-[var(--color-border)] rounded-lg px-1 py-0.5 text-sm"
+              min={1}
+              max={numPages}
+            />
+            <span className="text-[var(--color-text-tertiary)]">/ {numPages}</span>
+          </span>
+          <button
+            onClick={() => onPageChange(Math.min(numPages, currentPage + 1))}
+            disabled={currentPage >= numPages}
+            className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] disabled:opacity-30 transition-colors"
+          >
+            <svg className="w-4 h-4 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+        <div className="w-px h-5 bg-[var(--color-border-light)] mx-1" />
         <div className="ml-auto flex items-center gap-1">
           <button
             onClick={() => setScale((s) => Math.max(0.5, +(s - 0.1).toFixed(1)))}
-            className="px-2 py-1 border rounded hover:bg-gray-200"
+            className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] transition-colors text-[var(--color-text-secondary)]"
           >
-            -
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            </svg>
           </button>
-          <span className="w-12 text-center">{Math.round(scale * 100)}%</span>
+          <span className="w-12 text-center text-sm text-[var(--color-text-secondary)] tabular-nums">{Math.round(scale * 100)}%</span>
           <button
             onClick={() => setScale((s) => Math.min(3, +(s + 0.1).toFixed(1)))}
-            className="px-2 py-1 border rounded hover:bg-gray-200"
+            className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] transition-colors text-[var(--color-text-secondary)]"
           >
-            +
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
           </button>
         </div>
       </div>
 
       {/* PDF Document */}
-      <div className="flex-1 overflow-auto flex justify-center bg-gray-100 p-4">
+      <div className="flex-1 overflow-auto flex justify-center bg-[var(--color-surface-tertiary)] p-4">
         <Document file={fileUrl} onLoadSuccess={onDocumentLoadSuccess}>
           <div ref={pageRef}>
             <Page

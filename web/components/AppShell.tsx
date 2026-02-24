@@ -55,20 +55,22 @@ export function AppShell() {
 
   return (
     <>
-      {/* Header */}
-      <header className="flex items-center gap-6 px-5 py-3 border-b bg-white flex-shrink-0">
-        <h1 className="text-lg font-bold tracking-tight">Biomarker Extract</h1>
-        <nav className="flex gap-1">
+      {/* Header — frosted glass */}
+      <header className="flex items-center gap-6 px-6 py-3 border-b border-[var(--color-border-light)] bg-white/80 backdrop-blur-lg flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <h1 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">
+          Biomarker Extract
+        </h1>
+        <nav className="flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                px-3 py-1.5 text-sm font-medium rounded-md transition-colors
+                px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200
                 ${
                   activeTab === tab.id
-                    ? "bg-gray-900 text-white"
-                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                    ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] shadow-sm"
+                    : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                 }
               `}
             >
@@ -82,7 +84,7 @@ export function AppShell() {
       </header>
 
       {/* Tab content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-[var(--color-surface-secondary)]">
         {activeTab === "files" && (
           <FilesTab
             onNewExtraction={handleNewExtraction}

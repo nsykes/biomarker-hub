@@ -96,10 +96,10 @@ export function BiomarkersTab() {
   return (
     <div className="flex flex-col h-full">
       {/* Search bar */}
-      <div className="px-5 py-3 border-b bg-white flex-shrink-0">
+      <div className="px-5 py-3 border-b border-[var(--color-border-light)] bg-white flex-shrink-0">
         <div className="relative max-w-md">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -116,10 +116,11 @@ export function BiomarkersTab() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search biomarkers..."
-            className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200"
+            className="input-base !pl-10 !rounded-xl"
+            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
           />
         </div>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-[var(--color-text-tertiary)] mt-1.5">
           {REGISTRY.length} biomarkers across {groupedRegistry.size} categories
         </p>
       </div>
@@ -131,22 +132,27 @@ export function BiomarkersTab() {
             {/* Category header */}
             <button
               onClick={() => toggleCategory(category)}
-              className="w-full flex items-center gap-2 px-5 py-2.5 bg-gray-50 border-b text-left hover:bg-gray-100 transition-colors sticky top-0 z-10"
+              className="w-full flex items-center gap-2 px-5 py-2.5 bg-[var(--color-surface-tertiary)]/80 backdrop-blur-sm border-b border-[var(--color-border-light)] text-left hover:bg-[var(--color-surface-tertiary)] transition-colors sticky top-0 z-10"
             >
-              <span className="w-3 text-xs text-gray-400">
-                {isCollapsed(category) ? "\u25B6" : "\u25BC"}
-              </span>
-              <span className="font-semibold text-sm text-gray-900">
+              <svg
+                className={`w-3 h-3 text-[var(--color-text-tertiary)] transition-transform duration-200 ${isCollapsed(category) ? '' : 'rotate-90'}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              <span className="font-semibold text-sm text-[var(--color-text-primary)]">
                 {category}
               </span>
-              <span className="text-xs text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded-full">
+              <span className="text-xs text-[var(--color-primary)] bg-[var(--color-primary-light)] px-2 py-0.5 rounded-full font-medium">
                 {entries.length}
               </span>
             </button>
 
             {/* Biomarker rows */}
             {!isCollapsed(category) && (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-[var(--color-border-light)]">
                 {entries.map((entry) => {
                   const latest = getLatestValue(entry.slug);
 
@@ -154,22 +160,22 @@ export function BiomarkersTab() {
                     <Link
                       key={entry.slug}
                       href={`/biomarkers/${entry.slug}`}
-                      className="flex items-center gap-4 px-5 py-2 text-left hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-4 px-5 py-2.5 text-left hover:bg-[var(--color-primary-light)] transition-colors duration-150"
                     >
-                      <span className="text-sm text-gray-900 flex-1 min-w-0">
+                      <span className="text-sm text-[var(--color-text-primary)] flex-1 min-w-0">
                         {entry.displayName}
                         {entry.fullName !== entry.displayName && (
-                          <span className="text-xs text-gray-400 ml-1.5">
+                          <span className="text-xs text-[var(--color-text-tertiary)] ml-1.5">
                             {entry.fullName}
                           </span>
                         )}
                         {entry.region && (
-                          <span className="text-xs text-gray-400 ml-1">
+                          <span className="text-xs text-[var(--color-text-tertiary)] ml-1">
                             ({entry.region})
                           </span>
                         )}
                       </span>
-                      <span className="text-sm text-gray-600 w-24 text-right flex-shrink-0">
+                      <span className="text-sm text-[var(--color-text-secondary)] w-24 text-right flex-shrink-0 tabular-nums">
                         {latest
                           ? latest.valueText ??
                             (latest.value !== null
@@ -177,15 +183,15 @@ export function BiomarkersTab() {
                               : "\u2014")
                           : "\u2014"}
                       </span>
-                      <span className="text-xs text-gray-400 w-16 text-right flex-shrink-0">
+                      <span className="text-xs text-[var(--color-text-tertiary)] w-16 text-right flex-shrink-0">
                         {entry.defaultUnit || ""}
                       </span>
                       <span className="flex-shrink-0 w-24 text-right">
                         {latest && <FlagBadge flag={latest.flag} />}
                       </span>
-                      <span className="w-3 text-xs text-gray-300 flex-shrink-0">
-                        &#x203A;
-                      </span>
+                      <svg className="w-4 h-4 text-[var(--color-text-tertiary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </Link>
                   );
                 })}

@@ -56,7 +56,7 @@ function ReportInfoField({
   if (editing) {
     return (
       <span className="inline-flex items-center gap-1">
-        <span className="text-gray-500 text-xs font-medium">{label}:</span>
+        <span className="text-[var(--color-text-secondary)] text-xs font-medium">{label}:</span>
         <input
           ref={inputRef}
           type={type}
@@ -67,7 +67,7 @@ function ReportInfoField({
             if (e.key === "Escape") cancel();
           }}
           onBlur={save}
-          className="border rounded px-1.5 py-0.5 text-xs w-auto min-w-[80px]"
+          className="input-base !py-0.5 !px-1.5 !text-xs !w-auto !min-w-[80px] !rounded-lg"
         />
       </span>
     );
@@ -75,13 +75,13 @@ function ReportInfoField({
 
   return (
     <span className="inline-flex items-center gap-1">
-      <span className="text-gray-500 text-xs font-medium">{label}:</span>
+      <span className="text-[var(--color-text-secondary)] text-xs font-medium">{label}:</span>
       <span
         onClick={() => {
           setEditValue(value);
           setEditing(true);
         }}
-        className="text-xs cursor-text hover:bg-blue-100 px-1.5 py-0.5 rounded"
+        className="text-xs cursor-text hover:bg-[var(--color-primary-light)] px-1.5 py-0.5 rounded-md transition-colors"
         title="Click to edit"
       >
         {value || "\u2014"}
@@ -133,7 +133,7 @@ export function ResultsPanel({
   return (
     <div className="flex flex-col h-full">
       {/* Header bar */}
-      <div className="flex items-center gap-3 px-3 py-2 border-b bg-gray-50 flex-shrink-0 flex-wrap">
+      <div className="flex items-center gap-3 px-3 py-2.5 border-b border-[var(--color-border-light)] bg-white flex-shrink-0 flex-wrap" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
         <button
           onClick={() => {
             if (extraction && !isExtracting) {
@@ -142,16 +142,14 @@ export function ResultsPanel({
             onExtract();
           }}
           disabled={!file || isExtracting || noApiKey}
-          className={`px-4 py-1.5 text-white rounded text-sm font-medium
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     flex items-center gap-2 cursor-pointer ${
-                       extraction && !isExtracting
-                         ? "bg-gray-500 hover:bg-gray-600"
-                         : "bg-blue-600 hover:bg-blue-700"
-                     }`}
+          className={
+            extraction && !isExtracting
+              ? "btn-secondary flex items-center gap-2"
+              : "btn-primary flex items-center gap-2"
+          }
         >
           {isExtracting && (
-            <Spinner size="sm" className="border-white border-t-transparent" />
+            <Spinner size="sm" className="!border-white !border-t-transparent" />
           )}
           {isExtracting
             ? "Extracting..."
@@ -160,14 +158,14 @@ export function ResultsPanel({
               : "Extract Biomarkers"}
         </button>
         {noApiKey && (
-          <span className="text-xs text-amber-600">
+          <span className="text-xs text-[#B36B00]">
             Add your OpenRouter API key in Settings to start extracting.
           </span>
         )}
         {extraction && (
           <button
             onClick={handleExport}
-            className="ml-auto px-3 py-1.5 border rounded text-sm hover:bg-gray-100 cursor-pointer"
+            className="ml-auto btn-secondary"
           >
             Export JSON
           </button>
@@ -176,7 +174,7 @@ export function ResultsPanel({
 
       {/* Report info bar */}
       {extraction && (
-        <div className="flex items-center gap-4 px-3 py-1.5 border-b bg-blue-50 flex-shrink-0 flex-wrap">
+        <div className="flex items-center gap-4 px-3 py-2 border-b border-[var(--color-border-light)] bg-[var(--color-primary-light)] flex-shrink-0 flex-wrap">
           <ReportInfoField
             label="Date"
             value={extraction.reportInfo.collectionDate || ""}
@@ -201,14 +199,14 @@ export function ResultsPanel({
       {/* Results table or empty state */}
       <div className="flex-1 overflow-auto">
         {!extraction && !isExtracting && (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full text-[var(--color-text-tertiary)]">
             <p>Upload a PDF and click Extract to begin</p>
           </div>
         )}
 
         {isExtracting && !extraction && (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
-            <Spinner size="lg" className="border-blue-600 border-t-transparent" />
+          <div className="flex flex-col items-center justify-center h-full text-[var(--color-text-tertiary)] gap-3">
+            <Spinner size="lg" />
             <p>Extracting biomarkers... this may take 30-90 seconds</p>
           </div>
         )}
@@ -216,8 +214,8 @@ export function ResultsPanel({
         {extraction && (
           <>
             <table className="w-full text-left">
-              <thead className="sticky top-0 bg-white border-b z-10">
-                <tr className="text-xs text-gray-500 uppercase">
+              <thead className="sticky top-0 bg-white border-b border-[var(--color-border-light)] z-10">
+                <tr className="text-xs text-[var(--color-text-tertiary)] uppercase">
                   <th className="px-2 py-2">Metric</th>
                   <th className="px-2 py-2">Value</th>
                   <th className="px-2 py-2">Unit</th>
@@ -232,16 +230,23 @@ export function ResultsPanel({
                     <React.Fragment key={category}>
                       <tr
                         onClick={() => toggleCategory(category)}
-                        className="bg-gray-100 cursor-pointer hover:bg-gray-200"
+                        className="bg-[var(--color-surface-tertiary)] cursor-pointer hover:bg-[var(--color-border-light)] transition-colors"
                       >
                         <td
                           colSpan={6}
-                          className="px-2 py-1.5 font-semibold text-sm"
+                          className="px-2 py-1.5 font-semibold text-sm text-[var(--color-text-primary)]"
                         >
-                          <span className="mr-1 inline-block w-3">
-                            {isCollapsed(category) ? "\u25B6" : "\u25BC"}
+                          <span className="inline-flex items-center gap-1.5">
+                            <svg
+                              className={`w-3 h-3 text-[var(--color-text-tertiary)] transition-transform duration-200 ${isCollapsed(category) ? '' : 'rotate-90'}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                            {category} ({biomarkers.length})
                           </span>
-                          {category} ({biomarkers.length})
                         </td>
                       </tr>
                       {!isCollapsed(category) &&
@@ -262,7 +267,7 @@ export function ResultsPanel({
             </table>
 
             {/* Add Biomarker */}
-            <div className="px-3 py-2 border-t">
+            <div className="px-3 py-2.5 border-t border-[var(--color-border-light)]">
               {showCombobox ? (
                 <BiomarkerCombobox
                   onSelect={(entry) => {
@@ -290,7 +295,7 @@ export function ResultsPanel({
               ) : (
                 <button
                   onClick={() => setShowCombobox(true)}
-                  className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+                  className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium cursor-pointer"
                 >
                   + Add Biomarker
                 </button>
@@ -302,7 +307,7 @@ export function ResultsPanel({
 
       {/* Status bar */}
       {meta && (
-        <div className="flex items-center gap-4 px-3 py-1.5 border-t bg-gray-50 text-xs text-gray-500 flex-shrink-0">
+        <div className="flex items-center gap-4 px-3 py-1.5 border-t border-[var(--color-border-light)] bg-[var(--color-surface-tertiary)] text-xs text-[var(--color-text-tertiary)] flex-shrink-0">
           <span>Model: {meta.model}</span>
           {meta.tokensUsed && (
             <span>Tokens: {meta.tokensUsed.toLocaleString()}</span>

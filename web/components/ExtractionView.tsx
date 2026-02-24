@@ -261,7 +261,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
 
   const leftPane =
     isViewMode ? (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3 p-8">
+      <div className="flex flex-col items-center justify-center h-full text-[var(--color-text-tertiary)] gap-3 p-8">
         <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
         </svg>
@@ -307,19 +307,19 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         />
       )}
 
-      {/* Header */}
-      <header className="flex items-center gap-3 px-4 py-2 border-b bg-white flex-shrink-0">
+      {/* Header — frosted glass */}
+      <header className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-light)] bg-white/80 backdrop-blur-lg flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <button
           onClick={onBack}
-          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back
         </button>
-        <div className="w-px h-5 bg-gray-200" />
-        <h1 className="text-lg font-bold">
+        <div className="w-px h-5 bg-[var(--color-border)]" />
+        <h1 className="text-lg font-bold text-[var(--color-text-primary)]">
           {mode.type === "view" ? mode.file.filename : "New Extraction"}
         </h1>
         {file && mode.type === "new" && (
@@ -329,9 +329,12 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
 
       {/* Error banner */}
       {error && (
-        <div className="px-4 py-2 bg-red-50 text-red-700 text-sm border-b border-red-200 flex-shrink-0">
-          {error}
-          <button onClick={() => setError(null)} className="ml-2 underline">
+        <div className="px-4 py-2.5 flex items-center gap-3 text-sm border-b border-[#FDE8E8] flex-shrink-0" style={{ background: '#FDE8E8' }}>
+          <svg className="w-4 h-4 text-[#FF3B30] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <span className="text-[#CC2D24]">{error}</span>
+          <button onClick={() => setError(null)} className="ml-auto text-xs text-[#CC2D24] hover:text-[#991b1b] font-medium">
             Dismiss
           </button>
         </div>
@@ -340,13 +343,13 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         {mode.type === "new" && !file ? (
-          <div className="flex flex-col items-center justify-center h-full px-4">
+          <div className="flex flex-col items-center justify-center h-full px-4 bg-[var(--color-surface-secondary)]">
             <div className="w-full max-w-lg">
               <UploadZone onFileSelect={handleFileSelect} currentFile={null} />
               {!apiKey && (
-                <p className="mt-4 text-sm text-amber-600 text-center">
-                  No API key set. Add one in Settings before extracting.
-                </p>
+                <div className="mt-4 card px-4 py-3 text-sm text-center" style={{ background: '#FFF3E0', borderColor: '#FFE0B2' }}>
+                  <span className="text-[#B36B00]">No API key set. Add one in Settings before extracting.</span>
+                </div>
               )}
             </div>
           </div>

@@ -3,12 +3,12 @@
 import { BiomarkerFlag } from "@/lib/types";
 
 const FLAG_STYLES: Record<BiomarkerFlag, string> = {
-  NORMAL: "bg-green-100 text-green-800",
-  LOW: "bg-blue-100 text-blue-800",
-  HIGH: "bg-red-100 text-red-800",
-  ABNORMAL: "bg-yellow-100 text-yellow-800",
-  CRITICAL_LOW: "bg-blue-200 text-blue-900 font-bold",
-  CRITICAL_HIGH: "bg-red-200 text-red-900 font-bold",
+  NORMAL: "bg-[#E8FAF0] text-[#1B7F37]",
+  LOW: "bg-[#EDEDFB] text-[#4240B0]",
+  HIGH: "bg-[#FDE8E8] text-[#CC2D24]",
+  ABNORMAL: "bg-[#FFF3E0] text-[#B36B00]",
+  CRITICAL_LOW: "bg-[#E0E0F5] text-[#2A288A] font-bold",
+  CRITICAL_HIGH: "bg-[#FBD5D5] text-[#9E1A17] font-bold",
 };
 
 export function FlagBadge({ flag }: { flag: BiomarkerFlag }) {

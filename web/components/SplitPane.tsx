@@ -72,11 +72,19 @@ export function SplitPane({
       <div
         onMouseDown={handleMouseDown}
         className={`
-          w-1 flex-shrink-0 cursor-col-resize
-          bg-gray-200 hover:bg-blue-400 transition-colors
-          ${isDragging ? "bg-blue-500" : ""}
+          w-1.5 flex-shrink-0 cursor-col-resize relative
+          bg-[var(--color-border-light)] transition-colors duration-150
+          hover:bg-[var(--color-primary)] active:bg-[var(--color-primary)]
+          ${isDragging ? "bg-[var(--color-primary)]" : ""}
         `}
-      />
+      >
+        {/* Grip indicator dots */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-1">
+          <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? 'bg-white' : 'bg-[var(--color-text-tertiary)]'}`} />
+          <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? 'bg-white' : 'bg-[var(--color-text-tertiary)]'}`} />
+          <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? 'bg-white' : 'bg-[var(--color-text-tertiary)]'}`} />
+        </div>
+      </div>
       <div
         className="overflow-auto h-full"
         style={{

@@ -82,7 +82,7 @@ export function BiomarkerRow({
               setEditingField(null);
             }}
             onBlur={cancelEdit}
-            className="w-full text-xs border rounded px-1 py-0.5"
+            className="input-base !py-0.5 !px-1 !text-xs !rounded-lg"
           >
             {FLAG_OPTIONS.map((f) => (
               <option key={f} value={f}>
@@ -107,14 +107,14 @@ export function BiomarkerRow({
           onKeyDown={handleKeyDown}
           onBlur={saveEdit}
           step="any"
-          className="w-full text-xs border rounded px-1 py-0.5"
+          className="input-base !py-0.5 !px-1 !text-xs !rounded-lg"
         />
       );
     }
     return (
       <span
         onClick={(e) => startEdit(e, field, displayValue)}
-        className="cursor-text hover:bg-gray-100 px-1 py-0.5 rounded block min-h-[1.5em]"
+        className="cursor-text hover:bg-[var(--color-surface-tertiary)] px-1 py-0.5 rounded-md block min-h-[1.5em] transition-colors"
         title="Click to edit"
       >
         {displayValue || "\u00A0"}
@@ -138,11 +138,11 @@ export function BiomarkerRow({
       <tr
         onClick={() => onSelect(biomarker)}
         className={`
-          border-b text-sm cursor-pointer transition-colors
-          ${isSelected ? "bg-yellow-50 border-l-4 border-l-yellow-400" : "hover:bg-gray-50"}
+          border-b border-[var(--color-border-light)] text-sm cursor-pointer transition-colors duration-150
+          ${isSelected ? "bg-[var(--color-primary-light)] border-l-[3px] border-l-[var(--color-primary)]" : "hover:bg-[var(--color-surface-secondary)]"}
         `}
       >
-        <td className="px-2 py-1">
+        <td className="px-2 py-1.5">
           <div className="flex items-center gap-1.5">
             {renderEditableCell("metricName", biomarker.metricName)}
             {isUnmatched && (
@@ -151,7 +151,7 @@ export function BiomarkerRow({
                   e.stopPropagation();
                   setShowRemap((v) => !v);
                 }}
-                className="shrink-0 text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 hover:bg-amber-100 cursor-pointer"
+                className="shrink-0 text-[10px] font-medium text-[#B36B00] bg-[#FFF3E0] border border-[#FFE0B2] rounded-md px-1.5 py-0.5 hover:bg-[#FFE0B2] cursor-pointer transition-colors"
                 title="This biomarker doesn't match any known entry. Click to remap."
               >
                 Unmatched
@@ -159,15 +159,15 @@ export function BiomarkerRow({
             )}
           </div>
         </td>
-        <td className="px-2 py-1">
+        <td className="px-2 py-1.5">
           {renderEditableCell("value", displayValue)}
         </td>
-        <td className="px-2 py-1">
+        <td className="px-2 py-1.5">
           {renderEditableCell("unit", biomarker.unit || "-")}
         </td>
-        <td className="px-2 py-1">{refRange}</td>
+        <td className="px-2 py-1.5">{refRange}</td>
         <td
-          className="px-2 py-1"
+          className="px-2 py-1.5"
           onClick={(e) => startEdit(e, "flag", biomarker.flag)}
         >
           {editingField === "flag" ? (
@@ -176,13 +176,13 @@ export function BiomarkerRow({
             <FlagBadge flag={biomarker.flag} />
           )}
         </td>
-        <td className="px-1 py-1">
+        <td className="px-1 py-1.5">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDelete(biomarker.id);
             }}
-            className="text-gray-400 hover:text-red-500 transition-colors p-0.5"
+            className="text-[var(--color-text-tertiary)] hover:text-[#FF3B30] hover:bg-[#FDE8E8] rounded-md transition-colors p-1"
             title="Remove biomarker"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -192,10 +192,10 @@ export function BiomarkerRow({
         </td>
       </tr>
       {showRemap && (
-        <tr className="border-b bg-amber-50/50">
+        <tr className="border-b border-[var(--color-border-light)] bg-[#FFF3E0]/30">
           <td colSpan={6} className="px-3 py-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500 shrink-0">Remap to:</span>
+              <span className="text-xs text-[var(--color-text-secondary)] shrink-0">Remap to:</span>
               <BiomarkerCombobox
                 onSelect={(entry) => {
                   onUpdate(biomarker.id, "canonicalSlug", entry.slug);

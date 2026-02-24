@@ -266,6 +266,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       extraction={extraction}
       meta={meta}
       isExtracting={isExtracting}
+      noApiKey={!apiKey}
       selectedBiomarker={selectedBiomarker}
       onExtract={handleExtract}
       onSelectBiomarker={handleSelectBiomarker}

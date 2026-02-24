@@ -12,6 +12,7 @@ interface ResultsPanelProps {
   extraction: ExtractionResult | null;
   meta: ExtractionMeta | null;
   isExtracting: boolean;
+  noApiKey: boolean;
   selectedBiomarker: Biomarker | null;
   onExtract: () => void;
   onSelectBiomarker: (biomarker: Biomarker) => void;
@@ -95,6 +96,7 @@ export function ResultsPanel({
   extraction,
   meta,
   isExtracting,
+  noApiKey,
   selectedBiomarker,
   onExtract,
   onSelectBiomarker,
@@ -136,7 +138,7 @@ export function ResultsPanel({
       <div className="flex items-center gap-3 px-3 py-2 border-b bg-gray-50 flex-shrink-0 flex-wrap">
         <button
           onClick={() => onExtract()}
-          disabled={!file || isExtracting}
+          disabled={!file || isExtracting || noApiKey}
           className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm font-medium
                      hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
                      flex items-center gap-2 cursor-pointer"
@@ -146,6 +148,11 @@ export function ResultsPanel({
           )}
           {isExtracting ? "Extracting..." : "Extract Biomarkers"}
         </button>
+        {noApiKey && (
+          <span className="text-xs text-amber-600">
+            Add your OpenRouter API key in Settings to start extracting.
+          </span>
+        )}
         {extraction && (
           <button
             onClick={handleExport}

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Biomarker } from "@/lib/types";
 import { FlagBadge } from "./FlagBadge";
+import { BiomarkerCombobox } from "./BiomarkerCombobox";
 import { FLAG_OPTIONS } from "@/lib/constants";
 
 interface BiomarkerRowProps {
@@ -26,6 +27,7 @@ export function BiomarkerRow({
     null
   );
   const [editValue, setEditValue] = useState<string>("");
+  const [showRemap, setShowRemap] = useState(false);
   const inputRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
 
   useEffect(() => {
@@ -131,59 +133,98 @@ export function BiomarkerRow({
     biomarker.valueText ??
     (biomarker.value !== null ? String(biomarker.value) : "-");
 
+  const isUnmatched = biomarker.canonicalSlug === null;
+
   return (
-    <tr
-      onClick={() => onSelect(biomarker)}
-      className={`
-        border-b text-sm cursor-pointer transition-colors
-        ${isSelected ? "bg-yellow-50 border-l-4 border-l-yellow-400" : "hover:bg-gray-50"}
-      `}
-    >
-      <td className="px-2 py-1">
-        {renderEditableCell("metricName", biomarker.metricName)}
-      </td>
-      <td className="px-2 py-1">
-        {renderEditableCell("value", displayValue)}
-      </td>
-      <td className="px-2 py-1">
-        {renderEditableCell("unit", biomarker.unit || "-")}
-      </td>
-      <td className="px-2 py-1">{refRange}</td>
-      <td
-        className="px-2 py-1"
-        onClick={(e) => startEdit(e, "flag", biomarker.flag)}
+    <>
+      <tr
+        onClick={() => onSelect(biomarker)}
+        className={`
+          border-b text-sm cursor-pointer transition-colors
+          ${isSelected ? "bg-yellow-50 border-l-4 border-l-yellow-400" : "hover:bg-gray-50"}
+        `}
       >
-        {editingField === "flag" ? (
-          renderEditableCell("flag", biomarker.flag)
-        ) : (
-          <FlagBadge flag={biomarker.flag} />
-        )}
-      </td>
-      <td className="px-2 py-1">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onPageClick(biomarker.page);
-          }}
-          className="text-blue-600 hover:underline text-xs"
+        <td className="px-2 py-1">
+          <div className="flex items-center gap-1.5">
+            {renderEditableCell("metricName", biomarker.metricName)}
+            {isUnmatched && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowRemap((v) => !v);
+                }}
+                className="shrink-0 text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 hover:bg-amber-100 cursor-pointer"
+                title="This biomarker doesn't match any known entry. Click to remap."
+              >
+                Unmatched
+              </button>
+            )}
+          </div>
+        </td>
+        <td className="px-2 py-1">
+          {renderEditableCell("value", displayValue)}
+        </td>
+        <td className="px-2 py-1">
+          {renderEditableCell("unit", biomarker.unit || "-")}
+        </td>
+        <td className="px-2 py-1">{refRange}</td>
+        <td
+          className="px-2 py-1"
+          onClick={(e) => startEdit(e, "flag", biomarker.flag)}
         >
-          p.{biomarker.page}
-        </button>
-      </td>
-      <td className="px-1 py-1">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(biomarker.id);
-          }}
-          className="text-gray-400 hover:text-red-500 transition-colors p-0.5"
-          title="Remove biomarker"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </td>
-    </tr>
+          {editingField === "flag" ? (
+            renderEditableCell("flag", biomarker.flag)
+          ) : (
+            <FlagBadge flag={biomarker.flag} />
+          )}
+        </td>
+        <td className="px-2 py-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onPageClick(biomarker.page);
+            }}
+            className="text-blue-600 hover:underline text-xs"
+          >
+            p.{biomarker.page}
+          </button>
+        </td>
+        <td className="px-1 py-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(biomarker.id);
+            }}
+            className="text-gray-400 hover:text-red-500 transition-colors p-0.5"
+            title="Remove biomarker"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </td>
+      </tr>
+      {showRemap && (
+        <tr className="border-b bg-amber-50/50">
+          <td colSpan={7} className="px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 shrink-0">Remap to:</span>
+              <BiomarkerCombobox
+                onSelect={(entry) => {
+                  onUpdate(biomarker.id, "canonicalSlug", entry.slug);
+                  onUpdate(biomarker.id, "metricName", entry.displayName);
+                  onUpdate(biomarker.id, "category", entry.category);
+                  if (!biomarker.unit) {
+                    onUpdate(biomarker.id, "unit", entry.defaultUnit);
+                  }
+                  setShowRemap(false);
+                }}
+                onClose={() => setShowRemap(false)}
+              />
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

@@ -15,7 +15,7 @@ Currently supports: Quest Diagnostics blood panels, Function Health reports, Bod
   - **Framework Preset:** Next.js (auto-detected from root directory)
   - **Domain:** `biomarker-hub.vercel.app`
 - **Database:** Neon Postgres — project **"biomarker-hub"** (ID: `jolly-sky-75880073`) under the **"Vercel: Nyle Sykes' projects"** org (ID: `org-tiny-hat-28280839`). Not the `hello@nylesykes.com` org. Connected to Vercel via integration. Neon Auth is provisioned (lives in `neon_auth` schema, separate from app tables in `public`).
-- **LLM API:** OpenRouter (env var `OPENROUTER_API_KEY` set in Vercel)
+- **LLM API:** OpenRouter (each user provides their own API key via Settings)
 - **Repo:** Monorepo — `web/` is the Next.js 15 app
 - **MCP servers configured:** Vercel (`https://mcp.vercel.com`), Neon (`https://mcp.neon.tech`), PitchBook, Granola
 
@@ -144,20 +144,15 @@ Four changes to clean up the extraction experience:
 
 - **Expand all / Collapse all** — Add a toggle button to the Biomarkers tab to expand or collapse all biomarker category groups at once.
 
-### Unknown Biomarker Handling (Open Question)
+### Unknown Biomarker Remapping (Implemented — 2026-02-23)
 
-When parsing a PDF, the LLM may extract a biomarker that doesn't exist in our canonical biomarker registry. We don't yet have a strategy for handling this. Questions to resolve:
+When the LLM extracts a biomarker that doesn't match the canonical registry, `matchBiomarker()` returns null and `canonicalSlug` is stored as null. These biomarkers are saved in the DB with all data intact but are hidden from the Biomarkers tab (which filters out null slugs).
 
-- Do we reject/drop unrecognized biomarkers, or store them anyway?
-- Should they be flagged for manual review and mapping to an existing entry?
-- Do we auto-create new registry entries, or require explicit admin approval?
-- How do we handle display, categorization, and reference ranges for biomarkers with no registry entry?
+**Solution:** During extraction review, unmatched biomarkers show an amber "Unmatched" badge next to the metric name in `BiomarkerRow`. Clicking the badge opens a `BiomarkerCombobox` inline, letting the user search and select the correct registry entry. On selection, the row's `canonicalSlug`, `metricName`, and `category` are updated from the registry (unit is set only if currently null). The original `rawName`, `value`, reference ranges, `flag`, and `page` are preserved. After remapping, the biomarker appears in the Biomarkers tab and trend charts like any other matched entry.
 
-This affects the extraction pipeline, the biomarkers tab, detail pages, and trend tracking. Needs a decision before V2 multi-file support.
+### Remove Server-Side API Key (Implemented — 2026-02-23)
 
-### Remove Server-Side API Key
-
-Currently the app can use a server-side `OPENROUTER_API_KEY` env var as a fallback. This should be removed — the app should only work if the user provides their own API key in Settings. No shared/default key. If no key is configured, the extraction flow should show a clear message directing users to add one.
+The server-side `OPENROUTER_API_KEY` env var fallback has been removed. Each user must provide their own OpenRouter API key in Settings. The extract route returns a 400 with a clear message if no key is provided. The UI disables the extract button and shows an inline message when no API key is configured.
 
 ### Privacy & Data Flow Audit
 

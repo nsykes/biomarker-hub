@@ -33,12 +33,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey =
-      (formData.get("apiKey") as string) || process.env.OPENROUTER_API_KEY;
+    const apiKey = formData.get("apiKey") as string;
     if (!apiKey) {
       return NextResponse.json(
-        { error: "No API key provided. Set one in Settings or configure OPENROUTER_API_KEY." },
-        { status: 500 }
+        { error: "No API key configured. Add your OpenRouter API key in Settings." },
+        { status: 400 }
       );
     }
 

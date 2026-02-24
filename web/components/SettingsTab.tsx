@@ -95,8 +95,7 @@ export function SettingsTab() {
           </div>
           <p className="text-xs text-gray-400">
             Your OpenRouter API key. Stored as plaintext in your Neon database
-            (encrypted at rest by Neon). Falls back to server environment
-            variable if not set.
+            (encrypted at rest by Neon).
           </p>
         </div>
       </section>

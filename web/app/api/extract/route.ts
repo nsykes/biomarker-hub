@@ -179,15 +179,20 @@ export async function POST(request: NextRequest) {
       const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
       try {
         const results = await Promise.all(
-          chunks.map((chunk, idx) =>
-            extractChunk(
+          chunks.map(async (chunk, idx) => {
+            const chunkStart = Date.now();
+            const result = await extractChunk(
               chunk.buffer,
               `${filename} (chunk ${idx + 1}/${chunks.length})`,
               model,
               apiKey,
               controller.signal
-            )
-          )
+            );
+            console.log(
+              `Chunk ${idx + 1}/${chunks.length} completed in ${((Date.now() - chunkStart) / 1000).toFixed(1)}s`
+            );
+            return result;
+          })
         );
 
         // Merge: reportInfo from first chunk, concatenate biomarkers with page offset

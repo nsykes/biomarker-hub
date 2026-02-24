@@ -10,7 +10,7 @@ export const EXTRACTION_MAX_TOKENS = 32000;
 export const EXTRACTION_TEMPERATURE = 0;
 export const CHUNK_PAGE_THRESHOLD = 8; // Only chunk PDFs with more than this many pages
 export const CHUNK_SIZE = 6; // Pages per chunk
-export const FETCH_TIMEOUT_MS = 55_000; // Abort fetch before Vercel kills the function
+export const FETCH_TIMEOUT_MS = 110_000; // Abort fetch before Vercel kills the function (10s margin before 120s maxDuration)
 
 // PDF highlight (row-based matching)
 export const HIGHLIGHT_ROW_TOLERANCE = 3;

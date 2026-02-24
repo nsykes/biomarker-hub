@@ -8,7 +8,12 @@ export default async function AuthPage({
   const { path } = await params;
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <AuthView path={path} />
+      <AuthView
+        path={path}
+        classNames={{
+          footerLink: "!text-blue-600 font-medium",
+        }}
+      />
     </div>
   );
 }

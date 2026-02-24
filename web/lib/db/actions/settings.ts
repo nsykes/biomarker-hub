@@ -35,11 +35,23 @@ export async function getSettings(): Promise<AppSettings> {
 
 export async function updateSettings(
   data: Partial<Pick<AppSettings, "openRouterApiKey" | "defaultModel">>
-): Promise<void> {
+): Promise<AppSettings> {
   const userId = await requireUser();
   const current = await getSettings();
-  await db
+  const rows = await db
     .update(settings)
     .set(data)
-    .where(and(eq(settings.id, current.id), eq(settings.userId, userId)));
+    .where(and(eq(settings.id, current.id), eq(settings.userId, userId)))
+    .returning();
+
+  if (rows.length === 0) {
+    throw new Error("Failed to update settings");
+  }
+
+  const r = rows[0];
+  return {
+    id: r.id,
+    openRouterApiKey: r.openRouterApiKey,
+    defaultModel: r.defaultModel,
+  };
 }

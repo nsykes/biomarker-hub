@@ -66,7 +66,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
     getSettings().then((s) => {
       setDefaultModel(s.defaultModel);
       setApiKey(s.openRouterApiKey);
-    });
+    }).catch(console.error);
   }, []);
 
   // Fetch stored PDF when viewing a report that has one
@@ -312,7 +312,20 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
-        <SplitPane left={leftPane} right={rightPane} />
+        {mode.type === "new" && !file ? (
+          <div className="flex flex-col items-center justify-center h-full px-4">
+            <div className="w-full max-w-lg">
+              <UploadZone onFileSelect={handleFileSelect} currentFile={null} />
+              {!apiKey && (
+                <p className="mt-4 text-sm text-amber-600 text-center">
+                  No API key set. Add one in Settings before extracting.
+                </p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <SplitPane left={leftPane} right={rightPane} />
+        )}
       </main>
     </>
   );

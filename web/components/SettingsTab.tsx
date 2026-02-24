@@ -13,6 +13,11 @@ export function SettingsTab() {
   const [showKey, setShowKey] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [keyStored, setKeyStored] = useState(false);
+  const [keyDirty, setKeyDirty] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
@@ -20,21 +25,30 @@ export function SettingsTab() {
       .then((s) => {
         setSettings(s);
         setApiKeyInput(s.openRouterApiKey || "");
+        setKeyStored(!!s.openRouterApiKey);
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error("Failed to load settings:", err);
+        setLoadError("Failed to load settings. Please try refreshing the page.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const saveApiKey = useCallback(async () => {
     setSaving("apiKey");
+    setSaveError(null);
     try {
-      await updateSettings({ openRouterApiKey: apiKeyInput || null });
-      setSettings((prev) =>
-        prev ? { ...prev, openRouterApiKey: apiKeyInput || null } : prev
-      );
+      const saved = await updateSettings({ openRouterApiKey: apiKeyInput || null });
+      setSettings(saved);
+      setApiKeyInput(saved.openRouterApiKey || "");
+      setKeyStored(!!saved.openRouterApiKey);
+      setKeyDirty(false);
+      setSaved(true);
+      setSaving(null);
+      setTimeout(() => setSaved(false), 2000);
     } catch (err) {
       console.error("Failed to save API key:", err);
-    } finally {
+      setSaveError("Failed to save. Please try again.");
       setSaving(null);
     }
   }, [apiKeyInput]);
@@ -63,6 +77,12 @@ export function SettingsTab() {
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-8">
+      {loadError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+          {loadError}
+        </div>
+      )}
+
       {/* API Key */}
       <section>
         <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
@@ -74,7 +94,12 @@ export function SettingsTab() {
               <input
                 type={showKey ? "text" : "password"}
                 value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
+                onChange={(e) => {
+                  setApiKeyInput(e.target.value);
+                  setKeyDirty(true);
+                  setSaved(false);
+                  setSaveError(null);
+                }}
                 placeholder="sk-or-v1-..."
                 className="w-full px-3 py-2 border rounded-lg text-sm pr-16 focus:outline-none focus:ring-2 focus:ring-gray-200"
               />
@@ -88,11 +113,27 @@ export function SettingsTab() {
             <button
               onClick={saveApiKey}
               disabled={saving === "apiKey"}
-              className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                saved
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
+              }`}
             >
-              {saving === "apiKey" ? "Saving..." : "Save"}
+              {saving === "apiKey"
+                ? "Saving..."
+                : saved
+                  ? "Saved!"
+                  : "Save"}
             </button>
           </div>
+          {saveError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
+              {saveError}
+            </div>
+          )}
+          {keyStored && !keyDirty && !saveError && (
+            <p className="text-xs text-green-600">Key saved</p>
+          )}
           <p className="text-xs text-gray-400">
             Your OpenRouter API key. Stored as plaintext in your Neon database
             (encrypted at rest by Neon).

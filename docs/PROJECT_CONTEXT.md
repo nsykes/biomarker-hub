@@ -19,7 +19,7 @@ Currently supports: Quest Diagnostics blood panels, Function Health reports, Bod
 - **Repo:** Monorepo — `web/` is the Next.js 15 app
 - **MCP servers configured:** Vercel (`https://mcp.vercel.com`), Neon (`https://mcp.neon.tech`), PitchBook, Granola
 
-The codebase has Drizzle ORM + Neon wiring already in place (`drizzle.config.ts`, `lib/db/`), using `DATABASE_URL` env var. The DB schema stores settings (including OpenRouter API key per-user). In V1, the DB is available but most state is still in-memory with JSON export.
+The codebase has Drizzle ORM + Neon wiring already in place (`drizzle.config.ts`, `lib/db/`), using `DATABASE_URL` env var. The DB schema stores per-user settings (OpenRouter API key, default model) and all report/biomarker data scoped by user ID. Auth is via Neon Auth (Google OAuth). In V1, the DB is available but most state is still in-memory with JSON export.
 
 ## Architecture
 
@@ -142,6 +142,135 @@ Several changes to the upload/extraction flow:
 ### Biomarkers Tab UX
 
 - **Expand all / Collapse all** — Add a toggle button to the Biomarkers tab to expand or collapse all biomarker category groups at once.
+
+### Unknown Biomarker Handling (Open Question)
+
+When parsing a PDF, the LLM may extract a biomarker that doesn't exist in our canonical biomarker registry. We don't yet have a strategy for handling this. Questions to resolve:
+
+- Do we reject/drop unrecognized biomarkers, or store them anyway?
+- Should they be flagged for manual review and mapping to an existing entry?
+- Do we auto-create new registry entries, or require explicit admin approval?
+- How do we handle display, categorization, and reference ranges for biomarkers with no registry entry?
+
+This affects the extraction pipeline, the biomarkers tab, detail pages, and trend tracking. Needs a decision before V2 multi-file support.
+
+### Remove Server-Side API Key
+
+Currently the app can use a server-side `OPENROUTER_API_KEY` env var as a fallback. This should be removed — the app should only work if the user provides their own API key in Settings. No shared/default key. If no key is configured, the extraction flow should show a clear message directing users to add one.
+
+### Privacy & Data Flow Audit
+
+Before sharing the app with friends/family, do a thorough review of the full data flow and all third-party sub-processors to be able to clearly answer privacy questions:
+
+- What data leaves the browser and where does it go? (OpenRouter, Neon, Vercel, etc.)
+- What does OpenRouter do with the PDF content sent for extraction? Retention policies?
+- What does Neon store and where? Encryption at rest?
+- What does Vercel have access to? Logs, request bodies?
+- Is any data sent to places we don't realize? (analytics, error tracking, etc.)
+- Can we offer a clear, plain-language privacy summary for users?
+
+Goal: be able to confidently explain to a non-technical user exactly what happens with their health data.
+
+### UI Polish Pass
+
+The current UI is functional but needs a comprehensive visual polish pass — better spacing, typography, color palette, component styling, and overall design quality. This applies across the whole app (extraction view, biomarkers tab, detail pages, settings, etc.).
+
+### Neon Auth (Implemented — 2026-02-23)
+
+Auth is live using **`@neondatabase/auth@^0.2.0-beta.1`** (standalone package, powered by Better Auth under the hood). Google OAuth is the primary sign-in method.
+
+**What's in place:**
+- **Per-user data isolation** — all DB actions (`getFiles`, `saveFile`, `getSettings`, `saveSettings`, `getBiomarkerDetail`) are scoped by `userId` from the session. No user can see another user's data.
+- **Settings migrated from global to per-user** — each user gets their own settings row (API key, default model). The old global settings row was dropped.
+- **Orphan auto-claim** — `getFiles()` detects reports with `user_id IS NULL` (uploaded before auth existed) and assigns them to the current user on first load. One-time migration path.
+- **Route protection** — middleware protects `/`, `/biomarkers/*`, `/api/extract`, `/api/reports/*`. Unauthenticated requests redirect to `/auth/sign-in`.
+- **API guards** — extract and PDF routes return 401 without a valid session. PDF route also verifies report ownership.
+
+**File structure:**
+- `lib/auth/server.ts` — `createNeonAuth()` server instance
+- `lib/auth/client.ts` — `createAuthClient()` client instance (`'use client'`)
+- `components/AuthProvider.tsx` — wraps app with `NeonAuthUIProvider` (Google social provider)
+- `app/api/auth/[...path]/route.ts` — auth API catch-all (`auth.handler()`)
+- `app/auth/[path]/page.tsx` — sign-in/sign-up UI (`<AuthView>`)
+- `middleware.ts` — route protection via `auth.middleware({ loginUrl })`
+- `app/layout.tsx` — wraps children with `<AuthProvider>`
+- `components/AppShell.tsx` — `<UserButton>` in header
+
+**Env vars:**
+- `NEON_AUTH_BASE_URL` — from Neon dashboard Auth tab
+- `NEON_AUTH_COOKIE_SECRET` — 32+ chars, generate with `openssl rand -base64 32`
+
+**Session access:** `auth.getSession()` returns `{ data: { session, user } | null, error }`. Server components using it must export `dynamic = 'force-dynamic'`. Client-side: `authClient.useSession()` hook.
+
+**DB migration applied (2026-02-23):** `settings` table now has `user_id UUID NOT NULL UNIQUE` column. Old global settings row was deleted — users re-enter API key after signing in.
+
+**Setup prerequisites (manual):**
+1. Neon dashboard → Auth tab → enable Google as social provider (requires Google OAuth client ID/secret)
+2. Neon dashboard → Auth tab → copy `NEON_AUTH_BASE_URL`
+3. Add `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET` to `.env.local` (local) and Vercel project env vars (production)
+
+### Unit Normalization Across Labs (High Priority)
+
+Different labs report the same biomarker in different units (e.g., glucose in mg/dL vs mmol/L, calcium in mg/dL vs mmol/L). For trend tracking across multiple reports to work correctly, we need a unit conversion strategy. Without this, plotting values from different labs on the same chart will produce nonsensical trends. Questions to resolve:
+
+- Do we normalize all values to a single canonical unit per biomarker at ingestion time?
+- Or store the original and convert at display time?
+- Where does the conversion factor table live? (registry, DB, or hardcoded?)
+- How do we handle cases where the unit is missing or unrecognized?
+- Edge case: some biomarkers have legitimately different units depending on the test method — how do we distinguish?
+
+This is a prerequisite for reliable multi-file trend tracking.
+
+### Bad PDF Handling
+
+The app currently assumes uploaded files are well-formed lab report PDFs with a text layer. We need graceful handling for common failure cases:
+
+- **Image-only PDFs** (scanned documents with no text layer) — the LLM receives no text to extract from. Detect this and show a clear error suggesting the user needs an OCR'd version.
+- **Non-lab-report PDFs** — someone uploads a random document. The LLM will return empty or garbage results. Detect zero-biomarker extractions and show a helpful message.
+- **Corrupted/unreadable files** — malformed PDFs that fail to parse. Catch errors from react-pdf and show a user-friendly error instead of a blank screen.
+- **Password-protected PDFs** — some lab portals generate these. Detect and inform the user.
+
+Goal: no matter what file someone uploads, they get a clear, helpful message — never a broken UI or cryptic error.
+
+### Data Export & Portability
+
+Users should be able to download all of their data in standard formats. This is important for data ownership and trust — especially for health data, people want to know they're not locked in. Options to consider:
+
+- **CSV export** — simple table of all biomarker results across all reports (date, biomarker, value, unit, flag, source)
+- **JSON export** — structured dump of all reports and results (already partially exists via in-memory JSON export)
+- **FHIR format** — the healthcare interoperability standard. More complex but would allow importing into other health tools. Probably a stretch goal.
+- Per-report vs. bulk export options
+
+### Data Deletion
+
+Users need to be able to fully delete their account and all associated data. This is both a trust issue (especially for health data) and potentially a legal requirement depending on jurisdiction. Needs to cover:
+
+- All biomarker results and reports in the database
+- Stored PDF files (bytea in reports table)
+- Profile data
+- Auth account (Neon Auth user record)
+- Any derived data (cached aggregations, etc.)
+- Confirmation flow to prevent accidental deletion
+- Clear communication about what gets deleted and that it's irreversible
+
+### Mobile Responsiveness (Lower Priority)
+
+The current layout is desktop-oriented (split-pane PDF viewer + results table). Lab results are something people check on their phone, so the app should be usable on small screens. Considerations:
+
+- The split-pane extraction view won't work on mobile — needs a stacked or tabbed layout
+- Biomarkers tab and detail pages are more straightforward to make responsive
+- Charts (Recharts) may need touch-friendly sizing and interactions
+- Settings page should be responsive
+
+### Trend Alerts (Lowest Priority)
+
+Beyond single-report flags (high/low), the app could surface when a biomarker is trending in a concerning direction across multiple reports. For example:
+
+- A value that's still in range but has been steadily increasing over 3+ reports
+- A value that crossed from normal to abnormal between the two most recent reports
+- Significant jumps between consecutive readings
+
+This is a nice-to-have that depends on multi-file support and unit normalization being in place first.
 
 ### Other Future Items
 

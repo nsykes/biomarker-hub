@@ -139,7 +139,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
           });
           setSavedFileId(id);
           // Upload PDF to database
-          fetch(`/api/reports/${id}/pdf`, { method: "PUT", body: file }).catch(console.error);
+          await fetch(`/api/reports/${id}/pdf`, { method: "PUT", body: file });
         } catch (saveErr) {
           console.error("Failed to auto-save:", saveErr);
         }

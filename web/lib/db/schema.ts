@@ -120,9 +120,10 @@ export const referenceRanges = pgTable("reference_ranges", {
     .notNull(),
 });
 
-// 5. Settings (kept from before)
+// 5. Settings — per-user (each user gets their own row)
 export const settings = pgTable("settings", {
   id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().unique(),
   openRouterApiKey: text("openrouter_api_key"),
   defaultModel: text("default_model")
     .notNull()

@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import { UserButton } from "@neondatabase/auth/react";
 import { TabId, StoredFile } from "@/lib/types";
 import { FilesTab } from "./FilesTab";
 import { BiomarkersTab } from "./BiomarkersTab";
@@ -83,6 +84,9 @@ export function AppShell() {
             </button>
           ))}
         </nav>
+        <div className="ml-auto">
+          <UserButton />
+        </div>
       </header>
 
       {/* Tab content */}

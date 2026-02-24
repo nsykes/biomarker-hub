@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth/server";
 import { EXTRACTION_PROMPT } from "@/lib/prompt";
 import { ExtractionResult, ExtractionResponse } from "@/lib/types";
 import { matchBiomarker } from "@/lib/biomarker-registry";
@@ -6,6 +7,11 @@ import { matchBiomarker } from "@/lib/biomarker-registry";
 export const maxDuration = 120;
 
 export async function POST(request: NextRequest) {
+  const { data: session } = await auth.getSession();
+  if (!session) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const startTime = Date.now();
 
   try {

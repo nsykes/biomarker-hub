@@ -2,7 +2,8 @@
 
 import { db } from "./index";
 import { reports, biomarkerResults, settings, referenceRanges } from "./schema";
-import { eq, desc, asc, inArray } from "drizzle-orm";
+import { eq, desc, asc, inArray, isNull, and } from "drizzle-orm";
+import { auth } from "@/lib/auth/server";
 import {
   Biomarker,
   ExtractionMeta,
@@ -12,6 +13,14 @@ import {
   ReferenceRange,
   BiomarkerDetailData,
 } from "../types";
+
+// --- auth helper ---
+
+async function requireUser(): Promise<string> {
+  const { data: session } = await auth.getSession();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  return session.user.id;
+}
 
 // --- helpers ---
 
@@ -103,9 +112,18 @@ function biomarkerToRow(reportId: string, b: Biomarker) {
 // --- file / report CRUD ---
 
 export async function getFiles(): Promise<StoredFile[]> {
+  const userId = await requireUser();
+
+  // Auto-claim orphaned reports (user_id IS NULL) for the current user
+  await db
+    .update(reports)
+    .set({ userId })
+    .where(isNull(reports.userId));
+
   const reportRows = await db
     .select(reportColumns)
     .from(reports)
+    .where(eq(reports.userId, userId))
     .orderBy(desc(reports.addedAt));
 
   if (reportRows.length === 0) return [];
@@ -127,7 +145,11 @@ export async function getFiles(): Promise<StoredFile[]> {
 }
 
 export async function getFile(id: string): Promise<StoredFile | null> {
-  const rows = await db.select(reportColumns).from(reports).where(eq(reports.id, id));
+  const userId = await requireUser();
+  const rows = await db
+    .select(reportColumns)
+    .from(reports)
+    .where(and(eq(reports.id, id), eq(reports.userId, userId)));
   if (rows.length === 0) return null;
 
   const r = rows[0];
@@ -148,9 +170,12 @@ export async function saveFile(data: {
   biomarkers: Biomarker[];
   meta: ExtractionMeta;
 }): Promise<string> {
+  const userId = await requireUser();
+
   const [row] = await db
     .insert(reports)
     .values({
+      userId,
       filename: data.filename,
       source: data.source,
       labName: data.labName,
@@ -176,13 +201,25 @@ export async function saveFile(data: {
 }
 
 export async function deleteFile(id: string): Promise<void> {
-  await db.delete(reports).where(eq(reports.id, id));
+  const userId = await requireUser();
+  await db
+    .delete(reports)
+    .where(and(eq(reports.id, id), eq(reports.userId, userId)));
 }
 
 export async function updateFileBiomarkers(
   id: string,
   biomarkers: Biomarker[]
 ): Promise<void> {
+  const userId = await requireUser();
+
+  // Verify ownership
+  const rows = await db
+    .select({ id: reports.id })
+    .from(reports)
+    .where(and(eq(reports.id, id), eq(reports.userId, userId)));
+  if (rows.length === 0) throw new Error("Unauthorized");
+
   await db
     .delete(biomarkerResults)
     .where(eq(biomarkerResults.reportId, id));
@@ -197,9 +234,18 @@ export async function updateFileBiomarkers(
 // --- settings ---
 
 export async function getSettings(): Promise<AppSettings> {
-  const rows = await db.select().from(settings);
+  const userId = await requireUser();
+
+  const rows = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.userId, userId));
+
   if (rows.length === 0) {
-    const [row] = await db.insert(settings).values({}).returning();
+    const [row] = await db
+      .insert(settings)
+      .values({ userId })
+      .returning();
     return {
       id: row.id,
       openRouterApiKey: row.openRouterApiKey,
@@ -217,11 +263,12 @@ export async function getSettings(): Promise<AppSettings> {
 export async function updateSettings(
   data: Partial<Pick<AppSettings, "openRouterApiKey" | "defaultModel">>
 ): Promise<void> {
+  const userId = await requireUser();
   const current = await getSettings();
   await db
     .update(settings)
     .set(data)
-    .where(eq(settings.id, current.id));
+    .where(and(eq(settings.id, current.id), eq(settings.userId, userId)));
 }
 
 // --- biomarker detail ---
@@ -247,6 +294,8 @@ export async function getReferenceRange(
 export async function getBiomarkerDetail(
   slug: string
 ): Promise<{ history: BiomarkerHistoryPoint[]; referenceRange: ReferenceRange | null }> {
+  const userId = await requireUser();
+
   const [historyRows, referenceRange] = await Promise.all([
     db
       .select({
@@ -264,7 +313,12 @@ export async function getBiomarkerDetail(
       })
       .from(biomarkerResults)
       .innerJoin(reports, eq(biomarkerResults.reportId, reports.id))
-      .where(eq(biomarkerResults.canonicalSlug, slug))
+      .where(
+        and(
+          eq(biomarkerResults.canonicalSlug, slug),
+          eq(reports.userId, userId)
+        )
+      )
       .orderBy(asc(reports.collectionDate)),
     getReferenceRange(slug),
   ]);

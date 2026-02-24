@@ -16,7 +16,7 @@ import { getFiles } from "@/lib/db/actions";
 export function BiomarkersTab() {
   const [files, setFiles] = useState<StoredFile[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toggle: toggleCategory, isCollapsed } = useCategoryCollapse();
+  const { toggle: toggleCategory, isCollapsed, expandAll, collapseAll, anyCollapsed } = useCategoryCollapse();
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -120,9 +120,23 @@ export function BiomarkersTab() {
             style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
           />
         </div>
-        <p className="text-xs text-[var(--color-text-tertiary)] mt-1.5">
-          {REGISTRY.length} biomarkers across {groupedRegistry.size} categories
-        </p>
+        <div className="flex items-center gap-3 mt-1.5">
+          <p className="text-xs text-[var(--color-text-tertiary)]">
+            {REGISTRY.length} biomarkers across {groupedRegistry.size} categories
+          </p>
+          <button
+            onClick={() => {
+              if (anyCollapsed) {
+                expandAll();
+              } else {
+                collapseAll(Array.from(filteredGroups.keys()));
+              }
+            }}
+            className="text-xs text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium"
+          >
+            {anyCollapsed ? "Expand All" : "Collapse All"}
+          </button>
+        </div>
       </div>
 
       {/* Registry browser */}

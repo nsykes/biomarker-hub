@@ -333,7 +333,9 @@ Large PDFs (17+ pages, 150+ biomarkers) caused 504 gateway timeouts on Vercel be
 - Lightweight dedup by `rawName|value` handles page-boundary overlaps
 - Token usage aggregated across all chunks
 
-A `FETCH_TIMEOUT_MS` (55s) `AbortController` wraps all fetch calls as a safety net before Vercel kills the function. Small PDFs (≤8 pages) use the single-call path unchanged.
+A `FETCH_TIMEOUT_MS` (240s) `AbortController` wraps all fetch calls as a safety net before Vercel kills the function. `maxDuration` is set to 300s to use full Vercel Pro headroom. Small PDFs (≤8 pages) use the single-call path unchanged.
+
+**Stream keep-alive (2026-02-24):** Long extractions (up to ~240s) caused `ERR_NETWORK_IO_SUSPENDED` because the browser killed the idle connection when no bytes were sent. Fix: the extract route now returns a `ReadableStream` that sends a space byte every 15s as keep-alive, then writes the JSON result at the end. Leading whitespace is valid before JSON — the client reads the full body with `response.text()`, trims, and parses. Early validation errors (auth, missing file) still return normal `NextResponse.json()` with proper status codes; streaming only wraps the long-running extraction phase. HTTP 200 is always returned for streamed responses since headers are sent before the outcome is known — errors are encoded in the JSON body and the client checks for `parsed.error`.
 
 **Dependency added:** `pdf-lib` (lightweight, zero-dependency PDF manipulation)
 

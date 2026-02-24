@@ -128,7 +128,13 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
           );
         }
 
-        const data: ExtractionResponse = await response.json();
+        // Response is streamed with keep-alive spaces; read full body and parse
+        const text = await response.text();
+        const parsed = JSON.parse(text.trim());
+        if (parsed.error) {
+          throw new Error(parsed.error);
+        }
+        const data: ExtractionResponse = parsed;
         setExtraction(data.extraction);
         setMeta(data.meta);
 

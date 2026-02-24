@@ -72,7 +72,7 @@ export function BiomarkerDetailPage({ data }: { data: BiomarkerDetailData }) {
           <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
             Reference Range
           </h2>
-          <ReferenceRangeSection data={data} />
+          <ReferenceRangeSection data={data} slug={data.slug} defaultUnit={data.defaultUnit} />
         </section>
       </div>
     </div>

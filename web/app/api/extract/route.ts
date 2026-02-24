@@ -128,151 +128,172 @@ export async function POST(request: NextRequest) {
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
     const filename = file.name || "lab-report.pdf";
 
-    // Determine if we need to chunk
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
-    const pageCount = pdfDoc.getPageCount();
+    // Stream response with keep-alive to prevent browser timeout
+    // (ERR_NETWORK_IO_SUSPENDED) during long extractions
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        const keepAlive = setInterval(() => {
+          controller.enqueue(encoder.encode(" "));
+        }, 15_000);
 
-    let extraction: ExtractionResult;
-    let totalTokens: number | null = null;
+        try {
+          // Determine if we need to chunk
+          const pdfDoc = await PDFDocument.load(pdfBuffer);
+          const pageCount = pdfDoc.getPageCount();
 
-    if (pageCount <= CHUNK_PAGE_THRESHOLD) {
-      // Small PDF — single extraction call
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-      try {
-        const result = await extractChunk(
-          pdfBuffer,
-          filename,
-          model,
-          apiKey,
-          controller.signal
-        );
-        extraction = result.extraction;
-        totalTokens = result.usage?.total_tokens ?? null;
-      } finally {
-        clearTimeout(timeout);
-      }
-    } else {
-      // Large PDF — split into chunks and extract in parallel
-      const chunks: { buffer: Buffer; startPage: number }[] = [];
-      for (let i = 0; i < pageCount; i += CHUNK_SIZE) {
-        const chunkDoc = await PDFDocument.create();
-        const end = Math.min(i + CHUNK_SIZE, pageCount);
-        const pageIndices = Array.from(
-          { length: end - i },
-          (_, idx) => i + idx
-        );
-        const copiedPages = await chunkDoc.copyPages(pdfDoc, pageIndices);
-        copiedPages.forEach((page) => chunkDoc.addPage(page));
-        const chunkBytes = await chunkDoc.save();
-        chunks.push({
-          buffer: Buffer.from(chunkBytes),
-          startPage: i + 1, // 1-indexed
-        });
-      }
+          let extraction: ExtractionResult;
+          let totalTokens: number | null = null;
 
-      console.log(
-        `Chunked extraction: ${pageCount} pages → ${chunks.length} chunks`
-      );
+          if (pageCount <= CHUNK_PAGE_THRESHOLD) {
+            // Small PDF — single extraction call
+            const abortController = new AbortController();
+            const timeout = setTimeout(() => abortController.abort(), FETCH_TIMEOUT_MS);
+            try {
+              const result = await extractChunk(
+                pdfBuffer,
+                filename,
+                model,
+                apiKey,
+                abortController.signal
+              );
+              extraction = result.extraction;
+              totalTokens = result.usage?.total_tokens ?? null;
+            } finally {
+              clearTimeout(timeout);
+            }
+          } else {
+            // Large PDF — split into chunks and extract in parallel
+            const chunks: { buffer: Buffer; startPage: number }[] = [];
+            for (let i = 0; i < pageCount; i += CHUNK_SIZE) {
+              const chunkDoc = await PDFDocument.create();
+              const end = Math.min(i + CHUNK_SIZE, pageCount);
+              const pageIndices = Array.from(
+                { length: end - i },
+                (_, idx) => i + idx
+              );
+              const copiedPages = await chunkDoc.copyPages(pdfDoc, pageIndices);
+              copiedPages.forEach((page) => chunkDoc.addPage(page));
+              const chunkBytes = await chunkDoc.save();
+              chunks.push({
+                buffer: Buffer.from(chunkBytes),
+                startPage: i + 1, // 1-indexed
+              });
+            }
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-      try {
-        const results = await Promise.all(
-          chunks.map(async (chunk, idx) => {
-            const chunkStart = Date.now();
-            const result = await extractChunk(
-              chunk.buffer,
-              `${filename} (chunk ${idx + 1}/${chunks.length})`,
-              model,
-              apiKey,
-              controller.signal
-            );
             console.log(
-              `Chunk ${idx + 1}/${chunks.length} completed in ${((Date.now() - chunkStart) / 1000).toFixed(1)}s`
+              `Chunked extraction: ${pageCount} pages → ${chunks.length} chunks`
             );
-            return result;
-          })
-        );
 
-        // Merge: reportInfo from first chunk, concatenate biomarkers with page offset
-        extraction = {
-          reportInfo: results[0].extraction.reportInfo,
-          biomarkers: [],
-        };
+            const abortController = new AbortController();
+            const timeout = setTimeout(() => abortController.abort(), FETCH_TIMEOUT_MS);
+            try {
+              const results = await Promise.all(
+                chunks.map(async (chunk, idx) => {
+                  const chunkStart = Date.now();
+                  const result = await extractChunk(
+                    chunk.buffer,
+                    `${filename} (chunk ${idx + 1}/${chunks.length})`,
+                    model,
+                    apiKey,
+                    abortController.signal
+                  );
+                  console.log(
+                    `Chunk ${idx + 1}/${chunks.length} completed in ${((Date.now() - chunkStart) / 1000).toFixed(1)}s`
+                  );
+                  return result;
+                })
+              );
 
-        const seen = new Set<string>();
-        for (let i = 0; i < results.length; i++) {
-          const offset = chunks[i].startPage - 1;
-          for (const b of results[i].extraction.biomarkers) {
-            const adjusted = { ...b, page: b.page + offset };
-            const dedupKey = `${b.rawName}|${b.value}`;
-            if (!seen.has(dedupKey)) {
-              seen.add(dedupKey);
-              extraction.biomarkers.push(adjusted);
+              // Merge: reportInfo from first chunk, concatenate biomarkers with page offset
+              extraction = {
+                reportInfo: results[0].extraction.reportInfo,
+                biomarkers: [],
+              };
+
+              const seen = new Set<string>();
+              for (let i = 0; i < results.length; i++) {
+                const offset = chunks[i].startPage - 1;
+                for (const b of results[i].extraction.biomarkers) {
+                  const adjusted = { ...b, page: b.page + offset };
+                  const dedupKey = `${b.rawName}|${b.value}`;
+                  if (!seen.has(dedupKey)) {
+                    seen.add(dedupKey);
+                    extraction.biomarkers.push(adjusted);
+                  }
+                }
+              }
+
+              // Aggregate tokens
+              totalTokens = results.reduce(
+                (sum, r) => sum + (r.usage?.total_tokens ?? 0),
+                0
+              );
+            } finally {
+              clearTimeout(timeout);
             }
           }
+
+          // Add UUIDs to each biomarker
+          extraction.biomarkers = extraction.biomarkers.map((b) => ({
+            ...b,
+            id: crypto.randomUUID(),
+          }));
+
+          // Match against canonical biomarker registry
+          extraction.biomarkers = extraction.biomarkers.map((b) => {
+            const specimen =
+              b.category === "Urinalysis"
+                ? "urine"
+                : ["Body Composition", "Bone", "Muscle Balance"].includes(b.category)
+                  ? "body_composition"
+                  : "blood";
+            const canonical = matchBiomarker(
+              b.rawName,
+              specimen as "blood" | "urine" | "body_composition",
+              b.region
+            );
+            return {
+              ...b,
+              canonicalSlug: canonical?.slug ?? null,
+              metricName: canonical?.displayName ?? b.metricName,
+              category: canonical?.category ?? b.category,
+            };
+          });
+
+          const duration = Date.now() - startTime;
+
+          const result: ExtractionResponse = {
+            extraction,
+            meta: {
+              model: model,
+              tokensUsed: totalTokens,
+              duration,
+            },
+          };
+
+          controller.enqueue(encoder.encode(JSON.stringify(result)));
+        } catch (err: any) {
+          const errorBody = err?.name === "AbortError"
+            ? { error: "Extraction timed out. Please try a shorter report." }
+            : { error: err?.message || "Internal extraction error" };
+          if (err?.name !== "AbortError") console.error("Extraction error:", err);
+          controller.enqueue(encoder.encode(JSON.stringify(errorBody)));
+        } finally {
+          clearInterval(keepAlive);
+          controller.close();
         }
-
-        // Aggregate tokens
-        totalTokens = results.reduce(
-          (sum, r) => sum + (r.usage?.total_tokens ?? 0),
-          0
-        );
-      } finally {
-        clearTimeout(timeout);
-      }
-    }
-
-    // Add UUIDs to each biomarker
-    extraction.biomarkers = extraction.biomarkers.map((b) => ({
-      ...b,
-      id: crypto.randomUUID(),
-    }));
-
-    // Match against canonical biomarker registry
-    extraction.biomarkers = extraction.biomarkers.map((b) => {
-      const specimen =
-        b.category === "Urinalysis"
-          ? "urine"
-          : ["Body Composition", "Bone", "Muscle Balance"].includes(b.category)
-            ? "body_composition"
-            : "blood";
-      const canonical = matchBiomarker(
-        b.rawName,
-        specimen as "blood" | "urine" | "body_composition",
-        b.region
-      );
-      return {
-        ...b,
-        canonicalSlug: canonical?.slug ?? null,
-        metricName: canonical?.displayName ?? b.metricName,
-        category: canonical?.category ?? b.category,
-      };
+      },
     });
 
-    const duration = Date.now() - startTime;
-
-    const result: ExtractionResponse = {
-      extraction,
-      meta: {
-        model: model,
-        tokensUsed: totalTokens,
-        duration,
-      },
-    };
-
-    return NextResponse.json(result);
+    return new Response(stream, {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (err: any) {
-    if (err?.name === "AbortError") {
-      return NextResponse.json(
-        { error: "Extraction timed out. Please try a shorter report." },
-        { status: 504 }
-      );
-    }
-    console.error("Extraction error:", err);
+    // This catch only handles errors before streaming starts (formData parsing)
+    console.error("Pre-extraction error:", err);
     return NextResponse.json(
-      { error: err?.message || "Internal extraction error" },
+      { error: err?.message || "Internal error" },
       { status: 500 }
     );
   }

@@ -19,5 +19,15 @@ export function useCategoryCollapse() {
     [collapsed]
   );
 
-  return { toggle, isCollapsed };
+  const expandAll = useCallback(() => {
+    setCollapsed(new Set());
+  }, []);
+
+  const collapseAll = useCallback((categories: string[]) => {
+    setCollapsed(new Set(categories));
+  }, []);
+
+  const anyCollapsed = collapsed.size > 0;
+
+  return { toggle, isCollapsed, expandAll, collapseAll, anyCollapsed };
 }

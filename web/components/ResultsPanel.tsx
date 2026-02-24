@@ -104,7 +104,7 @@ export function ResultsPanel({
   onDeleteBiomarker,
   onAddBiomarker,
 }: ResultsPanelProps) {
-  const { toggle: toggleCategory, isCollapsed } = useCategoryCollapse();
+  const { toggle: toggleCategory, isCollapsed, expandAll, collapseAll, anyCollapsed } = useCategoryCollapse();
   const [showCombobox, setShowCombobox] = useState(false);
 
   const groupedBiomarkers = useMemo(() => {
@@ -221,7 +221,20 @@ export function ResultsPanel({
                   <th className="px-2 py-2">Unit</th>
                   <th className="px-2 py-2">Ref Range</th>
                   <th className="px-2 py-2">Flag</th>
-                  <th className="px-1 py-2"></th>
+                  <th className="px-1 py-2 text-right">
+                    <button
+                      onClick={() => {
+                        if (anyCollapsed) {
+                          expandAll();
+                        } else {
+                          collapseAll(Array.from(groupedBiomarkers.keys()));
+                        }
+                      }}
+                      className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium normal-case"
+                    >
+                      {anyCollapsed ? "Expand All" : "Collapse All"}
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody>

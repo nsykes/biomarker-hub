@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppSettings } from "@/lib/types";
-import { getSettingsSafe, updateSettingsSafe } from "@/lib/db/actions";
+import { getSettingsSafe, updateSettingsSafe, deleteAccount } from "@/lib/db/actions";
+import { authClient } from "@/lib/auth/client";
 import { AVAILABLE_MODELS } from "@/lib/models";
 import { DEFAULT_MODEL } from "@/lib/constants";
 import { PageSpinner } from "./Spinner";
+import { DeleteAccountModal } from "./DeleteAccountModal";
 
 export function SettingsTab() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -18,6 +20,8 @@ export function SettingsTab() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [keyStored, setKeyStored] = useState(false);
   const [keyDirty, setKeyDirty] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const loadSettings = useCallback(async () => {
@@ -218,6 +222,70 @@ export function SettingsTab() {
           </div>
         </div>
       </section>
+
+      {/* Export Data */}
+      <section className="card p-5">
+        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
+          Export Data
+        </h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+          Download all your biomarker data as a CSV file. Includes dates, values, units, flags, reference ranges, and source information for every result across all reports.
+        </p>
+        <button
+          onClick={async () => {
+            setExporting(true);
+            try {
+              const res = await fetch("/api/account/export");
+              if (!res.ok) throw new Error("Export failed");
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = res.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] || "biomarker-export.csv";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+            } catch (err) {
+              console.error("Export failed:", err);
+            } finally {
+              setExporting(false);
+            }
+          }}
+          disabled={exporting}
+          className="btn-secondary"
+        >
+          {exporting ? "Exporting..." : "Export CSV"}
+        </button>
+      </section>
+
+      {/* Delete Account */}
+      <section className="card p-5 border-[#FF3B30]/20">
+        <h2 className="text-base font-semibold text-[#FF3B30] mb-3">
+          Delete Account
+        </h2>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+          Permanently delete your account and all associated data, including reports, biomarker results, PDFs, and settings. This cannot be undone.
+        </p>
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 text-[#FF3B30] border border-[#FF3B30]/30 hover:bg-[#FDE8E8]"
+        >
+          Delete Account
+        </button>
+      </section>
+
+      {showDeleteModal && (
+        <DeleteAccountModal
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={async () => {
+            const result = await deleteAccount();
+            if (!result.success) throw new Error(result.error ?? "Delete failed");
+            await authClient.signOut();
+            window.location.href = "/auth/sign-in";
+          }}
+        />
+      )}
     </div>
   );
 }

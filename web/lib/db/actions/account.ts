@@ -1,0 +1,23 @@
+"use server";
+
+import { db } from "../index";
+import { reports, settings, profiles } from "../schema";
+import { eq } from "drizzle-orm";
+import { requireUser } from "./auth";
+
+type SafeResult = { success: true; error: null } | { success: false; error: string };
+
+export async function deleteAccount(): Promise<SafeResult> {
+  try {
+    const userId = await requireUser();
+
+    // reports CASCADE-deletes all biomarker_results
+    await db.delete(reports).where(eq(reports.userId, userId));
+    await db.delete(settings).where(eq(settings.userId, userId));
+    await db.delete(profiles).where(eq(profiles.userId, userId));
+
+    return { success: true, error: null };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Unknown error" };
+  }
+}

@@ -352,26 +352,20 @@ The app currently assumes uploaded files are well-formed lab report PDFs with a 
 
 Goal: no matter what file someone uploads, they get a clear, helpful message — never a broken UI or cryptic error.
 
-### Data Export & Portability
+### Data Export — CSV (Implemented — 2026-02-24)
 
-Users should be able to download all of their data in standard formats. This is important for data ownership and trust — especially for health data, people want to know they're not locked in. Options to consider:
+Users can download all their biomarker data as a CSV file from Settings → Export Data. The GET endpoint at `/api/account/export` joins `biomarker_results` with `reports`, sorted by collection date then category. Columns: Date, Biomarker, Value, Unit, Flag, Reference Range Low/High, Source File, Lab Name. Empty accounts get a header-only CSV. Auth-guarded (401 for unauthenticated requests).
 
-- **CSV export** — simple table of all biomarker results across all reports (date, biomarker, value, unit, flag, source)
-- **JSON export** — structured dump of all reports and results (already partially exists via in-memory JSON export)
-- **FHIR format** — the healthcare interoperability standard. More complex but would allow importing into other health tools. Probably a stretch goal.
-- Per-report vs. bulk export options
+**Future:** JSON export, FHIR format, per-report export.
 
-### Data Deletion
+### Account Deletion (Implemented — 2026-02-24)
 
-Users need to be able to fully delete their account and all associated data. This is both a trust issue (especially for health data) and potentially a legal requirement depending on jurisdiction. Needs to cover:
+Users can permanently delete their account and all data from Settings → Delete Account. A confirmation modal requires typing "DELETE" to enable the button. On confirm:
+1. `deleteAccount()` server action deletes reports (CASCADE → biomarker_results), settings, and profile
+2. Client-side `authClient.signOut()` clears the session
+3. Full page redirect to `/auth/sign-in`
 
-- All biomarker results and reports in the database
-- Stored PDF files (bytea in reports table)
-- Profile data
-- Auth account (Neon Auth user record)
-- Any derived data (cached aggregations, etc.)
-- Confirmation flow to prevent accidental deletion
-- Clear communication about what gets deleted and that it's irreversible
+Does NOT delete `reference_ranges` (global, not user-scoped). Auth user record deletion is handled by the signOut/session expiry flow.
 
 ### Mobile Responsiveness (Lower Priority)
 

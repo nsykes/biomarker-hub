@@ -25,3 +25,5 @@ export {
   updateReferenceRange,
   backfillReferenceRange,
 } from "./actions/biomarkers";
+
+export { deleteAccount } from "./actions/account";

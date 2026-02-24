@@ -66,6 +66,22 @@ async function extractChunk(
   const data = await response.json();
 
   if (!data.choices?.[0]?.message?.content) {
+    console.error(
+      "Empty LLM content — raw response:",
+      JSON.stringify({
+        id: data.id,
+        model: data.model,
+        choices: data.choices?.map((c: any) => ({
+          finish_reason: c.finish_reason,
+          message: {
+            role: c.message?.role,
+            content: c.message?.content,
+            refusal: c.message?.refusal,
+          },
+        })),
+        error: data.error,
+      })
+    );
     throw new Error("No content in LLM response");
   }
 

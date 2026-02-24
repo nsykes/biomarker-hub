@@ -11,6 +11,13 @@ export default async function middleware(request: NextRequest) {
   if (request.headers.get("next-action")) {
     return NextResponse.next();
   }
+
+  // API routes authenticate via auth.getSession() — skip middleware auth
+  // to prevent redirects from returning 405 on POST requests
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   return neonMiddleware(request);
 }
 

@@ -13,6 +13,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceArea,
+  ReferenceLine,
   CartesianGrid,
 } from "recharts";
 
@@ -49,6 +50,45 @@ function CustomTooltip({
       <p className="text-gray-500">{p.date}</p>
     </div>
   );
+}
+
+function buildRangeZones(
+  referenceRange: { goalDirection: string; rangeLow: number | null; rangeHigh: number | null },
+  yMin: number,
+  yMax: number,
+) {
+  const zones: React.ReactNode[] = [];
+  const green = "#16a34a";
+  const red = "#dc2626";
+  const greenOpacity = 0.06;
+  const redOpacity = 0.05;
+  const lineColor = "#9ca3af";
+
+  const { goalDirection, rangeLow, rangeHigh } = referenceRange;
+
+  if (goalDirection === "below" && rangeHigh !== null) {
+    zones.push(
+      <ReferenceArea key="green-below" y1={yMin} y2={rangeHigh} fill={green} fillOpacity={greenOpacity} stroke="none" />,
+      <ReferenceArea key="red-above" y1={rangeHigh} y2={yMax} fill={red} fillOpacity={redOpacity} stroke="none" />,
+      <ReferenceLine key="line-high" y={rangeHigh} stroke={lineColor} strokeDasharray="6 3" strokeOpacity={0.5} />,
+    );
+  } else if (goalDirection === "above" && rangeLow !== null) {
+    zones.push(
+      <ReferenceArea key="red-below" y1={yMin} y2={rangeLow} fill={red} fillOpacity={redOpacity} stroke="none" />,
+      <ReferenceArea key="green-above" y1={rangeLow} y2={yMax} fill={green} fillOpacity={greenOpacity} stroke="none" />,
+      <ReferenceLine key="line-low" y={rangeLow} stroke={lineColor} strokeDasharray="6 3" strokeOpacity={0.5} />,
+    );
+  } else if (goalDirection === "within" && rangeLow !== null && rangeHigh !== null) {
+    zones.push(
+      <ReferenceArea key="red-below" y1={yMin} y2={rangeLow} fill={red} fillOpacity={redOpacity} stroke="none" />,
+      <ReferenceArea key="green-within" y1={rangeLow} y2={rangeHigh} fill={green} fillOpacity={greenOpacity} stroke="none" />,
+      <ReferenceArea key="red-above" y1={rangeHigh} y2={yMax} fill={red} fillOpacity={redOpacity} stroke="none" />,
+      <ReferenceLine key="line-low" y={rangeLow} stroke={lineColor} strokeDasharray="6 3" strokeOpacity={0.5} />,
+      <ReferenceLine key="line-high" y={rangeHigh} stroke={lineColor} strokeDasharray="6 3" strokeOpacity={0.5} />,
+    );
+  }
+
+  return zones;
 }
 
 export function HistoryChart({
@@ -132,19 +172,7 @@ export function HistoryChart({
           width={50}
         />
         <Tooltip content={<CustomTooltip />} />
-        {data.referenceRange &&
-          data.referenceRange.rangeLow !== null &&
-          data.referenceRange.rangeHigh !== null && (
-            <ReferenceArea
-              y1={data.referenceRange.rangeLow}
-              y2={data.referenceRange.rangeHigh}
-              fill="#16a34a"
-              fillOpacity={0.08}
-              stroke="#16a34a"
-              strokeOpacity={0.2}
-              strokeDasharray="3 3"
-            />
-          )}
+        {data.referenceRange && buildRangeZones(data.referenceRange, yMin, yMax)}
         <Line
           type="monotone"
           dataKey="value"

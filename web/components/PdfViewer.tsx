@@ -28,6 +28,7 @@ export function PdfViewer({
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const pageRef = useRef<HTMLDivElement>(null);
   const cleanupHighlightRef = useRef<(() => void) | null>(null);
+  const pendingRafRef = useRef<number | null>(null);
 
   // Keep refs in sync so the stable callback can access current values
   const highlightTargetRef = useRef(highlightTarget);
@@ -53,8 +54,14 @@ export function PdfViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightTarget]);
 
-  // Stable callback — never changes, so <Page> doesn't re-render the text layer
-  const handleTextLayerSuccess = useCallback(() => {
+  // Single shared highlight scheduler — cancels any pending rAF so only the
+  // last caller's frame executes, preventing the double-apply bounce.
+  const scheduleHighlight = useCallback(() => {
+    if (pendingRafRef.current !== null) {
+      cancelAnimationFrame(pendingRafRef.current);
+      pendingRafRef.current = null;
+    }
+
     if (cleanupHighlightRef.current) {
       cleanupHighlightRef.current();
       cleanupHighlightRef.current = null;
@@ -62,25 +69,30 @@ export function PdfViewer({
 
     const target = highlightTargetRef.current;
     if (target && target.page === currentPageRef.current && pageRef.current) {
-      cleanupHighlightRef.current = applyHighlights(pageRef.current, target);
-    }
-  }, []);
-
-  // Handle highlight changes on the current page (text layer won't re-render for same-page clicks)
-  useEffect(() => {
-    if (cleanupHighlightRef.current) {
-      cleanupHighlightRef.current();
-      cleanupHighlightRef.current = null;
-    }
-    if (highlightTarget && highlightTarget.page === currentPage && pageRef.current) {
-      const raf = requestAnimationFrame(() => {
+      pendingRafRef.current = requestAnimationFrame(() => {
+        pendingRafRef.current = null;
         if (pageRef.current && highlightTargetRef.current) {
           cleanupHighlightRef.current = applyHighlights(pageRef.current, highlightTargetRef.current);
         }
       });
-      return () => cancelAnimationFrame(raf);
     }
-  }, [highlightTarget, currentPage]);
+  }, []);
+
+  // Stable callback — never changes, so <Page> doesn't re-render the text layer
+  const handleTextLayerSuccess = useCallback(() => {
+    scheduleHighlight();
+  }, [scheduleHighlight]);
+
+  // Handle highlight changes on the current page (text layer won't re-render for same-page clicks)
+  useEffect(() => {
+    scheduleHighlight();
+    return () => {
+      if (pendingRafRef.current !== null) {
+        cancelAnimationFrame(pendingRafRef.current);
+        pendingRafRef.current = null;
+      }
+    };
+  }, [highlightTarget, currentPage, scheduleHighlight]);
 
   const onDocumentLoadSuccess = ({ numPages: n }: { numPages: number }) => {
     setNumPages(n);

@@ -80,12 +80,15 @@ export function applyHighlights(
   ) as HTMLElement[];
   if (spans.length === 0) return () => {};
 
-  // Collect spans with their vertical positions
+  // Collect spans with their vertical positions (use getBoundingClientRect
+  // for transform-aware Y-offsets — offsetTop is unreliable when pdfjs uses
+  // CSS transforms for span positioning)
+  const textLayerRect = (textLayer as HTMLElement).getBoundingClientRect();
   const spanInfos: SpanInfo[] = spans
     .map((el) => ({
       el,
       text: (el.textContent || "").trim(),
-      top: el.offsetTop,
+      top: el.getBoundingClientRect().top - textLayerRect.top,
     }))
     .filter((s) => s.text.length > 0);
 

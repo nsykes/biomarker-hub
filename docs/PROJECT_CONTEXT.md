@@ -70,7 +70,9 @@ Every logged-in user tracks only their own health data — it's a strict 1:1 rel
 neon_auth.user (id, name, email — managed by Neon)
   └── profiles (user_id PK/FK, date_of_birth, sex)
   └── reports (user_id FK)
-        └── biomarker_results (report_id FK)
+  │     └── biomarker_results (report_id FK)
+  └── dashboards (user_id FK)
+        └── dashboard_items (dashboard_id FK)
 ```
 
 The old `patients` table was dropped in favor of this design. `name` comes from the auth user, so it's not duplicated in `profiles`.
@@ -121,9 +123,10 @@ Each biomarker in the Biomarkers tab links to a dedicated detail page at `/bioma
 - AppShell reads `?tab=` query param on mount for back-navigation from detail pages (`/?tab=biomarkers`).
 - Charting: `recharts` library added as dependency.
 
+**Time-proportional chart X-axis (Implemented — 2026-02-25):** X-axis uses `scale="time"` with timestamp-based domain and 30-day padding, so spacing between points reflects actual elapsed time.
+
 **Remaining work:**
 - Biomarker summary/explanation text (what it is, why it matters)
-- **Time-proportional chart X-axis** — Currently data points are evenly spaced regardless of when they occurred. The X-axis should use a proper time scale so that the spacing between points reflects the actual time elapsed between collection dates (e.g., two tests a week apart should be much closer together than two tests a year apart).
 
 ### PDF Preview from History Table (Implemented — 2026-02-25)
 
@@ -131,6 +134,14 @@ Clicking a row in the biomarker detail history table opens a modal with the sour
 
 **New file:** `components/PdfPreviewModal.tsx`
 **Files changed:** `lib/types.ts`, `lib/db/actions/biomarkers.ts`, `components/biomarker-detail/HistoryTable.tsx`, `components/BiomarkerDetailPage.tsx`, `components/BiomarkersTab.tsx`
+
+### Consistent Header Between Main Page and Detail Page (Implemented — 2026-02-25)
+
+The header on BiomarkerDetailPage previously had different padding (`px-5` vs AppShell's `px-6`) and was much taller because it contained the biomarker title, category badge, and full name. This caused the logo to visibly shift when navigating between pages.
+
+**Fix:** Header now contains only the logo and "← Biomarkers" back link (matching AppShell's single-row layout with `px-6 gap-3`). The biomarker name, category badge, unit, and full name subtitle moved into a title section below the header within the `max-w-4xl` content area.
+
+**Files changed:** `components/BiomarkerDetailPage.tsx`
 
 ### Live Chart Updates on Reference Range Edit (Implemented — 2026-02-25)
 
@@ -418,7 +429,7 @@ This is a nice-to-have that depends on multi-file support and unit normalization
 PDF filenames are meaningless to users. The UI now shows **collection date** and **lab/source** as the primary report identifier everywhere instead of filename.
 
 **Changes:**
-- **FilesTab:** Replaced Filename + Lab + Collection Date columns with Report | Type | Lab | Source | Biomarkers | Added | (delete). Lab and Source are separate columns (not merged with `||` fallback). Filter bar has separate Lab and Source dropdowns.
+- **FilesTab:** Replaced Filename + Lab + Collection Date columns with Report | Type | Lab | Source | Biomarkers | (delete). Lab and Source are separate columns (not merged with `||` fallback). Filter bar has separate Lab and Source dropdowns.
 - **HistoryTable (biomarker detail):** Separate Lab and Source columns (not merged). Each shows `"—"` when null.
 - **ReferenceRangeSection:** Lab-reported ranges show `labName || source` (attribution of who reported the range — appropriate to merge here).
 - **ExtractionView header:** Shows both lab and source joined with `" · "` when both exist; shows whichever is available if only one exists.
@@ -427,9 +438,8 @@ PDF filenames are meaningless to users. The UI now shows **collection date** and
 
 Filename is still stored in the DB and used in CSV exports for data lineage.
 
-**Remaining work:**
-- **Remove "Added" column** — The "Added" date (when the report was saved to the DB) is irrelevant to users. Remove it entirely.
-- **Sortable Report column** — The Report column (which shows collection date) should be clickable to sort all rows by collection date ascending/descending. Move the sort toggle functionality from the removed "Added" column to here. Consider also allowing sort by lab or source.
+**Remove "Added" column (Implemented — 2026-02-25):** The "Added" date column has been removed from FilesTab.
+
 
 ### Extraction Results: Group by Page, Not Category (Implemented — 2026-02-24)
 
@@ -481,25 +491,30 @@ Region stripping uses a sorted list of all region names (longest first to avoid 
 
 **Files changed:** `web/lib/biomarker-registry.ts`, `web/app/api/extract/route.ts`, `web/lib/prompt.ts`
 
-### Custom Dashboards (BI-Style Multi-Chart Views)
+### Custom Dashboards (Implemented — 2026-02-25)
 
-Users currently have to click into each biomarker detail page one at a time. For monitoring a health domain (e.g., heart health), this is tedious. The app should support user-created dashboards that show multiple biomarker charts on a single page.
+Users can create named collections of biomarker charts (e.g., "Heart Health" with Total Cholesterol, LDL, HDL, Triglycerides, etc.) and view them all on a single page. The Dashboards tab sits between Biomarkers and Settings in the main nav.
 
-**Concept:**
-- A dashboard is a named collection of biomarker charts (e.g., "Heart Health" with Total Cholesterol, LDL, HDL, Triglycerides, ApoB, Lp(a), Homocysteine)
-- Single page view with all selected charts rendered together — no clicking in and out
-- Users create/edit dashboards: pick a name, select which biomarkers to include
-- Could offer preset templates by category (Heart, Metabolic, Thyroid, etc.) as starting points
-- Each chart is a mini version of the existing biomarker detail chart (trend line + reference range zone)
+**Architecture:**
+- **DB tables:** `dashboards` (user-scoped, named) + `dashboard_items` (biomarker membership + sort order, CASCADE delete). Both indexed.
+- **Server actions:** `web/lib/db/actions/dashboards.ts` — full CRUD (create, read, update, delete) + `getDashboardChartData(slugs)` which batch-fetches history + reference ranges for multiple biomarkers in 2 queries (not N).
+- **UI:** Master-detail pattern within the Dashboards tab (no new routes). List view shows cards with name + biomarker count + FAB to create. Detail view shows a responsive chart grid (`grid-cols-1 md:grid-cols-2`) with drag-to-reorder via `@dnd-kit/sortable`.
+- **Chart cards** wrap the existing `HistoryChart` component. Each card has a drag handle, clickable header (navigates to `/biomarkers/[slug]`), and remove button.
+- **Create/Edit modal** uses `BiomarkerCombobox` for biomarker selection with removable chips.
+- **Account deletion** cascades to dashboards.
 
-**Open questions:**
-- Layout: grid of small charts vs. vertically stacked full-width charts?
-- Should dashboards be shareable or exportable?
-- Should category groupings from the Biomarkers tab auto-generate default dashboards?
+**Dependencies added:** `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
+
+**New files:** `DashboardsTab.tsx`, `DashboardView.tsx`, `DashboardChartCard.tsx`, `CreateDashboardModal.tsx`, `lib/db/actions/dashboards.ts`
+**Modified files:** `schema.ts` (2 tables), `types.ts` (TabId + 3 interfaces), `actions.ts` (barrel), `account.ts` (cascade), `AppShell.tsx` (tab + render)
+
+**Future:**
+- Preset templates by category (Heart, Metabolic, Thyroid, etc.)
+- Shareable/exportable dashboards
+- Summary stats per dashboard (latest values, trend indicators)
 
 ### Other Future Items
 
-- **README.md** — The repo has no README. Add one covering what the app does, how to set it up locally (env vars, Neon DB, Google OAuth), and how to deploy.
 - **General code cleanup** — Accumulated tech debt pass: remove dead code, consolidate duplicated patterns, tighten types, clean up TODOs, improve naming consistency across components.
 - Batch PDF processing (upload multiple files at once)
 - PII stripping before sending to LLM

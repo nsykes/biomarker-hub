@@ -17,12 +17,17 @@ Monorepo for biomarker extraction and health data tools.
 - `web/lib/utils.ts` — Shared utilities (formatDate)
 - `web/app/api/extract/route.ts` — OpenRouter API route
 - `web/lib/db/actions.ts` — Barrel re-export for all server actions (do not add code here — add to sub-modules)
-- `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers, account)
+- `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers, account, dashboards)
 - `web/components/biomarker-detail/` — BiomarkerDetailPage subcomponents (HistoryChart, HistoryTable, ReferenceRangeSection, helpers)
 - `web/components/BiomarkerCombobox.tsx` — Registry-backed biomarker search/select for adding biomarkers after extraction
 - `web/components/PdfPreviewModal.tsx` — Modal for previewing source PDF from history table rows
 - `web/components/RangeConflictModal.tsx` — Modal for resolving reference range conflicts between PDF and stored ranges
 - `web/components/DeleteAccountModal.tsx` — Confirmation modal for account deletion (type "DELETE" to confirm)
+- `web/components/DashboardsTab.tsx` — Dashboard list view with create FAB
+- `web/components/DashboardView.tsx` — Single dashboard detail with chart grid and drag-to-reorder
+- `web/components/DashboardChartCard.tsx` — Sortable chart card wrapping HistoryChart
+- `web/components/CreateDashboardModal.tsx` — Modal for creating/editing dashboards with biomarker selection
+- `web/lib/db/actions/dashboards.ts` — Dashboard CRUD + batch chart data server actions
 - `web/components/Spinner.tsx` — Shared loading spinner (Spinner, PageSpinner)
 - `web/app/api/account/export/route.ts` — CSV export endpoint (all biomarker data)
 - `web/lib/db/actions/account.ts` — Account deletion server action

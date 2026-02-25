@@ -130,3 +130,37 @@ export const settings = pgTable("settings", {
     .notNull()
     .default(DEFAULT_MODEL),
 });
+
+// 6. Dashboards — user-scoped named collections of biomarker charts
+export const dashboards = pgTable(
+  "dashboards",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("idx_dashboards_user").on(table.userId)]
+);
+
+// 7. Dashboard items — biomarker membership + ordering within a dashboard
+export const dashboardItems = pgTable(
+  "dashboard_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    dashboardId: uuid("dashboard_id")
+      .notNull()
+      .references(() => dashboards.id, { onDelete: "cascade" }),
+    canonicalSlug: text("canonical_slug").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("idx_dashboard_items_dashboard").on(table.dashboardId)]
+);

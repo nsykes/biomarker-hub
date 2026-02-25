@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "../index";
-import { reports, settings, profiles } from "../schema";
+import { reports, settings, profiles, dashboards } from "../schema";
 import { eq } from "drizzle-orm";
 import { requireUser } from "./auth";
 
@@ -11,6 +11,8 @@ export async function deleteAccount(): Promise<SafeResult> {
   try {
     const userId = await requireUser();
 
+    // dashboards CASCADE-deletes all dashboard_items
+    await db.delete(dashboards).where(eq(dashboards.userId, userId));
     // reports CASCADE-deletes all biomarker_results
     await db.delete(reports).where(eq(reports.userId, userId));
     await db.delete(settings).where(eq(settings.userId, userId));

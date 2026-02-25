@@ -80,7 +80,26 @@ export interface AppSettings {
   defaultModel: string;
 }
 
-export type TabId = "files" | "biomarkers" | "settings";
+export type TabId = "files" | "biomarkers" | "dashboards" | "settings";
+
+export interface DashboardSummary {
+  id: string;
+  name: string;
+  biomarkerCount: number;
+  updatedAt: string;
+}
+
+export interface DashboardItem {
+  id: string;
+  canonicalSlug: string;
+  sortOrder: number;
+}
+
+export interface DashboardDetail {
+  id: string;
+  name: string;
+  items: DashboardItem[];
+}
 
 export interface BiomarkerHistoryPoint {
   collectionDate: string | null;

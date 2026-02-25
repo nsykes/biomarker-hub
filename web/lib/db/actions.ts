@@ -28,3 +28,15 @@ export {
 } from "./actions/biomarkers";
 
 export { deleteAccount } from "./actions/account";
+
+export {
+  getDashboards,
+  getDashboard,
+  createDashboard,
+  updateDashboard,
+  deleteDashboard,
+  addDashboardItem,
+  removeDashboardItem,
+  reorderDashboardItems,
+  getDashboardChartData,
+} from "./actions/dashboards";

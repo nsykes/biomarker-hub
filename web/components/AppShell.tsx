@@ -6,12 +6,14 @@ import { UserButton } from "@neondatabase/auth/react";
 import { TabId, StoredFile } from "@/lib/types";
 import { FilesTab } from "./FilesTab";
 import { BiomarkersTab } from "./BiomarkersTab";
+import { DashboardsTab } from "./DashboardsTab";
 import { SettingsTab } from "./SettingsTab";
 import { ExtractionView } from "./ExtractionView";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "files", label: "Files" },
   { id: "biomarkers", label: "Biomarkers" },
+  { id: "dashboards", label: "Dashboards" },
   { id: "settings", label: "Settings" },
 ];
 
@@ -97,6 +99,7 @@ export function AppShell() {
           />
         )}
         {activeTab === "biomarkers" && <BiomarkersTab />}
+        {activeTab === "dashboards" && <DashboardsTab />}
         {activeTab === "settings" && <SettingsTab />}
       </main>
     </>

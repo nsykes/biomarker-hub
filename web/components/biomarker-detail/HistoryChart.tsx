@@ -19,9 +19,15 @@ import {
 
 interface ChartPoint {
   date: string;
+  timestamp: number;
   value: number | null;
   flag: string;
   label: string;
+}
+
+function formatTimestamp(ts: number): string {
+  const d = new Date(ts);
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
 function CustomDot(props: {
@@ -108,17 +114,30 @@ export function HistoryChart({
     );
   }
 
-  // Normalize values to canonical unit
-  const convertedPoints = numericPoints.map((h) => {
-    const c = convertToCanonical(data.slug, h.value!, h.unit);
-    return { point: h, value: c.value, unit: c.unit };
-  });
+  // Normalize values to canonical unit (filter out points without dates — can't place on time axis)
+  const convertedPoints = numericPoints
+    .filter((h) => h.collectionDate !== null)
+    .map((h) => {
+      const c = convertToCanonical(data.slug, h.value!, h.unit);
+      return { point: h, value: c.value, unit: c.unit };
+    });
+
+  if (convertedPoints.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-48 bg-[var(--color-surface-tertiary)] rounded-xl border border-dashed border-[var(--color-border)]">
+        <p className="text-sm text-[var(--color-text-tertiary)]">
+          No numeric values to chart
+        </p>
+      </div>
+    );
+  }
 
   const canonicalUnit =
     convertedPoints.find((c) => c.unit)?.unit || data.defaultUnit || "";
 
   const chartData: ChartPoint[] = convertedPoints.map(({ point, value }) => ({
     date: formatDate(point.collectionDate),
+    timestamp: new Date(point.collectionDate + "T00:00:00").getTime(),
     value,
     flag: point.flag,
     label: `${point.valueModifier ?? ""}${parseFloat(value.toFixed(2))} ${canonicalUnit}`.trim(),
@@ -154,12 +173,26 @@ export function HistoryChart({
     }
   }
 
+  // Time-proportional X-axis domain
+  const timestamps = chartData.map((p) => p.timestamp);
+  const tsMin = Math.min(...timestamps);
+  const tsMax = Math.max(...timestamps);
+  const DAY_MS = 86_400_000;
+  const xDomain: [number, number] =
+    tsMin === tsMax
+      ? [tsMin - 30 * DAY_MS, tsMax + 30 * DAY_MS]
+      : [tsMin, tsMax];
+
   return (
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F5" />
         <XAxis
-          dataKey="date"
+          dataKey="timestamp"
+          type="number"
+          scale="time"
+          domain={xDomain}
+          tickFormatter={formatTimestamp}
           tick={{ fontSize: 12, fill: "#AEAEB2" }}
           tickLine={false}
           axisLine={{ stroke: "#E5E5EA" }}

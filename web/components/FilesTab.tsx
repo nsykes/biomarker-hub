@@ -26,9 +26,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [collectionDateFrom, setCollectionDateFrom] = useState("");
   const [collectionDateTo, setCollectionDateTo] = useState("");
-  const [addedDateFrom, setAddedDateFrom] = useState("");
-  const [addedDateTo, setAddedDateTo] = useState("");
-  const [addedSort, setAddedSort] = useState<"none" | "desc" | "asc">("none");
+  const [reportSort, setReportSort] = useState<"none" | "desc" | "asc">("none");
 
   const loadFiles = useCallback(async () => {
     try {
@@ -78,26 +76,21 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
       if (sourceFilter !== "all" && (f.source || "") !== sourceFilter) return false;
       if (collectionDateFrom && (!f.collectionDate || f.collectionDate < collectionDateFrom)) return false;
       if (collectionDateTo && (!f.collectionDate || f.collectionDate > collectionDateTo)) return false;
-      if (addedDateFrom) {
-        const added = f.addedAt.slice(0, 10);
-        if (added < addedDateFrom) return false;
-      }
-      if (addedDateTo) {
-        const added = f.addedAt.slice(0, 10);
-        if (added > addedDateTo) return false;
-      }
       return true;
     });
-    if (addedSort !== "none") {
+    if (reportSort !== "none") {
       result.sort((a, b) => {
-        const cmp = a.addedAt.localeCompare(b.addedAt);
-        return addedSort === "asc" ? cmp : -cmp;
+        if (!a.collectionDate && !b.collectionDate) return 0;
+        if (!a.collectionDate) return 1;
+        if (!b.collectionDate) return -1;
+        const cmp = a.collectionDate.localeCompare(b.collectionDate);
+        return reportSort === "asc" ? cmp : -cmp;
       });
     }
     return result;
-  }, [files, typeFilter, labFilter, sourceFilter, collectionDateFrom, collectionDateTo, addedDateFrom, addedDateTo, addedSort]);
+  }, [files, typeFilter, labFilter, sourceFilter, collectionDateFrom, collectionDateTo, reportSort]);
 
-  const filtersActive = typeFilter !== "all" || labFilter !== "all" || sourceFilter !== "all" || collectionDateFrom || collectionDateTo || addedDateFrom || addedDateTo;
+  const filtersActive = typeFilter !== "all" || labFilter !== "all" || sourceFilter !== "all" || collectionDateFrom || collectionDateTo;
 
   const clearFilters = () => {
     setTypeFilter("all");
@@ -105,8 +98,6 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
     setSourceFilter("all");
     setCollectionDateFrom("");
     setCollectionDateTo("");
-    setAddedDateFrom("");
-    setAddedDateTo("");
   };
 
   if (loading) {
@@ -204,24 +195,6 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
               />
             </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Added</label>
-            <div className="flex items-center gap-1.5">
-              <input
-                type="date"
-                value={addedDateFrom}
-                onChange={(e) => setAddedDateFrom(e.target.value)}
-                className="input-base !py-1.5 !px-2 !rounded-lg !w-auto"
-              />
-              <span className="text-[var(--color-text-tertiary)] text-xs">to</span>
-              <input
-                type="date"
-                value={addedDateTo}
-                onChange={(e) => setAddedDateTo(e.target.value)}
-                className="input-base !py-1.5 !px-2 !rounded-lg !w-auto"
-              />
-            </div>
-          </div>
           {filtersActive && (
             <button
               onClick={clearFilters}
@@ -243,29 +216,28 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
             <table className="w-full text-left">
               <thead>
                 <tr className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wider bg-[var(--color-surface-tertiary)]">
-                  <th className="px-5 py-3 font-medium">Report</th>
+                  <th className="px-5 py-3 font-medium">
+                    <button
+                      onClick={() => setReportSort(prev => prev === "none" ? "desc" : prev === "desc" ? "asc" : "none")}
+                      className="inline-flex items-center gap-1 hover:text-[var(--color-text-secondary)] transition-colors"
+                    >
+                      Report
+                      {reportSort === "desc" && <span>↓</span>}
+                      {reportSort === "asc" && <span>↑</span>}
+                      {reportSort === "none" && <span className="text-[var(--color-text-tertiary)]/50">↕</span>}
+                    </button>
+                  </th>
                   <th className="px-5 py-3 font-medium">Type</th>
                   <th className="px-5 py-3 font-medium">Lab</th>
                   <th className="px-5 py-3 font-medium">Source</th>
                   <th className="px-5 py-3 font-medium">Biomarkers</th>
-                  <th className="px-5 py-3 font-medium">
-                    <button
-                      onClick={() => setAddedSort(prev => prev === "none" ? "desc" : prev === "desc" ? "asc" : "none")}
-                      className="inline-flex items-center gap-1 hover:text-[var(--color-text-secondary)] transition-colors"
-                    >
-                      Added
-                      {addedSort === "desc" && <span>↓</span>}
-                      {addedSort === "asc" && <span>↑</span>}
-                      {addedSort === "none" && <span className="text-[var(--color-text-tertiary)]/50">↕</span>}
-                    </button>
-                  </th>
                   <th className="px-5 py-3 font-medium w-10"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border-light)]">
                 {filteredFiles.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-[var(--color-text-tertiary)] text-sm">
+                    <td colSpan={6} className="px-5 py-12 text-center text-[var(--color-text-tertiary)] text-sm">
                       No files match filters
                     </td>
                   </tr>
@@ -301,9 +273,6 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
                       </td>
                       <td className="px-5 py-3.5 text-sm text-[var(--color-text-secondary)]">
                         {f.biomarkers.length}
-                      </td>
-                      <td className="px-5 py-3.5 text-sm text-[var(--color-text-tertiary)]">
-                        {new Date(f.addedAt).toLocaleDateString()}
                       </td>
                       <td className="px-5 py-3.5">
                         <button

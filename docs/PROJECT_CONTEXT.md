@@ -125,6 +125,7 @@ Each biomarker in the Biomarkers tab links to a dedicated detail page at `/bioma
 **Remaining work:**
 - Biomarker summary/explanation text (what it is, why it matters)
 - Link from history table rows back to the source report
+- **Time-proportional chart X-axis** — Currently data points are evenly spaced regardless of when they occurred. The X-axis should use a proper time scale so that the spacing between points reflects the actual time elapsed between collection dates (e.g., two tests a week apart should be much closer together than two tests a year apart).
 
 ### Extraction View Improvements (Implemented — 2026-02-23)
 
@@ -404,6 +405,10 @@ PDF filenames are meaningless to users. The UI now shows **collection date** and
 - **`getBiomarkerDetail` server action:** Now selects `reports.source` and maps it to history points.
 
 Filename is still stored in the DB and used in CSV exports for data lineage.
+
+**Remaining work:**
+- **Remove "Added" column** — The "Added" date (when the report was saved to the DB) is irrelevant to users. Remove it entirely.
+- **Sortable Report column** — The Report column (which shows collection date) should be clickable to sort all rows by collection date ascending/descending. Move the sort toggle functionality from the removed "Added" column to here. Consider also allowing sort by lab or source.
 
 ### Extraction Results: Group by Page, Not Category (Implemented — 2026-02-24)
 

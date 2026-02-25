@@ -107,6 +107,27 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
     setSavedFileId(null);
   }, []);
 
+  // Re-attach PDF to existing report (view mode with missing PDF)
+  const handleReUploadPdf = useCallback(
+    async (f: File) => {
+      if (!savedFileId) return;
+      setFile(f);
+      setCurrentPage(1);
+      try {
+        const res = await fetch(`/api/reports/${savedFileId}/pdf`, { method: "PUT", body: f });
+        if (!res.ok) {
+          const retry = await fetch(`/api/reports/${savedFileId}/pdf`, { method: "PUT", body: f });
+          if (!retry.ok) {
+            console.error("PDF re-upload failed after retry:", retry.status);
+          }
+        }
+      } catch (err) {
+        console.error("PDF re-upload failed:", err);
+      }
+    },
+    [savedFileId]
+  );
+
   const handleExtract = useCallback(
     async () => {
       if (!file) return;
@@ -160,7 +181,13 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
           });
           setSavedFileId(id);
           // Upload PDF to database
-          await fetch(`/api/reports/${id}/pdf`, { method: "PUT", body: file });
+          const uploadRes = await fetch(`/api/reports/${id}/pdf`, { method: "PUT", body: file });
+          if (!uploadRes.ok) {
+            const retry = await fetch(`/api/reports/${id}/pdf`, { method: "PUT", body: file });
+            if (!retry.ok) {
+              console.error("PDF upload failed after retry:", retry.status);
+            }
+          }
         } catch (saveErr) {
           console.error("Failed to auto-save:", saveErr);
         }
@@ -328,7 +355,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         <p className="text-sm text-center">
           PDF not stored. Re-upload the file to see the split-pane view.
         </p>
-        <UploadZone onFileSelect={handleFileSelect} currentFile={null} />
+        <UploadZone onFileSelect={handleReUploadPdf} currentFile={null} />
       </div>
     ) : file ? (
       <PdfViewer

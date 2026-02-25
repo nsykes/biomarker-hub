@@ -188,6 +188,56 @@ export async function saveFile(data: {
   return row.id;
 }
 
+export async function reextractReport(
+  id: string,
+  data: {
+    source: string | null;
+    labName: string | null;
+    collectionDate: string | null;
+    reportType: string | null;
+    biomarkers: Biomarker[];
+    meta: ExtractionMeta;
+  }
+): Promise<void> {
+  const userId = await requireUser();
+
+  // Verify ownership
+  const rows = await db
+    .select({ id: reports.id })
+    .from(reports)
+    .where(and(eq(reports.id, id), eq(reports.userId, userId)));
+  if (rows.length === 0) throw new Error("Unauthorized");
+
+  // Update report metadata
+  await db
+    .update(reports)
+    .set({
+      source: data.source,
+      labName: data.labName,
+      collectionDate: data.collectionDate,
+      reportType: data.reportType as
+        | "blood_panel"
+        | "dexa_scan"
+        | "other"
+        | null,
+      extractionModel: data.meta.model,
+      extractionTokens: data.meta.tokensUsed,
+      extractionDurationMs: data.meta.duration,
+    })
+    .where(eq(reports.id, id));
+
+  // Replace biomarkers
+  await db
+    .delete(biomarkerResults)
+    .where(eq(biomarkerResults.reportId, id));
+
+  if (data.biomarkers.length > 0) {
+    await db
+      .insert(biomarkerResults)
+      .values(data.biomarkers.map((b) => biomarkerToRow(id, b)));
+  }
+}
+
 export async function deleteFile(id: string): Promise<void> {
   const userId = await requireUser();
   await db

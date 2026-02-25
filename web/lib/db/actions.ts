@@ -7,6 +7,7 @@ export {
   getFile,
   saveFile,
   deleteFile,
+  reextractReport,
   updateFileBiomarkers,
   updateReportInfo,
 } from "./actions/reports";

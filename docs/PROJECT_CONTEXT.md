@@ -96,7 +96,6 @@ Neon Postgres is provisioned and schema is live (profiles, reports, biomarker_re
 
 Remaining work:
 - Enable trend queries across reports
-- Support re-extraction with improved prompts
 
 ### MCP Server
 
@@ -126,6 +125,12 @@ Each biomarker in the Biomarkers tab links to a dedicated detail page at `/bioma
 - Biomarker summary/explanation text (what it is, why it matters)
 - Link from history table rows back to the source report
 - **Time-proportional chart X-axis** — Currently data points are evenly spaced regardless of when they occurred. The X-axis should use a proper time scale so that the spacing between points reflects the actual time elapsed between collection dates (e.g., two tests a week apart should be much closer together than two tests a year apart).
+
+### Re-extraction Updates Existing Report (Implemented — 2026-02-25)
+
+Previously, clicking "Re-attempt Extraction" on an existing report always created a new report row, producing duplicate biomarker data (visible as two identical data points on charts). Now re-extraction updates the existing report in-place via `reextractReport()` server action — it updates report metadata, deletes old biomarker_results, and inserts the new ones. The `savedFileId` is checked in `handleExtract`: if set (viewing existing report), calls `reextractReport`; if null (new extraction), calls `saveFile` as before.
+
+**New server action:** `reextractReport(id, data)` in `lib/db/actions/reports.ts` — verifies ownership, updates report fields, replaces biomarkers atomically.
 
 ### Extraction View Improvements (Implemented — 2026-02-23)
 
@@ -459,6 +464,22 @@ Region stripping uses a sorted list of all region names (longest first to avoid 
 **Prompt update:** DEXA examples now explicitly show metricName should NOT include the region prefix (e.g., rawName "Android Fat %" → metricName "Fat %", region "Android").
 
 **Files changed:** `web/lib/biomarker-registry.ts`, `web/app/api/extract/route.ts`, `web/lib/prompt.ts`
+
+### Custom Dashboards (BI-Style Multi-Chart Views)
+
+Users currently have to click into each biomarker detail page one at a time. For monitoring a health domain (e.g., heart health), this is tedious. The app should support user-created dashboards that show multiple biomarker charts on a single page.
+
+**Concept:**
+- A dashboard is a named collection of biomarker charts (e.g., "Heart Health" with Total Cholesterol, LDL, HDL, Triglycerides, ApoB, Lp(a), Homocysteine)
+- Single page view with all selected charts rendered together — no clicking in and out
+- Users create/edit dashboards: pick a name, select which biomarkers to include
+- Could offer preset templates by category (Heart, Metabolic, Thyroid, etc.) as starting points
+- Each chart is a mini version of the existing biomarker detail chart (trend line + reference range zone)
+
+**Open questions:**
+- Layout: grid of small charts vs. vertically stacked full-width charts?
+- Should dashboards be shareable or exportable?
+- Should category groupings from the Biomarkers tab auto-generate default dashboards?
 
 ### Other Future Items
 

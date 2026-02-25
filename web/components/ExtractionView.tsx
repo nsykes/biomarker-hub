@@ -16,7 +16,7 @@ import {
 } from "@/lib/types";
 import { buildHighlightTarget } from "@/lib/highlight";
 import { formatDate } from "@/lib/utils";
-import { saveFile, getSettingsSafe, updateFileBiomarkers, updateReportInfo, reconcileReferenceRanges } from "@/lib/db/actions";
+import { saveFile, reextractReport, getSettingsSafe, updateFileBiomarkers, updateReportInfo, reconcileReferenceRanges } from "@/lib/db/actions";
 import { RangeConflictModal } from "@/components/RangeConflictModal";
 import { UndoToast } from "@/components/UndoToast";
 import { DEFAULT_MODEL, UNDO_TOAST_DURATION_MS } from "@/lib/constants";
@@ -170,16 +170,26 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
 
         // Auto-save to database
         try {
-          const id = await saveFile({
-            filename: file.name,
+          const extractionData = {
             source: data.extraction.reportInfo.source || null,
             labName: data.extraction.reportInfo.labName || null,
             collectionDate: data.extraction.reportInfo.collectionDate || null,
             reportType: data.extraction.reportInfo.reportType || null,
             biomarkers: data.extraction.biomarkers,
             meta: data.meta,
-          });
-          setSavedFileId(id);
+          };
+
+          let id: string;
+          if (savedFileId) {
+            // Re-extraction: update existing report in-place
+            await reextractReport(savedFileId, extractionData);
+            id = savedFileId;
+          } else {
+            // New extraction: create a new report
+            id = await saveFile({ filename: file.name, ...extractionData });
+            setSavedFileId(id);
+          }
+
           // Upload PDF to database
           const uploadRes = await fetch(`/api/reports/${id}/pdf`, { method: "PUT", body: file });
           if (!uploadRes.ok) {
@@ -218,7 +228,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         setIsExtracting(false);
       }
     },
-    [file, apiKey, defaultModel]
+    [file, apiKey, defaultModel, savedFileId]
   );
 
   const handleUpdateReportInfo = useCallback(

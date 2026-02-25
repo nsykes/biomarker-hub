@@ -151,12 +151,14 @@ export function HistoryChart({
   let yMin = min - padding;
   let yMax = max + padding;
 
-  // Extend Y-axis to include reference range if present
+  // Extend Y-axis to always include reference range bounds
   if (data.referenceRange) {
     if (data.referenceRange.rangeLow !== null) {
       yMin = Math.min(yMin, data.referenceRange.rangeLow - padding);
+      yMax = Math.max(yMax, data.referenceRange.rangeLow + padding);
     }
     if (data.referenceRange.rangeHigh !== null) {
+      yMin = Math.min(yMin, data.referenceRange.rangeHigh - padding);
       yMax = Math.max(yMax, data.referenceRange.rangeHigh + padding);
     }
   }
@@ -172,6 +174,10 @@ export function HistoryChart({
       yMax = Math.max(yMax, c.value + padding);
     }
   }
+
+  // Smart tick formatting: choose decimal places based on axis range
+  const tickStep = (yMax - yMin) / 5;
+  const yDecimals = tickStep >= 50 ? 0 : tickStep >= 0.5 ? 1 : tickStep >= 0.05 ? 2 : 3;
 
   // Time-proportional X-axis domain
   const timestamps = chartData.map((p) => p.timestamp);
@@ -202,7 +208,8 @@ export function HistoryChart({
           tick={{ fontSize: 12, fill: "#AEAEB2" }}
           tickLine={false}
           axisLine={{ stroke: "#E5E5EA" }}
-          width={50}
+          tickFormatter={(v: number) => v.toFixed(yDecimals)}
+          width={60}
         />
         <Tooltip content={<CustomTooltip />} />
         {data.referenceRange && buildRangeZones(data.referenceRange, yMin, yMax)}

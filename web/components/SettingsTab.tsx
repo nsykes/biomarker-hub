@@ -126,7 +126,7 @@ export function SettingsTab() {
                   setSaveError(null);
                 }}
                 placeholder="sk-or-v1-..."
-                className="input-base pr-16"
+                className="input-base !pr-16"
               />
               <button
                 onClick={() => setShowKey(!showKey)}

@@ -46,6 +46,7 @@ export function BiomarkersTab() {
           source: file.source,
           referenceRangeLow: b.referenceRangeLow,
           referenceRangeHigh: b.referenceRangeHigh,
+          page: b.page,
         });
         map.set(b.canonicalSlug, existing);
       }

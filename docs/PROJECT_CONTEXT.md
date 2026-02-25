@@ -123,8 +123,14 @@ Each biomarker in the Biomarkers tab links to a dedicated detail page at `/bioma
 
 **Remaining work:**
 - Biomarker summary/explanation text (what it is, why it matters)
-- Link from history table rows back to the source report
 - **Time-proportional chart X-axis** — Currently data points are evenly spaced regardless of when they occurred. The X-axis should use a proper time scale so that the spacing between points reflects the actual time elapsed between collection dates (e.g., two tests a week apart should be much closer together than two tests a year apart).
+
+### PDF Preview from History Table (Implemented — 2026-02-25)
+
+Clicking a row in the biomarker detail history table opens a modal with the source PDF, navigated to the page where that biomarker appears. The modal fetches the PDF on demand from `/api/reports/[id]/pdf`, shows a loading spinner while fetching, and renders it via `PdfViewer` (no highlight, just the page). Close via X button, backdrop click, or Escape key. The `page` field was added to `BiomarkerHistoryPoint` and the `getBiomarkerDetail()` query.
+
+**New file:** `components/PdfPreviewModal.tsx`
+**Files changed:** `lib/types.ts`, `lib/db/actions/biomarkers.ts`, `components/biomarker-detail/HistoryTable.tsx`, `components/BiomarkerDetailPage.tsx`, `components/BiomarkersTab.tsx`
 
 ### Live Chart Updates on Reference Range Edit (Implemented — 2026-02-25)
 

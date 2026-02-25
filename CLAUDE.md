@@ -20,6 +20,7 @@ Monorepo for biomarker extraction and health data tools.
 - `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers, account)
 - `web/components/biomarker-detail/` — BiomarkerDetailPage subcomponents (HistoryChart, HistoryTable, ReferenceRangeSection, helpers)
 - `web/components/BiomarkerCombobox.tsx` — Registry-backed biomarker search/select for adding biomarkers after extraction
+- `web/components/PdfPreviewModal.tsx` — Modal for previewing source PDF from history table rows
 - `web/components/RangeConflictModal.tsx` — Modal for resolving reference range conflicts between PDF and stored ranges
 - `web/components/DeleteAccountModal.tsx` — Confirmation modal for account deletion (type "DELETE" to confirm)
 - `web/components/Spinner.tsx` — Shared loading spinner (Spinner, PageSpinner)

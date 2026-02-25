@@ -95,6 +95,7 @@ export interface BiomarkerHistoryPoint {
   source: string | null;
   referenceRangeLow: number | null;
   referenceRangeHigh: number | null;
+  page: number | null;
 }
 
 export interface ReferenceRange {

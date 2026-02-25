@@ -10,10 +10,12 @@ export function HistoryTable({
   history,
   slug,
   defaultUnit,
+  onViewPdf,
 }: {
   history: BiomarkerHistoryPoint[];
   slug: string;
   defaultUnit: string | null;
+  onViewPdf: (reportId: string, page: number | null) => void;
 }) {
   // Show newest first in the table
   const sorted = [...history].reverse();
@@ -40,7 +42,7 @@ export function HistoryTable({
             const converted = c?.converted ?? false;
 
             return (
-              <tr key={i} className="border-t border-[var(--color-border-light)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-light)] transition-colors duration-150">
+              <tr key={i} onClick={() => onViewPdf(h.reportId, h.page)} className="border-t border-[var(--color-border-light)] text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-light)] transition-colors duration-150 cursor-pointer">
                 <td className="py-2.5 px-4">
                   {formatDate(h.collectionDate)}
                 </td>

@@ -67,8 +67,10 @@ Return a JSON object with this exact structure:
     - rawName: "Right Arm Lean Tissue Mass" → metricName: "Lean Tissue Mass", region: "Right Arm"
     - Total body metrics: region: null (e.g. rawName: "Total Body Fat %" → metricName: "Fat %", region: null)
     - VAT Mass and VAT Volume are separate metrics
-    - Skip marketing/cover pages
-    - Skip regional trend report pages (pages with "Change vs. Baseline" tables)
+    - Skip marketing/cover pages only
+    - **DO extract** all regional detail pages (Fat %, Lean %, Lean Tissue Mass, BMC, etc. broken down by Arms, Legs, Trunk, Android, Gynoid, etc.)
+    - **DO extract** trend pages that show current absolute values (e.g. Lean % per region)
+    - Only skip "Change vs. Baseline" delta columns (percentage change values) — still extract the absolute values from those pages
 
 12. **Metric name normalization:** Use common clinical names. Always expand abbreviations to full clinical names:
     - "CHOLESTEROL, TOTAL" → "Total Cholesterol"

@@ -63,6 +63,7 @@ const BODY_COMP_METRICS = [
   { groupSlug: "fat-tissue-mass", displayName: "Fat Tissue Mass", fullName: "Fat Tissue Mass", unit: "lbs", aliases: ["FAT TISSUE MASS", "FAT MASS", "FAT TISSUE"] },
   { groupSlug: "lean-tissue-mass", displayName: "Lean Tissue Mass", fullName: "Lean Tissue Mass", unit: "lbs", aliases: ["LEAN TISSUE MASS", "LEAN MASS", "LEAN TISSUE"] },
   { groupSlug: "bmc", displayName: "BMC", fullName: "Bone Mineral Content", unit: "lbs", aliases: ["BMC", "BONE MINERAL CONTENT"] },
+  { groupSlug: "lean-pct", displayName: "Lean %", fullName: "Lean %", unit: "%", aliases: ["LEAN %", "LEAN PERCENTAGE", "% LEAN"] },
 ] as const;
 
 function generateBodyCompEntries(): CanonicalBiomarker[] {
@@ -964,7 +965,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     aliases: ["VAT VOLUME", "VISCERAL ADIPOSE TISSUE VOLUME"],
     region: null, regionGroupSlug: null, specimenType: "body_composition",
   },
-  // ─── Body Composition — regional (50 generated) ───
+  // ─── Body Composition — regional (60 generated: 6 metrics × 10 regions) ───
   ...generateBodyCompEntries(),
 
   // ─── Bone (10 generated: 8 BMD + 1 T-Score + 1 Z-Score) ───

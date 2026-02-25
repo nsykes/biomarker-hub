@@ -430,6 +430,30 @@ Deleting a biomarker during extraction review now shows a toast with an "Undo" b
 **Files changed:** `components/ExtractionView.tsx`, `lib/constants.ts`
 **New files:** `components/UndoToast.tsx`
 
+### DEXA Biomarker Matching Fix (Implemented — 2026-02-24)
+
+BodySpec DEXA PDFs extract ~40+ biomarkers, but most showed as "Unmatched" due to two problems:
+
+1. **Region-prefixed names failed alias lookup.** The LLM extracted rawNames like "Android Fat %" or "Gynoid Lean Mass". The `matchBiomarker` function normalized to "ANDROID FAT %" but the alias map only had "FAT %" — no match.
+
+2. **Missing registry entries.** "Lean %" wasn't a metric (only Fat % existed), and Bone regions only covered Total Body + L1-L4 + femurs — missing Head, Arms, Legs, Trunk, Ribs, Spine, Pelvis.
+
+**Fix — Registry additions:**
+- Added `Lean %` to `BODY_COMP_METRICS` (generates 10 new regional entries)
+- Added 7 bone regions (Head, Arms, Legs, Trunk, Ribs, Spine, Pelvis) to `BONE_REGIONS` (generates 21 new entries for BMD/T-Score/Z-Score)
+
+**Fix — `matchBiomarker` fallback chain:** When direct alias lookup fails, the function now tries:
+1. `aliasMap.get(normalize(rawName))` — existing behavior
+2. Strip region prefix from rawName, retry — only for `body_composition` specimenType
+3. `aliasMap.get(normalize(metricName))` — try LLM-normalized name (new optional 4th parameter)
+4. Strip region prefix from metricName, retry — only for `body_composition`
+
+Region stripping uses a sorted list of all region names (longest first to avoid partial matches like "Left" before "Left Femur Neck"). Gated to `body_composition` specimenType to avoid affecting blood/urine matching.
+
+**Prompt update:** DEXA examples now explicitly show metricName should NOT include the region prefix (e.g., rawName "Android Fat %" → metricName "Fat %", region "Android").
+
+**Files changed:** `web/lib/biomarker-registry.ts`, `web/app/api/extract/route.ts`, `web/lib/prompt.ts`
+
 ### Other Future Items
 
 - Batch PDF processing (upload multiple files at once)

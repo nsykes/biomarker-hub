@@ -255,7 +255,8 @@ export async function POST(request: NextRequest) {
             const canonical = matchBiomarker(
               b.rawName,
               specimen as "blood" | "urine" | "body_composition",
-              b.region
+              b.region,
+              b.metricName
             );
             return {
               ...b,

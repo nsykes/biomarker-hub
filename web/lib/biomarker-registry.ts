@@ -63,6 +63,7 @@ const BODY_COMP_METRICS = [
   { groupSlug: "fat-tissue-mass", displayName: "Fat Tissue Mass", fullName: "Fat Tissue Mass", unit: "lbs", aliases: ["FAT TISSUE MASS", "FAT MASS", "FAT TISSUE"] },
   { groupSlug: "lean-tissue-mass", displayName: "Lean Tissue Mass", fullName: "Lean Tissue Mass", unit: "lbs", aliases: ["LEAN TISSUE MASS", "LEAN MASS", "LEAN TISSUE"] },
   { groupSlug: "bmc", displayName: "BMC", fullName: "Bone Mineral Content", unit: "lbs", aliases: ["BMC", "BONE MINERAL CONTENT"] },
+  { groupSlug: "lean-pct", displayName: "Lean %", fullName: "Lean %", unit: "%", aliases: ["LEAN %", "LEAN PERCENTAGE", "% LEAN"] },
 ] as const;
 
 function generateBodyCompEntries(): CanonicalBiomarker[] {
@@ -95,6 +96,13 @@ const BONE_REGIONS = [
   { name: "Left Femur Total", slugSuffix: "left-femur-total" },
   { name: "Right Femur Neck", slugSuffix: "right-femur-neck" },
   { name: "Right Femur Total", slugSuffix: "right-femur-total" },
+  { name: "Head", slugSuffix: "head" },
+  { name: "Arms", slugSuffix: "arms" },
+  { name: "Legs", slugSuffix: "legs" },
+  { name: "Trunk", slugSuffix: "trunk" },
+  { name: "Ribs", slugSuffix: "ribs" },
+  { name: "Spine", slugSuffix: "spine" },
+  { name: "Pelvis", slugSuffix: "pelvis" },
 ] as const;
 
 const BONE_METRICS = [
@@ -993,30 +1001,41 @@ for (const entry of REGISTRY) {
   }
 }
 
+// ── Region prefix stripping (for DEXA matching) ─
+
+const ALL_REGION_PREFIXES = [
+  ...BODY_COMP_REGIONS.map((r) => r.name),
+  ...BONE_REGIONS.map((r) => r.name),
+]
+  .filter((v, i, a) => a.indexOf(v) === i) // deduplicate
+  .map((name) => normalize(name))
+  .sort((a, b) => b.length - a.length); // longest first to avoid partial matches
+
+function stripRegionPrefix(normalizedKey: string): string | null {
+  for (const prefix of ALL_REGION_PREFIXES) {
+    if (normalizedKey.startsWith(prefix + " ")) {
+      return normalizedKey.slice(prefix.length + 1);
+    }
+  }
+  return null;
+}
+
 // ── Match function ──────────────────────────────
 
-export function matchBiomarker(
-  rawName: string,
+function disambiguate(
+  candidates: CanonicalBiomarker[],
   specimenType: "blood" | "urine" | "body_composition" | null,
-  region: string | null
+  normalizedRegion: string | null
 ): CanonicalBiomarker | null {
-  const key = normalize(rawName);
-  const candidates = aliasMap.get(key);
-  if (!candidates || candidates.length === 0) return null;
+  if (candidates.length === 0) return null;
   if (candidates.length === 1) return candidates[0];
 
-  // Normalize "Total Body" region to null (prompt instructs region: null for total body)
-  const normalizedRegion =
-    region && region.toUpperCase() === "TOTAL BODY" ? null : region;
-
-  // Disambiguate by specimenType
   if (specimenType) {
     const bySpecimen = candidates.filter(
       (c) => c.specimenType === specimenType
     );
     if (bySpecimen.length === 1) return bySpecimen[0];
 
-    // Further disambiguate by region (DEXA entries)
     if (bySpecimen.length > 1) {
       const byRegion = bySpecimen.filter(
         (c) => c.region === normalizedRegion
@@ -1027,9 +1046,43 @@ export function matchBiomarker(
     if (bySpecimen.length > 0) return bySpecimen[0];
   }
 
-  // Disambiguate by region alone
   const byRegion = candidates.filter((c) => c.region === normalizedRegion);
   if (byRegion.length === 1) return byRegion[0];
 
   return candidates[0];
+}
+
+export function matchBiomarker(
+  rawName: string,
+  specimenType: "blood" | "urine" | "body_composition" | null,
+  region: string | null,
+  metricName?: string
+): CanonicalBiomarker | null {
+  const normalizedRegion =
+    region && region.toUpperCase() === "TOTAL BODY" ? null : region;
+
+  // Build ordered list of lookup keys to try
+  const keysToTry: string[] = [normalize(rawName)];
+
+  if (specimenType === "body_composition") {
+    const stripped = stripRegionPrefix(normalize(rawName));
+    if (stripped) keysToTry.push(stripped);
+  }
+
+  if (metricName) {
+    keysToTry.push(normalize(metricName));
+    if (specimenType === "body_composition") {
+      const stripped = stripRegionPrefix(normalize(metricName));
+      if (stripped) keysToTry.push(stripped);
+    }
+  }
+
+  for (const key of keysToTry) {
+    const candidates = aliasMap.get(key);
+    if (!candidates || candidates.length === 0) continue;
+    const result = disambiguate(candidates, specimenType, normalizedRegion);
+    if (result) return result;
+  }
+
+  return null;
 }

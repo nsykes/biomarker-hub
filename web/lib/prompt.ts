@@ -59,10 +59,13 @@ Return a JSON object with this exact structure:
     - Insulin → "Metabolic" (group with Glucose, HbA1c)
     - Leptin, Cortisol → "Endocrinology"
 
-11. **DEXA scans:** Use region field for body-region-specific metrics. Examples:
-    - "Arms Fat Percentage" with region: "Arms"
-    - "Right Arm Lean Mass" with region: "Right Arm"
-    - Total body metrics: region: null
+11. **DEXA scans:** Use region field for body-region-specific metrics.
+    - **metricName must NOT include the region prefix** — region goes in the region field only.
+    - rawName: "Android Fat %" → metricName: "Fat %", region: "Android"
+    - rawName: "Head BMD" → metricName: "BMD", region: "Head"
+    - rawName: "Right Arm Lean Tissue Mass" → metricName: "Lean Tissue Mass", region: "Right Arm"
+    - rawName: "Arms Lean %" → metricName: "Lean %", region: "Arms"
+    - Total body metrics: region: null (e.g. rawName: "Total Body Fat %" → metricName: "Fat %", region: null)
     - VAT Mass and VAT Volume are separate metrics
     - Skip marketing/cover pages
     - Skip regional trend report pages (pages with "Change vs. Baseline" tables)

@@ -8,9 +8,7 @@ export default async function AuthPage({
   const { path } = await params;
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--color-surface-secondary)]">
-      <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-6 tracking-tight">
-        Biomarker Extract
-      </h1>
+      <img src="/logo.svg" alt="Biomarker Hub" className="h-8 mb-6" />
       <AuthView
         path={path}
         classNames={{

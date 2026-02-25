@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { UserButton } from "@neondatabase/auth/react";
 import { TabId, StoredFile } from "@/lib/types";
@@ -26,6 +26,13 @@ export function AppShell() {
       : "files";
 
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+
+  // Clear ?tab= from URL after reading it so a refresh always lands on Files
+  useEffect(() => {
+    if (tabParam) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
   const [extractionMode, setExtractionMode] = useState<
     | { type: "new" }
     | { type: "view"; file: StoredFile }
@@ -57,9 +64,7 @@ export function AppShell() {
     <>
       {/* Header — frosted glass */}
       <header className="flex items-center gap-6 px-6 py-3 border-b border-[var(--color-border-light)] bg-white/80 backdrop-blur-lg flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-        <h1 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">
-          Biomarker Extract
-        </h1>
+        <img src="/logo.svg" alt="Biomarker Hub" className="h-8" />
         <nav className="flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5">
           {TABS.map((tab) => (
             <button

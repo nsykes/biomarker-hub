@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Biomarker Extract",
-  description: "Extract biomarker data from lab report PDFs",
+  title: "Biomarker Hub",
+  description: "Track and visualize your biomarker data from lab report PDFs",
 };
 
 export default function RootLayout({

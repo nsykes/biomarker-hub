@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 56" role="img" aria-labelledby="c4i-title c4i-desc">
+  <title id="c4i-title">Biomarker Hub Logo</title>
+  <desc id="c4i-desc">A pulse wave icon with inline Biomarker Hub wordmark</desc>
+  <g id="icon" transform="translate(4, 4)">
+    <path d="M4 32 Q16 32 22 24 T36 8 Q42 0 48 16 T60 32" fill="none" stroke="#0A84FF" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+    <circle cx="36" cy="8" r="7" fill="#0A84FF"/>
+    <circle cx="36" cy="8" r="3" fill="white"/>
+    <line x1="4" y1="32" x2="60" y2="32" stroke="#0A84FF" stroke-width="1" opacity="0.15"/>
+  </g>
+  <g id="wordmark" transform="translate(74, 0)">
+    <text x="0" y="36" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="600" fill="#1C1C1E" letter-spacing="-0.5">Biomarker</text>
+    <text x="122" y="36" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="400" fill="#0A84FF" letter-spacing="-0.5">Hub</text>
+  </g>
+</svg>

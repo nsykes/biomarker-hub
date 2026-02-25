@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" role="img" aria-labelledby="c3-title c3-desc">
+  <title id="c3-title">Biomarker Hub Logo</title>
+  <desc id="c3-desc">A reference range indicator icon with the Biomarker Hub wordmark</desc>
+  <!-- Concept 3: "The Range" — A value plotted on a reference range bar, core UX metaphor -->
+  <g id="icon" transform="translate(12, 16)">
+    <!-- Range bar background -->
+    <rect x="8" y="20" width="48" height="8" rx="4" fill="#0A84FF" opacity="0.1"/>
+    <!-- Normal range zone -->
+    <rect x="18" y="20" width="28" height="8" rx="4" fill="#0A84FF" opacity="0.25"/>
+    <!-- Tick marks -->
+    <line x1="18" y1="16" x2="18" y2="32" stroke="#0A84FF" stroke-width="1.5" opacity="0.3"/>
+    <line x1="46" y1="16" x2="46" y2="32" stroke="#0A84FF" stroke-width="1.5" opacity="0.3"/>
+    <!-- Data point -->
+    <circle cx="34" cy="24" r="7" fill="#0A84FF"/>
+    <circle cx="34" cy="24" r="3" fill="white"/>
+  </g>
+  <g id="wordmark" transform="translate(82, 0)">
+    <text x="0" y="42" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="600" fill="#1C1C1E" letter-spacing="-0.5">Biomarker</text>
+    <text x="0" y="62" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="400" fill="#0A84FF" letter-spacing="3">HUB</text>
+  </g>
+</svg>

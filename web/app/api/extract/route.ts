@@ -30,7 +30,7 @@ async function extractChunk(
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "X-Title": "Biomarker Extract",
+      "X-Title": "Biomarker Hub",
     },
     body: JSON.stringify({
       model,

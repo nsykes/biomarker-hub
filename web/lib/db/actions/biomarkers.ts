@@ -56,6 +56,7 @@ export async function getBiomarkerDetail(
         reportId: biomarkerResults.reportId,
         filename: reports.filename,
         labName: reports.labName,
+        source: reports.source,
         referenceRangeLow: biomarkerResults.referenceRangeLow,
         referenceRangeHigh: biomarkerResults.referenceRangeHigh,
       })
@@ -81,6 +82,7 @@ export async function getBiomarkerDetail(
     reportId: r.reportId,
     filename: r.filename,
     labName: r.labName,
+    source: r.source,
     referenceRangeLow:
       r.referenceRangeLow !== null ? Number(r.referenceRangeLow) : null,
     referenceRangeHigh:

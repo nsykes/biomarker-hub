@@ -62,12 +62,7 @@ export function HistoryTable({
                   <FlagBadge flag={h.flag} />
                 </td>
                 <td className="py-2.5 px-4 truncate max-w-[250px]">
-                  <span>{h.filename}</span>
-                  {h.labName && (
-                    <span className="text-[var(--color-text-tertiary)] ml-1">
-                      ({h.labName})
-                    </span>
-                  )}
+                  {h.labName || h.source || "\u2014"}
                 </td>
               </tr>
             );

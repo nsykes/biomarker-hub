@@ -95,7 +95,7 @@ export function ReferenceRangeSection({ data, slug, defaultUnit }: ReferenceRang
       return {
         low: low ? parseFloat(low.value.toFixed(2)) : null,
         high: high ? parseFloat(high.value.toFixed(2)) : null,
-        filename: h.filename,
+        source: h.source,
         labName: h.labName,
       };
     });
@@ -193,7 +193,7 @@ export function ReferenceRangeSection({ data, slug, defaultUnit }: ReferenceRang
               <div key={i} className="text-xs text-[var(--color-text-secondary)] flex gap-3 items-center pl-3 border-l-2 border-[var(--color-primary)] py-0.5">
                 <span className="font-medium">{formatRange(r.low, r.high)}</span>
                 <span className="text-[var(--color-text-tertiary)]">
-                  {r.labName || r.filename}
+                  {r.labName || r.source}
                 </span>
               </div>
             ))}

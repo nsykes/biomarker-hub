@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { StoredFile } from "@/lib/types";
 import { getFiles, deleteFile } from "@/lib/db/actions";
+import { formatDate } from "@/lib/utils";
 import { PageSpinner } from "./Spinner";
 
 interface FilesTabProps {
@@ -215,10 +216,8 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
             <table className="w-full text-left">
               <thead>
                 <tr className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wider bg-[var(--color-surface-tertiary)]">
-                  <th className="px-5 py-3 font-medium">Filename</th>
+                  <th className="px-5 py-3 font-medium">Report</th>
                   <th className="px-5 py-3 font-medium">Type</th>
-                  <th className="px-5 py-3 font-medium">Lab</th>
-                  <th className="px-5 py-3 font-medium">Collection Date</th>
                   <th className="px-5 py-3 font-medium">Biomarkers</th>
                   <th className="px-5 py-3 font-medium">Added</th>
                   <th className="px-5 py-3 font-medium w-10"></th>
@@ -227,7 +226,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
               <tbody className="divide-y divide-[var(--color-border-light)]">
                 {filteredFiles.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-[var(--color-text-tertiary)] text-sm">
+                    <td colSpan={5} className="px-5 py-12 text-center text-[var(--color-text-tertiary)] text-sm">
                       No files match filters
                     </td>
                   </tr>
@@ -245,21 +244,22 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
                           <svg className="w-4 h-4 text-[var(--color-text-tertiary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                           </svg>
-                          <span className="text-sm font-medium text-[var(--color-text-primary)] truncate max-w-xs">
-                            {f.filename}
-                          </span>
+                          <div className="min-w-0">
+                            <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                              {f.collectionDate ? formatDate(f.collectionDate) : "No date"}
+                            </span>
+                            {(f.labName || f.source) && (
+                              <p className="text-xs text-[var(--color-text-tertiary)] truncate max-w-xs">
+                                {f.labName || f.source}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
                           {badge.label}
                         </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-sm text-[var(--color-text-secondary)]">
-                        {f.labName || f.source || "\u2014"}
-                      </td>
-                      <td className="px-5 py-3.5 text-sm text-[var(--color-text-secondary)]">
-                        {f.collectionDate || "\u2014"}
                       </td>
                       <td className="px-5 py-3.5 text-sm text-[var(--color-text-secondary)]">
                         {f.biomarkers.length}

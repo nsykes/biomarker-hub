@@ -334,8 +334,9 @@ Large PDFs (17+ pages, 150+ biomarkers) caused 504 gateway timeouts on Vercel be
 **Solution:** PDFs exceeding `CHUNK_PAGE_THRESHOLD` (8 pages) are split into chunks of `CHUNK_SIZE` (6 pages) using `pdf-lib`. Each chunk is extracted in parallel via `Promise.all()`, then results are merged:
 - `reportInfo` taken from the first chunk (page 1 has patient/lab info)
 - Biomarker page numbers adjusted by chunk offset to preserve correct PDF page references
-- Lightweight dedup by `rawName|value` handles page-boundary overlaps
 - Token usage aggregated across all chunks
+
+**Post-extraction dedup (2026-02-24):** After slug matching but before UUID assignment, a universal dedup pass runs on ALL extractions (not just chunked). For biomarkers with a `canonicalSlug`, dedup is by slug alone — same biomarker in a single report = duplicate, regardless of rawName or value rounding. For unmatched biomarkers (null slug), falls back to `rawName|value` key. First occurrence (lowest page number) wins. This handles summary/appendix pages that repeat earlier results with different names (e.g., "EPA+DPA+DHA" on page 8 vs "Omega-3 Index (EPA+DPA+DHA)" on page 14).
 
 A `FETCH_TIMEOUT_MS` (240s) `AbortController` wraps all fetch calls as a safety net before Vercel kills the function. `maxDuration` is set to 300s to use full Vercel Pro headroom. Small PDFs (≤8 pages) use the single-call path unchanged.
 
@@ -389,6 +390,20 @@ Beyond single-report flags (high/low), the app could surface when a biomarker is
 - Significant jumps between consecutive readings
 
 This is a nice-to-have that depends on multi-file support and unit normalization being in place first.
+
+### De-emphasize File Name, Show Report Metadata Instead (Implemented — 2026-02-24)
+
+PDF filenames are meaningless to users. The UI now shows **collection date** and **lab/source** as the primary report identifier everywhere instead of filename.
+
+**Changes:**
+- **FilesTab:** Replaced Filename + Lab + Collection Date columns with a single "Report" column showing formatted date (bold) + lab/source as secondary text. Net -2 columns.
+- **HistoryTable (biomarker detail):** Source column shows `labName || source || "—"` instead of filename.
+- **ReferenceRangeSection:** Lab-reported ranges show `labName || source` instead of `labName || filename`.
+- **ExtractionView header:** Shows formatted collection date + lab/source when viewing a saved report. Falls back to filename if no date.
+- **`BiomarkerHistoryPoint` type:** Added `source: string | null` field.
+- **`getBiomarkerDetail` server action:** Now selects `reports.source` and maps it to history points.
+
+Filename is still stored in the DB and used in CSV exports for data lineage.
 
 ### Extraction Results: Group by Page, Not Category (Implemented — 2026-02-24)
 

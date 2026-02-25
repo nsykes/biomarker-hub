@@ -15,6 +15,7 @@ import {
   ReferenceRangeConflict,
 } from "@/lib/types";
 import { buildHighlightTarget } from "@/lib/highlight";
+import { formatDate } from "@/lib/utils";
 import { saveFile, getSettingsSafe, updateFileBiomarkers, updateReportInfo, reconcileReferenceRanges } from "@/lib/db/actions";
 import { RangeConflictModal } from "@/components/RangeConflictModal";
 import { UndoToast } from "@/components/UndoToast";
@@ -379,8 +380,17 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         </button>
         <div className="w-px h-5 bg-[var(--color-border)]" />
         <h1 className="text-lg font-bold text-[var(--color-text-primary)]">
-          {mode.type === "view" ? mode.file.filename : "New Extraction"}
+          {mode.type === "view"
+            ? mode.file.collectionDate
+              ? formatDate(mode.file.collectionDate)
+              : mode.file.filename
+            : "New Extraction"}
         </h1>
+        {mode.type === "view" && mode.file.collectionDate && (mode.file.labName || mode.file.source) && (
+          <span className="text-sm text-[var(--color-text-tertiary)]">
+            {mode.file.labName || mode.file.source}
+          </span>
+        )}
         {file && mode.type === "new" && (
           <UploadZone onFileSelect={handleFileSelect} currentFile={file} />
         )}

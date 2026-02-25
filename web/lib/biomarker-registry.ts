@@ -656,7 +656,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
   {
     slug: "epa-dpa-dha", displayName: "EPA+DPA+DHA", fullName: "Eicosapentaenoic + Docosapentaenoic + Docosahexaenoic Acid",
     category: "Fatty Acids", defaultUnit: "%",
-    aliases: ["EPA+DPA+DHA", "EPA + DPA + DHA"],
+    aliases: ["EPA+DPA+DHA", "EPA + DPA + DHA", "OMEGA-3 INDEX (EPA+DPA+DHA)", "OMEGA-3 INDEX", "OMEGA 3 INDEX"],
     region: null, regionGroupSlug: null, specimenType: null,
   },
   {
@@ -686,7 +686,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
   {
     slug: "aa-epa-ratio", displayName: "AA/EPA Ratio", fullName: "Arachidonic Acid/EPA Ratio",
     category: "Fatty Acids", defaultUnit: null,
-    aliases: ["AA/EPA RATIO", "ARACHIDONIC/EPA RATIO", "ARACHIDONIC ACID/EPA RATIO"],
+    aliases: ["AA/EPA RATIO", "ARACHIDONIC/EPA RATIO", "ARACHIDONIC ACID/EPA RATIO", "AA / EPA RATIO"],
     region: null, regionGroupSlug: null, specimenType: null,
   },
   {
@@ -962,7 +962,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
 // ── Alias lookup map ────────────────────────────
 
 function normalize(raw: string): string {
-  return raw.toUpperCase().replace(/,/g, "").replace(/\s+/g, " ").trim();
+  return raw.toUpperCase().replace(/,/g, "").replace(/\s*\/\s*/g, "/").replace(/\s+/g, " ").trim();
 }
 
 const aliasMap = new Map<string, CanonicalBiomarker[]>();

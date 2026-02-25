@@ -92,6 +92,7 @@ export interface BiomarkerHistoryPoint {
   reportId: string;
   filename: string;
   labName: string | null;
+  source: string | null;
   referenceRangeLow: number | null;
   referenceRangeHigh: number | null;
 }

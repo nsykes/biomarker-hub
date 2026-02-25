@@ -221,22 +221,16 @@ export async function POST(request: NextRequest) {
                 })
               );
 
-              // Merge: reportInfo from first chunk, concatenate biomarkers with page offset
+              // Merge: reportInfo from first chunk, concatenate biomarkers with page offset (no dedup yet)
               extraction = {
                 reportInfo: results[0].extraction.reportInfo,
                 biomarkers: [],
               };
 
-              const seen = new Set<string>();
               for (let i = 0; i < results.length; i++) {
                 const offset = chunks[i].startPage - 1;
                 for (const b of results[i].extraction.biomarkers) {
-                  const adjusted = { ...b, page: b.page + offset };
-                  const dedupKey = `${b.rawName}|${b.value}`;
-                  if (!seen.has(dedupKey)) {
-                    seen.add(dedupKey);
-                    extraction.biomarkers.push(adjusted);
-                  }
+                  extraction.biomarkers.push({ ...b, page: b.page + offset });
                 }
               }
 
@@ -250,13 +244,7 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // Add UUIDs to each biomarker
-          extraction.biomarkers = extraction.biomarkers.map((b) => ({
-            ...b,
-            id: crypto.randomUUID(),
-          }));
-
-          // Match against canonical biomarker registry
+          // Match against canonical biomarker registry (before dedup so slugs are available)
           extraction.biomarkers = extraction.biomarkers.map((b) => {
             const specimen =
               b.category === "Urinalysis"
@@ -276,6 +264,25 @@ export async function POST(request: NextRequest) {
               category: canonical?.category ?? b.category,
             };
           });
+
+          // Dedup: by canonicalSlug for matched entries, rawName|value fallback for unmatched.
+          // Keeps first occurrence (lowest page number). Applies to ALL extractions
+          // (not just chunked) to handle summary/appendix pages that repeat results.
+          {
+            const seen = new Set<string>();
+            extraction.biomarkers = extraction.biomarkers.filter((b) => {
+              const key = b.canonicalSlug ?? `${b.rawName}|${b.value}`;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+          }
+
+          // Add UUIDs to each biomarker
+          extraction.biomarkers = extraction.biomarkers.map((b) => ({
+            ...b,
+            id: crypto.randomUUID(),
+          }));
 
           const duration = Date.now() - startTime;
 

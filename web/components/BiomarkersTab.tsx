@@ -43,6 +43,7 @@ export function BiomarkersTab() {
           reportId: file.id,
           filename: file.filename,
           labName: file.labName,
+          source: file.source,
           referenceRangeLow: b.referenceRangeLow,
           referenceRangeHigh: b.referenceRangeHigh,
         });

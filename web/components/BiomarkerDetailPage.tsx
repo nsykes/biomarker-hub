@@ -7,7 +7,8 @@ import { getBiomarkerDetail, backfillReferenceRange } from "@/lib/db/actions";
 import { HistoryChart } from "./biomarker-detail/HistoryChart";
 import { HistoryTable } from "./biomarker-detail/HistoryTable";
 import { ReferenceRangeSection } from "./biomarker-detail/ReferenceRangeSection";
-import { PdfPreviewModal } from "./PdfPreviewModal";
+import dynamic from "next/dynamic";
+const PdfPreviewModal = dynamic(() => import("./PdfPreviewModal").then(m => m.PdfPreviewModal), { ssr: false });
 import { PageSpinner } from "./Spinner";
 
 /* ── Shared detail content (used by both inline view and standalone page) ── */

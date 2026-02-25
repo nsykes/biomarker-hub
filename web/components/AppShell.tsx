@@ -63,7 +63,7 @@ export function AppShell() {
   return (
     <>
       {/* Header — frosted glass */}
-      <header className="flex items-center gap-6 px-6 py-3 border-b border-[var(--color-border-light)] bg-white/80 backdrop-blur-lg flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <header className="flex items-center gap-3 px-6 py-3 border-b border-[var(--color-border-light)] bg-white/80 backdrop-blur-lg flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <img src="/logo.svg" alt="Biomarker Hub" className="h-10" />
         <nav className="flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5">
           {TABS.map((tab) => (

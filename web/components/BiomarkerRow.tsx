@@ -159,6 +159,9 @@ export function BiomarkerRow({
             )}
           </div>
         </td>
+        <td className="px-2 py-1.5 text-xs text-[var(--color-text-secondary)] truncate max-w-[120px]">
+          {biomarker.category}
+        </td>
         <td className="px-2 py-1.5">
           {renderEditableCell("value", displayValue)}
         </td>
@@ -193,7 +196,7 @@ export function BiomarkerRow({
       </tr>
       {showRemap && (
         <tr className="border-b border-[var(--color-border-light)] bg-[#FFF3E0]/30">
-          <td colSpan={6} className="px-3 py-2">
+          <td colSpan={7} className="px-3 py-2">
             <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--color-text-secondary)] shrink-0">Remap to:</span>
               <BiomarkerCombobox

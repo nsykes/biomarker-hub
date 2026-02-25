@@ -26,7 +26,7 @@ The codebase has Drizzle ORM + Neon wiring already in place (`drizzle.config.ts`
 ```
 Browser (localhost:3000 / Vercel)
 ├── Left pane: PDF viewer (react-pdf) with text-layer highlighting
-├── Right pane: Editable results table grouped by category
+├── Right pane: Editable results table grouped by page number
 └── API route → OpenRouter (Gemini 2.5 Pro default) → structured JSON
 ```
 
@@ -390,13 +390,13 @@ Beyond single-report flags (high/low), the app could surface when a biomarker is
 
 This is a nice-to-have that depends on multi-file support and unit normalization being in place first.
 
-### Extraction Results: Group by Page, Not Category
+### Extraction Results: Group by Page, Not Category (Implemented — 2026-02-24)
 
-During extraction review, the right panel currently groups biomarkers by category (Liver, Electrolytes, etc.), which causes the user to jump between different PDF pages as they scan down the list. This is disorienting — the left and right panels don't flow together.
+During extraction review, the right panel previously grouped biomarkers by category (Liver, Electrolytes, etc.), which caused the user to jump between different PDF pages as they scan down the list. Grouping by page makes left and right panels flow together.
 
-**Change:** Reorder the right panel so biomarkers are grouped by **page number** instead of category. Within each page group, biomarkers should appear in document order (matching the top-to-bottom reading order on the left). Add a **Category column** to the results table so that information isn't lost (e.g., "Liver", "Electrolytes", "Proteins"). The page group headers replace the current category group headers.
+**Change:** The results table now groups biomarkers by **page number** instead of category. Group headers show "Page 1 (n)", "Page 2 (n)", etc., sorted by page number. A **Category column** was added to the results table so that information isn't lost. Column order: Metric | Category | Value | Unit | Ref Range | Flag | [delete]. ColSpan updated from 6 to 7 for group header rows and remap rows. Expand/Collapse All works with string-coerced page keys.
 
-The result: scrolling down the right panel should correspond to scrolling down the left panel — page 1 biomarkers first, then page 2, etc., in the same order they appear in the PDF.
+**Files changed:** `components/ResultsPanel.tsx`, `components/BiomarkerRow.tsx`
 
 ### Undo for Biomarker Deletion
 

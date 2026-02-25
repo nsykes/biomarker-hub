@@ -108,14 +108,14 @@ export function ResultsPanel({
   const [showCombobox, setShowCombobox] = useState(false);
 
   const groupedBiomarkers = useMemo(() => {
-    if (!extraction) return new Map<string, Biomarker[]>();
-    const groups = new Map<string, Biomarker[]>();
+    if (!extraction) return new Map<number, Biomarker[]>();
+    const groups = new Map<number, Biomarker[]>();
     for (const b of extraction.biomarkers) {
-      const existing = groups.get(b.category) || [];
+      const existing = groups.get(b.page) || [];
       existing.push(b);
-      groups.set(b.category, existing);
+      groups.set(b.page, existing);
     }
-    return groups;
+    return new Map([...groups.entries()].sort(([a], [b]) => a - b));
   }, [extraction]);
 
   const handleExport = () => {
@@ -217,6 +217,7 @@ export function ResultsPanel({
               <thead className="sticky top-0 bg-white border-b border-[var(--color-border-light)] z-10">
                 <tr className="text-xs text-[var(--color-text-tertiary)] uppercase">
                   <th className="px-2 py-2">Metric</th>
+                  <th className="px-2 py-2">Category</th>
                   <th className="px-2 py-2">Value</th>
                   <th className="px-2 py-2">Unit</th>
                   <th className="px-2 py-2">Ref Range</th>
@@ -227,7 +228,7 @@ export function ResultsPanel({
                         if (anyCollapsed) {
                           expandAll();
                         } else {
-                          collapseAll(Array.from(groupedBiomarkers.keys()));
+                          collapseAll(Array.from(groupedBiomarkers.keys()).map(String));
                         }
                       }}
                       className="text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium normal-case"
@@ -239,30 +240,32 @@ export function ResultsPanel({
               </thead>
               <tbody>
                 {Array.from(groupedBiomarkers.entries()).map(
-                  ([category, biomarkers]) => (
-                    <React.Fragment key={category}>
+                  ([page, biomarkers]) => {
+                    const key = String(page);
+                    return (
+                    <React.Fragment key={key}>
                       <tr
-                        onClick={() => toggleCategory(category)}
+                        onClick={() => toggleCategory(key)}
                         className="bg-[var(--color-surface-tertiary)] cursor-pointer hover:bg-[var(--color-border-light)] transition-colors"
                       >
                         <td
-                          colSpan={6}
+                          colSpan={7}
                           className="px-2 py-1.5 font-semibold text-sm text-[var(--color-text-primary)]"
                         >
                           <span className="inline-flex items-center gap-1.5">
                             <svg
-                              className={`w-3 h-3 text-[var(--color-text-tertiary)] transition-transform duration-200 ${isCollapsed(category) ? '' : 'rotate-90'}`}
+                              className={`w-3 h-3 text-[var(--color-text-tertiary)] transition-transform duration-200 ${isCollapsed(key) ? '' : 'rotate-90'}`}
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
                             >
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
-                            {category} ({biomarkers.length})
+                            Page {page} ({biomarkers.length})
                           </span>
                         </td>
                       </tr>
-                      {!isCollapsed(category) &&
+                      {!isCollapsed(key) &&
                         biomarkers.map((b) => (
                           <BiomarkerRow
                             key={b.id}
@@ -274,7 +277,8 @@ export function ResultsPanel({
                           />
                         ))}
                     </React.Fragment>
-                  )
+                    );
+                  }
                 )}
               </tbody>
             </table>

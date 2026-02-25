@@ -33,10 +33,11 @@ interface ReferenceRangeSectionProps {
   data: BiomarkerDetailData;
   slug: string;
   defaultUnit: string | null;
+  referenceRange: ReferenceRange | null;
+  onRangeChange: (range: ReferenceRange | null) => void;
 }
 
-export function ReferenceRangeSection({ data, slug, defaultUnit }: ReferenceRangeSectionProps) {
-  const [referenceRange, setReferenceRange] = useState<ReferenceRange | null>(data.referenceRange);
+export function ReferenceRangeSection({ data, slug, defaultUnit, referenceRange, onRangeChange }: ReferenceRangeSectionProps) {
   const [editing, setEditing] = useState(false);
   const [rangeLow, setRangeLow] = useState("");
   const [rangeHigh, setRangeHigh] = useState("");
@@ -64,10 +65,10 @@ export function ReferenceRangeSection({ data, slug, defaultUnit }: ReferenceRang
       if (low === null && high === null) {
         // Clear the range
         await updateReferenceRange(slug, null, null, unitVal);
-        setReferenceRange(null);
+        onRangeChange(null);
       } else {
         await updateReferenceRange(slug, low, high, unitVal);
-        setReferenceRange({
+        onRangeChange({
           rangeLow: low,
           rangeHigh: high,
           goalDirection: inferGoalDirection(low, high),

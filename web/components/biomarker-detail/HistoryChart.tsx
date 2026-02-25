@@ -97,6 +97,26 @@ function buildRangeZones(
   return zones;
 }
 
+function computeFlag(
+  value: number,
+  ref: { goalDirection: string; rangeLow: number | null; rangeHigh: number | null } | null
+): string {
+  if (!ref) return "NORMAL";
+  const { goalDirection, rangeLow, rangeHigh } = ref;
+  if (goalDirection === "below" && rangeHigh !== null) {
+    return value <= rangeHigh ? "NORMAL" : "HIGH";
+  }
+  if (goalDirection === "above" && rangeLow !== null) {
+    return value >= rangeLow ? "NORMAL" : "LOW";
+  }
+  if (goalDirection === "within" && rangeLow !== null && rangeHigh !== null) {
+    if (value < rangeLow) return "LOW";
+    if (value > rangeHigh) return "HIGH";
+    return "NORMAL";
+  }
+  return "NORMAL";
+}
+
 export function HistoryChart({
   data,
 }: {
@@ -139,7 +159,7 @@ export function HistoryChart({
     date: formatDate(point.collectionDate),
     timestamp: new Date(point.collectionDate + "T00:00:00").getTime(),
     value,
-    flag: point.flag,
+    flag: computeFlag(value, data.referenceRange),
     label: `${point.valueModifier ?? ""}${parseFloat(value.toFixed(2))} ${canonicalUnit}`.trim(),
   }));
 

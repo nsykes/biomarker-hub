@@ -1,12 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { BiomarkerDetailData } from "@/lib/types";
+import { BiomarkerDetailData, ReferenceRange } from "@/lib/types";
 import { HistoryChart } from "./biomarker-detail/HistoryChart";
 import { HistoryTable } from "./biomarker-detail/HistoryTable";
 import { ReferenceRangeSection } from "./biomarker-detail/ReferenceRangeSection";
 
 export function BiomarkerDetailPage({ data }: { data: BiomarkerDetailData }) {
+  const [referenceRange, setReferenceRange] = useState<ReferenceRange | null>(data.referenceRange);
+  const chartData = { ...data, referenceRange };
+
   return (
     <div className="min-h-screen bg-[var(--color-surface-secondary)]">
       {/* Header — frosted glass */}
@@ -51,7 +55,7 @@ export function BiomarkerDetailPage({ data }: { data: BiomarkerDetailData }) {
           <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
             History
           </h2>
-          <HistoryChart data={data} />
+          <HistoryChart data={chartData} />
         </section>
 
         {/* History table */}
@@ -77,7 +81,7 @@ export function BiomarkerDetailPage({ data }: { data: BiomarkerDetailData }) {
           <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
             Reference Range
           </h2>
-          <ReferenceRangeSection data={data} slug={data.slug} defaultUnit={data.defaultUnit} />
+          <ReferenceRangeSection data={data} slug={data.slug} defaultUnit={data.defaultUnit} referenceRange={referenceRange} onRangeChange={setReferenceRange} />
         </section>
       </div>
     </div>

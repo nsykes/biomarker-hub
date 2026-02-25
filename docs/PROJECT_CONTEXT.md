@@ -126,6 +126,16 @@ Each biomarker in the Biomarkers tab links to a dedicated detail page at `/bioma
 - Link from history table rows back to the source report
 - **Time-proportional chart X-axis** — Currently data points are evenly spaced regardless of when they occurred. The X-axis should use a proper time scale so that the spacing between points reflects the actual time elapsed between collection dates (e.g., two tests a week apart should be much closer together than two tests a year apart).
 
+### Live Chart Updates on Reference Range Edit (Implemented — 2026-02-25)
+
+Two fixes to the biomarker detail page:
+
+1. **Chart updates live** when the user edits the reference range — green/red zones and reference lines shift immediately without a page refresh. Previously, `ReferenceRangeSection` managed its own local state; now the reference range is lifted to `BiomarkerDetailPage` and passed down to both the chart and the range editor via props + callback.
+
+2. **Dot colors reflect the custom reference range** — flags (NORMAL/HIGH/LOW) are now recomputed client-side from the current reference range instead of reading the DB-stored `flag` (which reflects the lab-reported range at extraction time). If no custom range is set, all dots default to NORMAL (green). A `computeFlag()` helper in `HistoryChart.tsx` handles all three goal directions (below/above/within).
+
+**Files changed:** `BiomarkerDetailPage.tsx`, `biomarker-detail/ReferenceRangeSection.tsx`, `biomarker-detail/HistoryChart.tsx`
+
 ### Re-extraction Updates Existing Report (Implemented — 2026-02-25)
 
 Previously, clicking "Re-attempt Extraction" on an existing report always created a new report row, producing duplicate biomarker data (visible as two identical data points on charts). Now re-extraction updates the existing report in-place via `reextractReport()` server action — it updates report metadata, deletes old biomarker_results, and inserts the new ones. The `savedFileId` is checked in `handleExtract`: if set (viewing existing report), calls `reextractReport`; if null (new extraction), calls `saveFile` as before.
@@ -483,6 +493,8 @@ Users currently have to click into each biomarker detail page one at a time. For
 
 ### Other Future Items
 
+- **README.md** — The repo has no README. Add one covering what the app does, how to set it up locally (env vars, Neon DB, Google OAuth), and how to deploy.
+- **General code cleanup** — Accumulated tech debt pass: remove dead code, consolidate duplicated patterns, tighten types, clean up TODOs, improve naming consistency across components.
 - Batch PDF processing (upload multiple files at once)
 - PII stripping before sending to LLM
 - Model comparison diff view (run same PDF through multiple models)

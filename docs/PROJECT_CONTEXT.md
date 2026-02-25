@@ -54,6 +54,10 @@ rawName is used for PDF highlighting (matching against text layer). metricName i
 
 The highlight algorithm groups text-layer spans into rows by Y-position, then scores each row against the biomarker's rawName + value + unit. Only the single best-matching row gets highlighted. This avoids false positives from substring matching (e.g., value "20" matching "200" or date strings).
 
+**Highlight rendering:** An absolute-positioned overlay `<div>` is appended to `.react-pdf__Page`, positioned via `getBoundingClientRect()` relative to the page element. This is used instead of inline span styles because pdfjs text layer re-renders can replace DOM elements, losing inline style changes. The overlay persists as a sibling of the text layer.
+
+**Debounced scheduling:** `scheduleHighlight` in PdfViewer uses `clearTimeout` + `setTimeout(100)` to debounce multiple triggers (React StrictMode double-invoke, `useEffect`, `onRenderTextLayerSuccess`). Only the last call executes, 100ms after the text layer has settled. This prevents the "jump down then back up" visual bug caused by multiple executions measuring unsettled CSS positions.
+
 ### Auth & Data Model: One User = One Patient
 
 Every logged-in user tracks only their own health data — it's a strict 1:1 relationship. Because of this, there's no separate `patients` table. Instead:
@@ -385,6 +389,24 @@ Beyond single-report flags (high/low), the app could surface when a biomarker is
 - Significant jumps between consecutive readings
 
 This is a nice-to-have that depends on multi-file support and unit normalization being in place first.
+
+### Extraction Results: Group by Page, Not Category
+
+During extraction review, the right panel currently groups biomarkers by category (Liver, Electrolytes, etc.), which causes the user to jump between different PDF pages as they scan down the list. This is disorienting — the left and right panels don't flow together.
+
+**Change:** Reorder the right panel so biomarkers are grouped by **page number** instead of category. Within each page group, biomarkers should appear in document order (matching the top-to-bottom reading order on the left). Add a **Category column** to the results table so that information isn't lost (e.g., "Liver", "Electrolytes", "Proteins"). The page group headers replace the current category group headers.
+
+The result: scrolling down the right panel should correspond to scrolling down the left panel — page 1 biomarkers first, then page 2, etc., in the same order they appear in the PDF.
+
+### Undo for Biomarker Deletion
+
+Clicking the X button on a biomarker row during extraction review permanently deletes it with no way to recover. This is too destructive for a single click — needs an undo mechanism. Options to consider:
+
+- Toast/snackbar with "Undo" button (soft delete with a few seconds to reverse)
+- Confirmation dialog before deleting
+- A "recently deleted" section at the bottom of the results panel
+
+The toast/undo pattern is probably the best UX — fast for intentional deletes, recoverable for accidents.
 
 ### Other Future Items
 

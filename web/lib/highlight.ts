@@ -98,9 +98,9 @@ export function applyHighlights(
 
   if (spanInfos.length === 0) return () => {};
 
+  const topValues = spanInfos.slice(0, 5).map((s) => `${s.top.toFixed(1)}:"${s.text.slice(0, 20)}"`).join(', ');
   console.warn(
-    `highlight: ${spanInfos.length} spans collected for "${target.rawName}"`,
-    spanInfos.slice(0, 5).map((s) => ({ top: s.top.toFixed(1), text: s.text }))
+    `highlight: ${spanInfos.length} spans collected for "${target.rawName}" — first 5: [${topValues}]`
   );
 
   // Sort by vertical position
@@ -129,15 +129,8 @@ export function applyHighlights(
     text: currentSpans.map((s) => s.text).join(" "),
   });
 
-  console.warn(
-    `highlight: ${rows.length} rows formed`,
-    rows.map((r, i) => ({
-      row: i,
-      top: r.spans[0]?.top.toFixed(1),
-      spans: r.spans.length,
-      text: r.text.slice(0, 80),
-    }))
-  );
+  const rowSummary = rows.map((r, i) => `row${i}@${r.spans[0]?.top.toFixed(1)}(${r.spans.length}sp):"${r.text.slice(0, 40)}"`).join(' | ');
+  console.warn(`highlight: ${rows.length} rows formed — ${rowSummary}`);
 
   // Find the single best-scoring row
   let bestScore = 0;
@@ -165,35 +158,55 @@ export function applyHighlights(
     }
   }
 
+  // Require at least a partial name match
+  if (!bestRow || bestScore < HIGHLIGHT_MIN_SCORE) {
+    console.warn(`highlight: no match (bestScore=${bestScore})`);
+    return () => {};
+  }
+
+  // Log winning row diagnostics
+  const winSpan = bestRow.spans[0];
+  const textLayerEl = textLayer as HTMLElement;
+  const tlRect = textLayerEl.getBoundingClientRect();
+  const winRect = winSpan.el.getBoundingClientRect();
+  const scaleFactor = getComputedStyle(textLayerEl).getPropertyValue('--total-scale-factor');
   console.warn(
-    `highlight: winner score=${bestScore} text="${bestRow?.text.slice(0, 80)}"`
+    `highlight: winner score=${bestScore} text="${bestRow.text.slice(0, 80)}" ` +
+    `offsetTop=${winSpan.top.toFixed(1)} bcrTop=${(winRect.top - tlRect.top).toFixed(1)} ` +
+    `scaleFactor=${scaleFactor}`
   );
 
-  // Require at least a partial name match
-  if (!bestRow || bestScore < HIGHLIGHT_MIN_SCORE) return () => {};
+  // Create overlay div positioned at the winning row's visual bounds.
+  // Using an overlay (sibling of text layer) instead of inline span styles
+  // so the highlight persists through text layer re-renders.
+  const pageEl = pageContainer.querySelector('.react-pdf__Page') as HTMLElement;
+  if (!pageEl) return () => {};
 
-  // Highlight only the best row's spans
-  const highlighted: HTMLElement[] = [];
-  for (const span of bestRow.spans) {
-    span.el.style.backgroundColor = HIGHLIGHT_COLOR;
-    span.el.style.borderRadius = "2px";
-    highlighted.push(span.el);
-  }
+  // Remove any existing overlay
+  pageEl.querySelector('[data-highlight-overlay]')?.remove();
 
-  // Scroll the first span of the matched row into view
-  if (highlighted.length > 0) {
-    highlighted[0].scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
-  }
+  const pageRect = pageEl.getBoundingClientRect();
+  const rects = bestRow.spans.map(s => s.el.getBoundingClientRect());
+  const top = Math.min(...rects.map(r => r.top)) - pageRect.top;
+  const bottom = Math.max(...rects.map(r => r.bottom)) - pageRect.top;
+  const left = Math.min(...rects.map(r => r.left)) - pageRect.left;
+  const right = Math.max(...rects.map(r => r.right)) - pageRect.left;
 
-  return () => {
-    highlighted.forEach((el) => {
-      el.style.backgroundColor = "";
-      el.style.borderRadius = "";
-    });
-  };
+  const overlay = document.createElement('div');
+  overlay.setAttribute('data-highlight-overlay', 'true');
+  overlay.style.cssText = `
+    position: absolute;
+    top: ${top}px; left: ${left}px;
+    width: ${right - left}px; height: ${bottom - top}px;
+    background-color: ${HIGHLIGHT_COLOR};
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 4;
+  `;
+  pageEl.appendChild(overlay);
+  overlay.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  return () => overlay.remove();
 }
 
 /**

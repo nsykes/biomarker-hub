@@ -28,7 +28,7 @@ export function PdfViewer({
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const pageRef = useRef<HTMLDivElement>(null);
   const cleanupHighlightRef = useRef<(() => void) | null>(null);
-  const pendingRafRef = useRef<number | null>(null);
+  const pendingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep refs in sync so the stable callback can access current values
   const highlightTargetRef = useRef(highlightTarget);
@@ -54,32 +54,38 @@ export function PdfViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightTarget]);
 
-  // Single shared highlight scheduler — cancels any pending rAF so only the
-  // last caller's frame executes, preventing the double-apply bounce.
+  // Debounced highlight scheduler — when called multiple times (StrictMode,
+  // useEffect, onRenderTextLayerSuccess), only the LAST call's timeout
+  // survives. 100ms after the last call the text layer is fully settled.
   const scheduleHighlight = useCallback(() => {
-    if (pendingRafRef.current !== null) {
-      cancelAnimationFrame(pendingRafRef.current);
-      pendingRafRef.current = null;
-    }
-
-    if (cleanupHighlightRef.current) {
-      cleanupHighlightRef.current();
-      cleanupHighlightRef.current = null;
+    if (pendingTimeoutRef.current !== null) {
+      clearTimeout(pendingTimeoutRef.current);
     }
 
     const target = highlightTargetRef.current;
     if (target && target.page === currentPageRef.current && pageRef.current) {
-      // Double rAF: first frame lets the browser resolve CSS custom properties
-      // (calc(var(--total-scale-factor) * Npx)) and complete layout; second
-      // frame ensures offsetTop values are fully settled before we measure.
-      pendingRafRef.current = requestAnimationFrame(() => {
-        pendingRafRef.current = requestAnimationFrame(() => {
-          pendingRafRef.current = null;
+      pendingTimeoutRef.current = setTimeout(() => {
+        pendingTimeoutRef.current = null;
+        requestAnimationFrame(() => {
+          // Cleanup old highlight right before applying new one (no flash)
+          if (cleanupHighlightRef.current) {
+            cleanupHighlightRef.current();
+            cleanupHighlightRef.current = null;
+          }
           if (pageRef.current && highlightTargetRef.current) {
-            cleanupHighlightRef.current = applyHighlights(pageRef.current, highlightTargetRef.current);
+            cleanupHighlightRef.current = applyHighlights(
+              pageRef.current,
+              highlightTargetRef.current
+            );
           }
         });
-      });
+      }, 100);
+    } else if (!target) {
+      // Target cleared — cleanup immediately
+      if (cleanupHighlightRef.current) {
+        cleanupHighlightRef.current();
+        cleanupHighlightRef.current = null;
+      }
     }
   }, []);
 
@@ -92,9 +98,9 @@ export function PdfViewer({
   useEffect(() => {
     scheduleHighlight();
     return () => {
-      if (pendingRafRef.current !== null) {
-        cancelAnimationFrame(pendingRafRef.current);
-        pendingRafRef.current = null;
+      if (pendingTimeoutRef.current !== null) {
+        clearTimeout(pendingTimeoutRef.current);
+        pendingTimeoutRef.current = null;
       }
     };
   }, [highlightTarget, currentPage, scheduleHighlight]);

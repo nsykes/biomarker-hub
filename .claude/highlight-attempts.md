@@ -57,3 +57,25 @@ Root cause identified: pdfjs applies compound CSS transforms (`scale(1/minFontSi
 3. **`web/lib/highlight.ts`**: Changed `console.debug` → `console.warn` so diagnostic logs are visible by default in Chrome.
 
 **Files changed**: `web/lib/highlight.ts`, `web/components/PdfViewer.tsx`
+
+**Result**: Scoring is 100% correct (logs prove every biomarker finds the right row text). BUT the highlight visually jumps DOWN to the correct spot, then jumps BACK UP to the wrong spot. User confirmed this exact behavior. The function runs 3 times per click (React StrictMode double-invoke + onRenderTextLayerSuccess + useEffect). The text layer re-renders between executions, replacing DOM elements. Later runs measure spans whose CSS `calc(var(--total-scale-factor) * Npx)` hasn't resolved, giving positions too high. The LAST run's highlight wins visually, and it's the wrong one. Double rAF made this worse by spreading execution across more frames.
+
+## Attempt 7: Debounced setTimeout + overlay div
+
+Root cause confirmed: multiple executions per click (3x) with the text layer re-rendering between them. Later runs measure unsettled CSS positions. Two-pronged fix:
+
+### 1. Debounced `scheduleHighlight` — `PdfViewer.tsx`
+
+Replaced double rAF + `pendingRafRef` with `clearTimeout` + `setTimeout(100)`. When called multiple times, only the LAST call's timeout survives. 100ms after the last call, text layer is fully settled. Old-highlight cleanup moved INSIDE the timeout (no flash — old highlight stays visible until new one is ready). Single `requestAnimationFrame` inside the timeout ensures measurement after next paint.
+
+### 2. Overlay div instead of span style modification — `highlight.ts`
+
+Replaced `span.el.style.backgroundColor` with a separate overlay `<div>` appended to `.react-pdf__Page`. Positioned using `getBoundingClientRect()` relative to `.react-pdf__Page` (exact visual position). Persists through text layer re-renders (sibling of text layer, not part of it). Has `pointer-events: none` and `data-highlight-overlay` attribute. Cleanup = `overlay.remove()`.
+
+### 3. Improved diagnostics — `highlight.ts`
+
+- Inline span top values in log strings (not collapsed Array objects)
+- Log winning row's `offsetTop` vs `BCR.top - textLayer.BCR.top`
+- Log `--total-scale-factor` from text layer's computed style
+
+**Files changed**: `web/lib/highlight.ts`, `web/components/PdfViewer.tsx`

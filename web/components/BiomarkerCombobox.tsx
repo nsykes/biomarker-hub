@@ -33,6 +33,7 @@ export function BiomarkerCombobox({ onSelect, onClose }: BiomarkerComboboxProps)
     return REGISTRY.filter((entry) => {
       if (entry.displayName.toLowerCase().includes(q)) return true;
       if (entry.fullName.toLowerCase().includes(q)) return true;
+      if (entry.category.toLowerCase().includes(q)) return true;
       return entry.aliases.some((a) => a.toLowerCase().includes(q));
     }).slice(0, 30);
   }, [query]);

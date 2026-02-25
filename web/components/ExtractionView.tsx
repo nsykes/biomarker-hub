@@ -17,7 +17,8 @@ import {
 import { buildHighlightTarget } from "@/lib/highlight";
 import { saveFile, getSettingsSafe, updateFileBiomarkers, updateReportInfo, reconcileReferenceRanges } from "@/lib/db/actions";
 import { RangeConflictModal } from "@/components/RangeConflictModal";
-import { DEFAULT_MODEL } from "@/lib/constants";
+import { UndoToast } from "@/components/UndoToast";
+import { DEFAULT_MODEL, UNDO_TOAST_DURATION_MS } from "@/lib/constants";
 
 const PdfViewer = dynamic(
   () =>
@@ -61,6 +62,13 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
   const [selectedBiomarker, setSelectedBiomarker] = useState<Biomarker | null>(null);
   const [highlightTarget, setHighlightTarget] = useState<HighlightTarget | null>(null);
   const [rangeConflicts, setRangeConflicts] = useState<ReferenceRangeConflict[] | null>(null);
+
+  const [toastItem, setToastItem] = useState<{ id: string; name: string } | null>(null);
+  const pendingDeleteRef = useRef<{
+    biomarker: Biomarker;
+    index: number;
+    timeoutId: ReturnType<typeof setTimeout>;
+  } | null>(null);
 
   const [defaultModel, setDefaultModel] = useState<string>(DEFAULT_MODEL);
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -202,22 +210,67 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
     [savedFileId]
   );
 
+  const flushPendingDelete = useCallback(() => {
+    const pending = pendingDeleteRef.current;
+    if (!pending) return;
+    clearTimeout(pending.timeoutId);
+    pendingDeleteRef.current = null;
+    setToastItem(null);
+    if (savedFileId) {
+      setExtraction((prev) => {
+        if (prev) updateFileBiomarkers(savedFileId, prev.biomarkers).catch(console.error);
+        return prev;
+      });
+    }
+  }, [savedFileId]);
+
   const handleDeleteBiomarker = useCallback(
     (id: string) => {
+      // Finalize any existing pending deletion first
+      flushPendingDelete();
+
       setExtraction((prev) => {
         if (!prev) return prev;
-        const updated = {
+        const index = prev.biomarkers.findIndex((b) => b.id === id);
+        if (index === -1) return prev;
+        const deleted = prev.biomarkers[index];
+
+        const timeoutId = setTimeout(() => {
+          pendingDeleteRef.current = null;
+          setToastItem(null);
+          if (savedFileId) {
+            setExtraction((cur) => {
+              if (cur) updateFileBiomarkers(savedFileId, cur.biomarkers).catch(console.error);
+              return cur;
+            });
+          }
+        }, UNDO_TOAST_DURATION_MS);
+
+        pendingDeleteRef.current = { biomarker: deleted, index, timeoutId };
+        setToastItem({ id: deleted.id, name: deleted.metricName || deleted.rawName });
+
+        return {
           ...prev,
           biomarkers: prev.biomarkers.filter((b) => b.id !== id),
         };
-        if (savedFileId) {
-          updateFileBiomarkers(savedFileId, updated.biomarkers).catch(console.error);
-        }
-        return updated;
       });
     },
-    [savedFileId]
+    [savedFileId, flushPendingDelete]
   );
+
+  const handleUndo = useCallback(() => {
+    const pending = pendingDeleteRef.current;
+    if (!pending) return;
+    clearTimeout(pending.timeoutId);
+    pendingDeleteRef.current = null;
+    setToastItem(null);
+    setExtraction((prev) => {
+      if (!prev) return prev;
+      const restored = [...prev.biomarkers];
+      restored.splice(Math.min(pending.index, restored.length), 0, pending.biomarker);
+      return { ...prev, biomarkers: restored };
+    });
+  }, []);
 
   const handleAddBiomarker = useCallback(
     (biomarker: Biomarker) => {
@@ -316,7 +369,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       {/* Header — frosted glass */}
       <header className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-light)] bg-white/80 backdrop-blur-lg flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <button
-          onClick={onBack}
+          onClick={() => { flushPendingDelete(); onBack(); }}
           className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -363,6 +416,8 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
           <SplitPane left={leftPane} right={rightPane} />
         )}
       </main>
+
+      {toastItem && <UndoToast name={toastItem.name} onUndo={handleUndo} />}
     </>
   );
 }

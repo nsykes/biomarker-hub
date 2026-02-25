@@ -398,15 +398,17 @@ During extraction review, the right panel previously grouped biomarkers by categ
 
 **Files changed:** `components/ResultsPanel.tsx`, `components/BiomarkerRow.tsx`
 
-### Undo for Biomarker Deletion
+### Undo for Biomarker Deletion (Implemented — 2026-02-24)
 
-Clicking the X button on a biomarker row during extraction review permanently deletes it with no way to recover. This is too destructive for a single click — needs an undo mechanism. Options to consider:
+Deleting a biomarker during extraction review now shows a toast with an "Undo" button for 5 seconds. If undo is clicked, the biomarker is restored at its original position. If the toast expires, deletion is finalized to DB. DB sync is deferred until the toast disappears (no unnecessary writes on undo).
 
-- Toast/snackbar with "Undo" button (soft delete with a few seconds to reverse)
-- Confirmation dialog before deleting
-- A "recently deleted" section at the bottom of the results panel
+**Behavior:**
+- One toast at a time — deleting B while A's toast is showing finalizes A immediately and shows B's toast
+- Back button flushes any pending deletion before navigating away
+- Custom toast component (`UndoToast.tsx`) — no UI library added, consistent with hand-rolled design system
 
-The toast/undo pattern is probably the best UX — fast for intentional deletes, recoverable for accidents.
+**Files changed:** `components/ExtractionView.tsx`, `lib/constants.ts`
+**New files:** `components/UndoToast.tsx`
 
 ### Other Future Items
 

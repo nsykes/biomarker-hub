@@ -35,3 +35,6 @@ export const FLAG_OPTIONS = [
   "CRITICAL_LOW",
   "CRITICAL_HIGH",
 ] as const;
+
+// Undo toast
+export const UNDO_TOAST_DURATION_MS = 5000;

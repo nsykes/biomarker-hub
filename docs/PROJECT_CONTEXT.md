@@ -396,10 +396,10 @@ This is a nice-to-have that depends on multi-file support and unit normalization
 PDF filenames are meaningless to users. The UI now shows **collection date** and **lab/source** as the primary report identifier everywhere instead of filename.
 
 **Changes:**
-- **FilesTab:** Replaced Filename + Lab + Collection Date columns with a single "Report" column showing formatted date (bold) + lab/source as secondary text. Net -2 columns.
-- **HistoryTable (biomarker detail):** Source column shows `labName || source || "—"` instead of filename.
-- **ReferenceRangeSection:** Lab-reported ranges show `labName || source` instead of `labName || filename`.
-- **ExtractionView header:** Shows formatted collection date + lab/source when viewing a saved report. Falls back to filename if no date.
+- **FilesTab:** Replaced Filename + Lab + Collection Date columns with Report | Type | Lab | Source | Biomarkers | Added | (delete). Lab and Source are separate columns (not merged with `||` fallback). Filter bar has separate Lab and Source dropdowns.
+- **HistoryTable (biomarker detail):** Separate Lab and Source columns (not merged). Each shows `"—"` when null.
+- **ReferenceRangeSection:** Lab-reported ranges show `labName || source` (attribution of who reported the range — appropriate to merge here).
+- **ExtractionView header:** Shows both lab and source joined with `" · "` when both exist; shows whichever is available if only one exists.
 - **`BiomarkerHistoryPoint` type:** Added `source: string | null` field.
 - **`getBiomarkerDetail` server action:** Now selects `reports.source` and maps it to history points.
 

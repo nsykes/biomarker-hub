@@ -23,6 +23,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [labFilter, setLabFilter] = useState<string>("all");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [collectionDateFrom, setCollectionDateFrom] = useState("");
   const [collectionDateTo, setCollectionDateTo] = useState("");
   const [addedDateFrom, setAddedDateFrom] = useState("");
@@ -59,17 +60,21 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
 
   const uniqueLabs = useMemo(() => {
     const labs = new Set<string>();
-    files.forEach((f) => {
-      const lab = f.labName || f.source;
-      if (lab) labs.add(lab);
-    });
+    files.forEach((f) => { if (f.labName) labs.add(f.labName); });
     return Array.from(labs).sort();
+  }, [files]);
+
+  const uniqueSources = useMemo(() => {
+    const sources = new Set<string>();
+    files.forEach((f) => { if (f.source) sources.add(f.source); });
+    return Array.from(sources).sort();
   }, [files]);
 
   const filteredFiles = useMemo(() => {
     return files.filter((f) => {
       if (typeFilter !== "all" && (f.reportType ?? "other") !== typeFilter) return false;
-      if (labFilter !== "all" && (f.labName || f.source || "") !== labFilter) return false;
+      if (labFilter !== "all" && (f.labName || "") !== labFilter) return false;
+      if (sourceFilter !== "all" && (f.source || "") !== sourceFilter) return false;
       if (collectionDateFrom && (!f.collectionDate || f.collectionDate < collectionDateFrom)) return false;
       if (collectionDateTo && (!f.collectionDate || f.collectionDate > collectionDateTo)) return false;
       if (addedDateFrom) {
@@ -82,13 +87,14 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
       }
       return true;
     });
-  }, [files, typeFilter, labFilter, collectionDateFrom, collectionDateTo, addedDateFrom, addedDateTo]);
+  }, [files, typeFilter, labFilter, sourceFilter, collectionDateFrom, collectionDateTo, addedDateFrom, addedDateTo]);
 
-  const filtersActive = typeFilter !== "all" || labFilter !== "all" || collectionDateFrom || collectionDateTo || addedDateFrom || addedDateTo;
+  const filtersActive = typeFilter !== "all" || labFilter !== "all" || sourceFilter !== "all" || collectionDateFrom || collectionDateTo || addedDateFrom || addedDateTo;
 
   const clearFilters = () => {
     setTypeFilter("all");
     setLabFilter("all");
+    setSourceFilter("all");
     setCollectionDateFrom("");
     setCollectionDateTo("");
     setAddedDateFrom("");
@@ -160,6 +166,19 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
             </select>
           </div>
           <div className="flex flex-col gap-1">
+            <label className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Source</label>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className="input-base !py-1.5 !px-2 !rounded-lg !w-auto"
+            >
+              <option value="all">All</option>
+              {uniqueSources.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
             <label className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Collection Date</label>
             <div className="flex items-center gap-1.5">
               <input
@@ -218,6 +237,8 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
                 <tr className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wider bg-[var(--color-surface-tertiary)]">
                   <th className="px-5 py-3 font-medium">Report</th>
                   <th className="px-5 py-3 font-medium">Type</th>
+                  <th className="px-5 py-3 font-medium">Lab</th>
+                  <th className="px-5 py-3 font-medium">Source</th>
                   <th className="px-5 py-3 font-medium">Biomarkers</th>
                   <th className="px-5 py-3 font-medium">Added</th>
                   <th className="px-5 py-3 font-medium w-10"></th>
@@ -226,7 +247,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
               <tbody className="divide-y divide-[var(--color-border-light)]">
                 {filteredFiles.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center text-[var(--color-text-tertiary)] text-sm">
+                    <td colSpan={7} className="px-5 py-12 text-center text-[var(--color-text-tertiary)] text-sm">
                       No files match filters
                     </td>
                   </tr>
@@ -244,22 +265,21 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
                           <svg className="w-4 h-4 text-[var(--color-text-tertiary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                           </svg>
-                          <div className="min-w-0">
-                            <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                              {f.collectionDate ? formatDate(f.collectionDate) : "No date"}
-                            </span>
-                            {(f.labName || f.source) && (
-                              <p className="text-xs text-[var(--color-text-tertiary)] truncate max-w-xs">
-                                {f.labName || f.source}
-                              </p>
-                            )}
-                          </div>
+                          <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                            {f.collectionDate ? formatDate(f.collectionDate) : "No date"}
+                          </span>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
                           {badge.label}
                         </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-[var(--color-text-secondary)] truncate max-w-[200px]">
+                        {f.labName || "\u2014"}
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-[var(--color-text-secondary)] truncate max-w-[200px]">
+                        {f.source || "\u2014"}
                       </td>
                       <td className="px-5 py-3.5 text-sm text-[var(--color-text-secondary)]">
                         {f.biomarkers.length}

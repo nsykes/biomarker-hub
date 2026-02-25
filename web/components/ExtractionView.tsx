@@ -388,7 +388,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         </h1>
         {mode.type === "view" && mode.file.collectionDate && (mode.file.labName || mode.file.source) && (
           <span className="text-sm text-[var(--color-text-tertiary)]">
-            {mode.file.labName || mode.file.source}
+            {[mode.file.labName, mode.file.source].filter(Boolean).join(" · ")}
           </span>
         )}
         {file && mode.type === "new" && (

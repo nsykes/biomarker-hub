@@ -27,6 +27,7 @@ export function HistoryTable({
             <th className="text-right py-2.5 px-4 font-medium">Value</th>
             <th className="text-right py-2.5 px-4 font-medium">Unit</th>
             <th className="text-left py-2.5 px-4 font-medium">Flag</th>
+            <th className="text-left py-2.5 px-4 font-medium">Lab</th>
             <th className="text-left py-2.5 px-4 font-medium">Source</th>
           </tr>
         </thead>
@@ -61,8 +62,11 @@ export function HistoryTable({
                 <td className="py-2.5 px-4">
                   <FlagBadge flag={h.flag} />
                 </td>
-                <td className="py-2.5 px-4 truncate max-w-[250px]">
-                  {h.labName || h.source || "\u2014"}
+                <td className="py-2.5 px-4 truncate max-w-[200px]">
+                  {h.labName || "\u2014"}
+                </td>
+                <td className="py-2.5 px-4 truncate max-w-[200px]">
+                  {h.source || "\u2014"}
                 </td>
               </tr>
             );

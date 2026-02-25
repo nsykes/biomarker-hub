@@ -22,16 +22,18 @@ const VALID_TABS = TABS.map((t) => t.id);
 export function AppShell() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
+  const biomarkerParam = searchParams.get("biomarker");
   const initialTab: TabId =
     tabParam && VALID_TABS.includes(tabParam as TabId)
       ? (tabParam as TabId)
       : "files";
 
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const [initialBiomarkerSlug] = useState<string | null>(biomarkerParam);
 
-  // Clear ?tab= from URL after reading it so a refresh always lands on Files
+  // Clear search params from URL after reading them so a refresh always lands on Files
   useEffect(() => {
-    if (tabParam) {
+    if (tabParam || biomarkerParam) {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
@@ -98,7 +100,7 @@ export function AppShell() {
             onViewFile={handleViewFile}
           />
         )}
-        {activeTab === "biomarkers" && <BiomarkersTab />}
+        {activeTab === "biomarkers" && <BiomarkersTab initialBiomarkerSlug={initialBiomarkerSlug} />}
         {activeTab === "dashboards" && <DashboardsTab />}
         {activeTab === "settings" && <SettingsTab />}
       </main>

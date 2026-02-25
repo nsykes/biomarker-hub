@@ -148,7 +148,7 @@ export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
   };
 
   const handleNavigate = (slug: string) => {
-    router.push(`/biomarkers/${slug}`);
+    router.push(`/?tab=biomarkers&biomarker=${slug}`);
   };
 
   if (loading) {

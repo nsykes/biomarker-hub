@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { StoredFile, BiomarkerHistoryPoint } from "@/lib/types";
 import {
   REGISTRY,
@@ -12,8 +11,16 @@ import { FlagBadge } from "./FlagBadge";
 import { PageSpinner } from "./Spinner";
 import { useCategoryCollapse } from "@/hooks/useCategoryCollapse";
 import { getFiles } from "@/lib/db/actions";
+import { BiomarkerDetailView } from "./BiomarkerDetailPage";
 
-export function BiomarkersTab() {
+interface BiomarkersTabProps {
+  initialBiomarkerSlug?: string | null;
+}
+
+export function BiomarkersTab({ initialBiomarkerSlug }: BiomarkersTabProps) {
+  const [activeBiomarkerSlug, setActiveBiomarkerSlug] = useState<string | null>(
+    initialBiomarkerSlug ?? null
+  );
   const [files, setFiles] = useState<StoredFile[]>([]);
   const [loading, setLoading] = useState(true);
   const { toggle: toggleCategory, isCollapsed, expandAll, collapseAll, anyCollapsed } = useCategoryCollapse();
@@ -90,6 +97,19 @@ export function BiomarkersTab() {
     if (!entries || entries.length === 0) return null;
     return entries[0]; // files are sorted by addedAt desc
   };
+
+  const handleBack = useCallback(() => {
+    setActiveBiomarkerSlug(null);
+  }, []);
+
+  if (activeBiomarkerSlug) {
+    return (
+      <BiomarkerDetailView
+        slug={activeBiomarkerSlug}
+        onBack={handleBack}
+      />
+    );
+  }
 
   if (loading) {
     return <PageSpinner />;
@@ -173,10 +193,10 @@ export function BiomarkersTab() {
                   const latest = getLatestValue(entry.slug);
 
                   return (
-                    <Link
+                    <button
                       key={entry.slug}
-                      href={`/biomarkers/${entry.slug}`}
-                      className="flex items-center gap-4 px-5 py-2.5 text-left hover:bg-[var(--color-primary-light)] transition-colors duration-150"
+                      onClick={() => setActiveBiomarkerSlug(entry.slug)}
+                      className="w-full flex items-center gap-4 px-5 py-2.5 text-left hover:bg-[var(--color-primary-light)] transition-colors duration-150"
                     >
                       <span className="text-sm text-[var(--color-text-primary)] flex-1 min-w-0">
                         {entry.displayName}
@@ -208,7 +228,7 @@ export function BiomarkersTab() {
                       <svg className="w-4 h-4 text-[var(--color-text-tertiary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                    </Link>
+                    </button>
                   );
                 })}
               </div>

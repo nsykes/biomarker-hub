@@ -103,7 +103,9 @@ Upload a PDF → LLM extracts biomarkers into structured JSON → review in spli
 
 ### Biomarker Detail Pages
 
-Each biomarker links to `/biomarkers/[slug]` with:
+Biomarker detail views render inline within the Biomarkers tab (not as a separate page), following the same pattern as Dashboards. Clicking a biomarker row sets `activeBiomarkerSlug` state, which renders `BiomarkerDetailView` with a sticky sub-header (back button + name + category badge). The main AppShell header (logo + tabs) stays visible throughout. The `/biomarkers/[slug]` route redirects to `/?tab=biomarkers&biomarker=slug` so direct URLs and dashboard chart navigation both land in the inline view.
+
+Each biomarker detail view includes:
 - **History chart** — time-proportional X-axis, dots colored by flag status (recomputed client-side from custom reference range), reference range as shaded zone.
 - **History table** — all data points with date, value, unit, flag, source. Click a row to preview the source PDF page in a modal.
 - **Reference range section** — editable custom range (auto-backfilled from lab data on first visit), goal direction auto-inferred, lab-reported ranges shown for comparison. Unit-normalized values shown with originals in parentheses.

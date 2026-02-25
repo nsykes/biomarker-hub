@@ -439,8 +439,14 @@ BodySpec DEXA PDFs extract ~40+ biomarkers, but most showed as "Unmatched" due t
 2. **Missing registry entries.** "Lean %" wasn't a metric (only Fat % existed), and Bone regions only covered Total Body + L1-L4 + femurs — missing Head, Arms, Legs, Trunk, Ribs, Spine, Pelvis.
 
 **Fix — Registry additions:**
-- Added `Lean %` to `BODY_COMP_METRICS` (generates 10 new regional entries)
-- Added 7 bone regions (Head, Arms, Legs, Trunk, Ribs, Spine, Pelvis) to `BONE_REGIONS` (generates 21 new entries for BMD/T-Score/Z-Score)
+- Added 7 bone regions (Head, Arms, Legs, Trunk, Ribs, Spine, Pelvis) to `BONE_REGIONS`
+
+**Registry pruning (2026-02-24):** Removed 40 empty DEXA entries that will never have data from BodySpec scans:
+- **Lean %** (11 entries) — removed from `BODY_COMP_METRICS`. BodySpec doesn't report Lean % as a standalone column; values only appear on trend/delta pages (skipped by extraction Rule 11).
+- **Subcutaneous Adipose** (1 entry) — removed from special metrics. Not in any BodySpec report.
+- **Regional T-Score and Z-Score** (14 entries) — T-Score and Z-Score now only generate for Total Body. BodySpec shows "-" for all regional T/Z scores.
+- **Clinical DEXA sites** (14 entries) — removed L1-L4 and all 4 femur regions from `BONE_REGIONS`. These are hospital/clinical DEXA sites not present in BodySpec consumer scans. Can be re-added if a clinical DEXA is ever uploaded.
+- **Final counts:** Body Composition 54 entries (was 65), Bone 10 entries (was 39)
 
 **Fix — `matchBiomarker` fallback chain:** When direct alias lookup fails, the function now tries:
 1. `aliasMap.get(normalize(rawName))` — existing behavior

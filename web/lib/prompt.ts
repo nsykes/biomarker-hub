@@ -64,7 +64,6 @@ Return a JSON object with this exact structure:
     - rawName: "Android Fat %" → metricName: "Fat %", region: "Android"
     - rawName: "Head BMD" → metricName: "BMD", region: "Head"
     - rawName: "Right Arm Lean Tissue Mass" → metricName: "Lean Tissue Mass", region: "Right Arm"
-    - rawName: "Arms Lean %" → metricName: "Lean %", region: "Arms"
     - Total body metrics: region: null (e.g. rawName: "Total Body Fat %" → metricName: "Fat %", region: null)
     - VAT Mass and VAT Volume are separate metrics
     - Skip marketing/cover pages

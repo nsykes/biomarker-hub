@@ -63,7 +63,6 @@ const BODY_COMP_METRICS = [
   { groupSlug: "fat-tissue-mass", displayName: "Fat Tissue Mass", fullName: "Fat Tissue Mass", unit: "lbs", aliases: ["FAT TISSUE MASS", "FAT MASS", "FAT TISSUE"] },
   { groupSlug: "lean-tissue-mass", displayName: "Lean Tissue Mass", fullName: "Lean Tissue Mass", unit: "lbs", aliases: ["LEAN TISSUE MASS", "LEAN MASS", "LEAN TISSUE"] },
   { groupSlug: "bmc", displayName: "BMC", fullName: "Bone Mineral Content", unit: "lbs", aliases: ["BMC", "BONE MINERAL CONTENT"] },
-  { groupSlug: "lean-pct", displayName: "Lean %", fullName: "Lean %", unit: "%", aliases: ["LEAN %", "LEAN PERCENTAGE", "% LEAN"] },
 ] as const;
 
 function generateBodyCompEntries(): CanonicalBiomarker[] {
@@ -91,11 +90,6 @@ function generateBodyCompEntries(): CanonicalBiomarker[] {
 
 const BONE_REGIONS = [
   { name: "Total Body", slugSuffix: "total-body" },
-  { name: "L1-L4", slugSuffix: "l1-l4" },
-  { name: "Left Femur Neck", slugSuffix: "left-femur-neck" },
-  { name: "Left Femur Total", slugSuffix: "left-femur-total" },
-  { name: "Right Femur Neck", slugSuffix: "right-femur-neck" },
-  { name: "Right Femur Total", slugSuffix: "right-femur-total" },
   { name: "Head", slugSuffix: "head" },
   { name: "Arms", slugSuffix: "arms" },
   { name: "Legs", slugSuffix: "legs" },
@@ -114,7 +108,9 @@ const BONE_METRICS = [
 function generateBoneEntries(): CanonicalBiomarker[] {
   const entries: CanonicalBiomarker[] = [];
   for (const metric of BONE_METRICS) {
-    for (const region of BONE_REGIONS) {
+    // T-Score and Z-Score only exist for Total Body (BodySpec shows "-" for regional)
+    const regions = metric.groupSlug === "bmd" ? BONE_REGIONS : [BONE_REGIONS[0]];
+    for (const region of regions) {
       const isTotal = region.name === "Total Body";
       entries.push({
         slug: `${metric.groupSlug}-${region.slugSuffix}`,
@@ -943,7 +939,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: "urine",
   },
 
-  // ─── Body Composition — special metrics (5) ───
+  // ─── Body Composition — special metrics (4) ───
   {
     slug: "resting-metabolic-rate", displayName: "Resting Metabolic Rate", fullName: "Resting Metabolic Rate",
     category: "Body Composition", defaultUnit: "kcal/day",
@@ -968,17 +964,10 @@ export const REGISTRY: CanonicalBiomarker[] = [
     aliases: ["VAT VOLUME", "VISCERAL ADIPOSE TISSUE VOLUME"],
     region: null, regionGroupSlug: null, specimenType: "body_composition",
   },
-  {
-    slug: "subcutaneous-adipose", displayName: "Subcutaneous Adipose", fullName: "Subcutaneous Adipose",
-    category: "Body Composition", defaultUnit: "lbs",
-    aliases: ["SUBCUTANEOUS ADIPOSE", "SUBCUTANEOUS FAT"],
-    region: null, regionGroupSlug: null, specimenType: "body_composition",
-  },
-
   // ─── Body Composition — regional (50 generated) ───
   ...generateBodyCompEntries(),
 
-  // ─── Bone (18 generated) ───
+  // ─── Bone (10 generated: 8 BMD + 1 T-Score + 1 Z-Score) ───
   ...generateBoneEntries(),
 ];
 

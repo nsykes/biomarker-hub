@@ -28,6 +28,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
   const [collectionDateTo, setCollectionDateTo] = useState("");
   const [addedDateFrom, setAddedDateFrom] = useState("");
   const [addedDateTo, setAddedDateTo] = useState("");
+  const [addedSort, setAddedSort] = useState<"none" | "desc" | "asc">("none");
 
   const loadFiles = useCallback(async () => {
     try {
@@ -71,7 +72,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
   }, [files]);
 
   const filteredFiles = useMemo(() => {
-    return files.filter((f) => {
+    const result = files.filter((f) => {
       if (typeFilter !== "all" && (f.reportType ?? "other") !== typeFilter) return false;
       if (labFilter !== "all" && (f.labName || "") !== labFilter) return false;
       if (sourceFilter !== "all" && (f.source || "") !== sourceFilter) return false;
@@ -87,7 +88,14 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
       }
       return true;
     });
-  }, [files, typeFilter, labFilter, sourceFilter, collectionDateFrom, collectionDateTo, addedDateFrom, addedDateTo]);
+    if (addedSort !== "none") {
+      result.sort((a, b) => {
+        const cmp = a.addedAt.localeCompare(b.addedAt);
+        return addedSort === "asc" ? cmp : -cmp;
+      });
+    }
+    return result;
+  }, [files, typeFilter, labFilter, sourceFilter, collectionDateFrom, collectionDateTo, addedDateFrom, addedDateTo, addedSort]);
 
   const filtersActive = typeFilter !== "all" || labFilter !== "all" || sourceFilter !== "all" || collectionDateFrom || collectionDateTo || addedDateFrom || addedDateTo;
 
@@ -240,7 +248,17 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
                   <th className="px-5 py-3 font-medium">Lab</th>
                   <th className="px-5 py-3 font-medium">Source</th>
                   <th className="px-5 py-3 font-medium">Biomarkers</th>
-                  <th className="px-5 py-3 font-medium">Added</th>
+                  <th className="px-5 py-3 font-medium">
+                    <button
+                      onClick={() => setAddedSort(prev => prev === "none" ? "desc" : prev === "desc" ? "asc" : "none")}
+                      className="inline-flex items-center gap-1 hover:text-[var(--color-text-secondary)] transition-colors"
+                    >
+                      Added
+                      {addedSort === "desc" && <span>↓</span>}
+                      {addedSort === "asc" && <span>↑</span>}
+                      {addedSort === "none" && <span className="text-[var(--color-text-tertiary)]/50">↕</span>}
+                    </button>
+                  </th>
                   <th className="px-5 py-3 font-medium w-10"></th>
                 </tr>
               </thead>

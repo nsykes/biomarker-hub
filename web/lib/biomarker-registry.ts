@@ -27,7 +27,8 @@ export type BiomarkerCategory =
   | "Celiac"
   | "Toxins"
   | "Blood Type"
-  | "Vitamins";
+  | "Vitamins"
+  | "Genetic";
 
 export interface CanonicalBiomarker {
   slug: string;
@@ -126,7 +127,7 @@ function generateBoneEntries(): CanonicalBiomarker[] {
 // ── Registry ────────────────────────────────────
 
 export const REGISTRY: CanonicalBiomarker[] = [
-  // ─── Heart (16) ───
+  // ─── Heart (17) ───
   {
     slug: "total-cholesterol", displayName: "Total Cholesterol", fullName: "Total Cholesterol",
     category: "Heart", defaultUnit: "mg/dL",
@@ -222,6 +223,12 @@ export const REGISTRY: CanonicalBiomarker[] = [
     category: "Heart", defaultUnit: "\u00B5mol/L",
     aliases: ["HOMOCYSTEINE", "HOMOCYSTEINE PLASMA", "HOMOCYST(E)INE"],
     region: null, regionGroupSlug: null, specimenType: null,
+  },
+  {
+    slug: "adiponectin", displayName: "Adiponectin", fullName: "Adiponectin",
+    category: "Heart", defaultUnit: "\u00B5g/mL",
+    aliases: ["ADIPONECTIN"],
+    region: null, regionGroupSlug: null, specimenType: "blood",
   },
 
   // ─── Metabolic (6) ───
@@ -813,6 +820,14 @@ export const REGISTRY: CanonicalBiomarker[] = [
     slug: "rh-type", displayName: "Rh Type", fullName: "Rh Type",
     category: "Blood Type", defaultUnit: null,
     aliases: ["RH TYPE", "RH(D) TYPE", "RH FACTOR", "RH(D) TYPING"],
+    region: null, regionGroupSlug: null, specimenType: null,
+  },
+
+  // ─── Genetic (1) ───
+  {
+    slug: "apoe-genotype", displayName: "APOE Genotype", fullName: "Apolipoprotein E Genotype",
+    category: "Genetic", defaultUnit: null,
+    aliases: ["APOE GENOTYPE", "APO E GENOTYPE", "APOLIPOPROTEIN E GENOTYPE"],
     region: null, regionGroupSlug: null, specimenType: null,
   },
 

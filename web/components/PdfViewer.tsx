@@ -86,6 +86,12 @@ export function PdfViewer({
         cleanupHighlightRef.current();
         cleanupHighlightRef.current = null;
       }
+    } else {
+      // Target exists but on a different page — cleanup stale highlight
+      if (cleanupHighlightRef.current) {
+        cleanupHighlightRef.current();
+        cleanupHighlightRef.current = null;
+      }
     }
   }, []);
 

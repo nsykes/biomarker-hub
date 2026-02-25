@@ -20,6 +20,7 @@ Monorepo for biomarker extraction and health data tools.
 - `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers, account, dashboards)
 - `web/components/biomarker-detail/` — BiomarkerDetailPage subcomponents (HistoryChart, HistoryTable, ReferenceRangeSection, helpers)
 - `web/components/BiomarkerCombobox.tsx` — Registry-backed biomarker search/select for adding biomarkers after extraction
+- `web/components/DatePickerInput.tsx` — Custom calendar popover date picker (no external deps), used in FilesTab filters
 - `web/components/PdfPreviewModal.tsx` — Modal for previewing source PDF from history table rows
 - `web/components/RangeConflictModal.tsx` — Modal for resolving reference range conflicts between PDF and stored ranges
 - `web/components/DeleteAccountModal.tsx` — Confirmation modal for account deletion (type "DELETE" to confirm)
@@ -44,7 +45,7 @@ npx tsc --noEmit # type-check
 ## Conventions
 
 - OpenRouter for all LLM calls (ZDR enabled). Default model: Gemini 2.5 Pro.
-- Neon Postgres via Drizzle ORM (`DATABASE_URL` env var). Most V1 state still in-memory with JSON export.
+- Neon Postgres via Drizzle ORM (`DATABASE_URL` env var). All state is fully DB-backed.
 - `rawName` = exact text from PDF, `metricName` = normalized clinical name.
 - PDF highlighting uses row-based spatial matching, not substring search.
 

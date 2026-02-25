@@ -6,16 +6,25 @@ import { REGISTRY, CanonicalBiomarker } from "@/lib/biomarker-registry";
 interface BiomarkerComboboxProps {
   onSelect: (entry: CanonicalBiomarker) => void;
   onClose: () => void;
+  /** Render dropdown inline (in-flow) instead of absolute-positioned overlay */
+  inline?: boolean;
 }
 
-export function BiomarkerCombobox({ onSelect, onClose }: BiomarkerComboboxProps) {
+export function BiomarkerCombobox({ onSelect, onClose, inline }: BiomarkerComboboxProps) {
   const [query, setQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (inline && listRef.current) {
+      listRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -39,7 +48,7 @@ export function BiomarkerCombobox({ onSelect, onClose }: BiomarkerComboboxProps)
   }, [query]);
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-md">
+    <div ref={containerRef} className={`${inline ? "" : "relative "}w-full max-w-md`}>
       <input
         ref={inputRef}
         type="text"
@@ -52,7 +61,7 @@ export function BiomarkerCombobox({ onSelect, onClose }: BiomarkerComboboxProps)
         className="input-base rounded-xl"
       />
       {filtered.length > 0 && (
-        <ul className="absolute z-20 mt-1.5 w-full max-h-60 overflow-auto bg-white rounded-xl shadow-lg border border-[var(--color-border-light)]">
+        <ul ref={listRef} className={`${inline ? "" : "absolute z-20 "}mt-1.5 w-full max-h-60 overflow-auto bg-white rounded-xl shadow-lg border border-[var(--color-border-light)]`}>
           {filtered.map((entry) => (
             <li
               key={entry.slug}
@@ -66,7 +75,7 @@ export function BiomarkerCombobox({ onSelect, onClose }: BiomarkerComboboxProps)
         </ul>
       )}
       {filtered.length === 0 && query.trim() && (
-        <div className="absolute z-20 mt-1.5 w-full bg-white rounded-xl shadow-lg border border-[var(--color-border-light)] px-3 py-3 text-sm text-[var(--color-text-tertiary)]">
+        <div className={`${inline ? "" : "absolute z-20 "}mt-1.5 w-full bg-white rounded-xl shadow-lg border border-[var(--color-border-light)] px-3 py-3 text-sm text-[var(--color-text-tertiary)]`}>
           No matching biomarkers
         </div>
       )}

@@ -5,6 +5,7 @@ import { StoredFile } from "@/lib/types";
 import { getFiles, deleteFile } from "@/lib/db/actions";
 import { formatDate } from "@/lib/utils";
 import { PageSpinner } from "./Spinner";
+import { DatePickerInput } from "./DatePickerInput";
 
 interface FilesTabProps {
   onNewExtraction: () => void;
@@ -177,18 +178,18 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
           <div className="flex flex-col gap-1">
             <label className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Collection Date</label>
             <div className="flex items-center gap-1.5">
-              <input
-                type="date"
+              <DatePickerInput
                 value={collectionDateFrom}
-                onChange={(e) => setCollectionDateFrom(e.target.value)}
-                className="input-base !py-1.5 !px-2 !rounded-lg !w-auto"
+                onChange={setCollectionDateFrom}
+                placeholder="From"
+                maxDate={collectionDateTo || undefined}
               />
               <span className="text-[var(--color-text-tertiary)] text-xs">to</span>
-              <input
-                type="date"
+              <DatePickerInput
                 value={collectionDateTo}
-                onChange={(e) => setCollectionDateTo(e.target.value)}
-                className="input-base !py-1.5 !px-2 !rounded-lg !w-auto"
+                onChange={setCollectionDateTo}
+                placeholder="To"
+                minDate={collectionDateFrom || undefined}
               />
             </div>
           </div>

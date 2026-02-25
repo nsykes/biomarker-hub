@@ -19,7 +19,7 @@ Currently supports: Quest Diagnostics blood panels, Function Health reports, Bod
 - **Repo:** Monorepo — `web/` is the Next.js 15 app
 - **MCP servers configured:** Vercel (`https://mcp.vercel.com`), Neon (`https://mcp.neon.tech`), PitchBook, Granola
 
-The codebase has Drizzle ORM + Neon wiring already in place (`drizzle.config.ts`, `lib/db/`), using `DATABASE_URL` env var. The DB schema stores per-user settings (OpenRouter API key, default model) and all report/biomarker data scoped by user ID. Auth is via Neon Auth (Google OAuth). In V1, the DB is available but most state is still in-memory with JSON export.
+**Env vars:** `DATABASE_URL` (Neon connection string), `NEON_AUTH_BASE_URL` (from Neon Auth tab), `NEON_AUTH_COOKIE_SECRET` (32+ chars, `openssl rand -base64 32`). All state is fully DB-backed via Drizzle ORM (`drizzle.config.ts`, `lib/db/`).
 
 ## Architecture
 
@@ -75,451 +75,62 @@ neon_auth.user (id, name, email — managed by Neon)
         └── dashboard_items (dashboard_id FK)
 ```
 
-The old `patients` table was dropped in favor of this design. `name` comes from the auth user, so it's not duplicated in `profiles`.
-
 ### LLM Extraction: Page Numbers Are Critical
 
 Every extracted biomarker includes the 1-indexed page number where it appears. This enables click-to-source tracing in the UI. Page accuracy varies by model — Gemini 2.5 Pro is currently the most reliable.
 
-## Future Plans
+### Unit Normalization: Display-Time, Not Ingestion-Time
 
-### Multi-File Support (V2)
+Different labs report the same biomarker in different units (e.g., glucose in mg/dL vs mmol/L). The app normalizes values to the registry's canonical unit at display time using a deterministic conversion table (`web/lib/unit-conversions.ts`) based on molecular weights (~17 conversions covering all common biomarkers).
 
-Upload multiple health files per product/person. Track the same biomarkers over time:
-- Timeline view: line charts showing biomarker values across multiple reports
-- Automatic deduplication by metricName across files
-- Date-based sorting using collectionDate from each report
+**Why display-time:** Originals are stored in DB untouched, conversion is applied when rendering charts/tables. This preserves source data fidelity and makes conversions reversible. Missing/unrecognized units pass through unchanged — no data is ever lost.
 
-### Database Persistence
+### Chunked PDF Extraction
 
-Neon Postgres is provisioned and schema is live (profiles, reports, biomarker_results, reference_ranges, settings). Drizzle ORM wiring is in place. The `actions.ts` layer now reads/writes the normalized schema (`reports` + `biomarker_results`) and assembles the flat `StoredFile` shape that components expect.
+Large PDFs (17+ pages) caused 504 gateway timeouts. PDFs exceeding `CHUNK_PAGE_THRESHOLD` (8 pages) are split into chunks of `CHUNK_SIZE` (6 pages) using `pdf-lib`, extracted in parallel via `Promise.all()`, then merged (reportInfo from first chunk, page numbers adjusted by offset, tokens aggregated). A universal post-extraction dedup pass runs on all extractions — same slug in a single report = duplicate (handles summary/appendix pages repeating earlier results).
 
-**PDF storage:** Uploaded PDFs are stored as `bytea` in the `reports.pdf_data` column alongside extraction results. A dedicated API route (`/api/reports/[id]/pdf`) handles binary upload (PUT) and retrieval (GET), avoiding server action size limits. List/detail queries exclude the `pdfData` column to avoid loading multi-MB blobs unnecessarily — the `pdfSizeBytes` field tells the UI whether a PDF exists without loading it. When viewing a saved report, the PDF is fetched on demand and displayed in the split-pane viewer.
+A `FETCH_TIMEOUT_MS` (240s) `AbortController` wraps fetch calls; `maxDuration` is 300s for Vercel Pro. The extract route uses a `ReadableStream` with 15s keep-alive bytes to prevent `ERR_NETWORK_IO_SUSPENDED` on long extractions.
 
-Remaining work:
-- Enable trend queries across reports
+### DEXA Biomarker Matching: Region Prefix Stripping
 
-### MCP Server
+BodySpec DEXA PDFs extract region-prefixed names (e.g., "Android Fat %") that don't match the registry alias "Fat %". The `matchBiomarker` fallback chain tries: (1) direct alias lookup on rawName, (2) strip region prefix from rawName (body_composition only), (3) alias lookup on metricName, (4) strip region prefix from metricName. Region stripping uses a sorted list of all region names (longest first to avoid partial matches). Gated to `body_composition` specimenType.
 
-Expose biomarker data as an MCP server so Claude/ChatGPT can:
-- Answer questions about health trends
-- Compare values against reference ranges
-- Summarize changes between reports
+## Current Capabilities
 
-### Biomarker Detail Pages (Implemented)
+### Extraction Pipeline
 
-Each biomarker in the Biomarkers tab links to a dedicated detail page at `/biomarkers/[slug]`:
+Upload a PDF → LLM extracts biomarkers into structured JSON → review in split-pane UI (PDF left, results right). Results grouped by page number. Users can add biomarkers (via registry-backed combobox), delete with undo toast, and remap unmatched biomarkers to registry entries. Re-extraction updates the existing report in-place (no duplicates). Model is configured in Settings. Large PDFs are automatically chunked.
 
-1. **Historical chart** — Recharts `LineChart` showing all numeric values over time, with data points colored by flag status. Reference range displayed as a shaded zone when available.
-2. **History table** — All data points (newest first) with date, value, unit, flag, and source (filename + lab name).
-3. **Reference range section** — Shows custom range from `reference_ranges` table (auto-backfilled from lab data on first visit if needed). One-sided ranges display as "< X" or "> X" instead of "? – X". Goal direction shown inline (e.g., "< 200 mg/dL (goal: below)"). Falls back to "No custom reference range set" only if no lab data exists at all. Also shows unique lab-reported ranges from extraction data.
+### Biomarker Detail Pages
 
-**Architecture:**
-- Route: `web/app/biomarkers/[slug]/page.tsx` (server component — looks up registry entry, fetches data via `getBiomarkerDetail()`)
-- Client component: `web/components/BiomarkerDetailPage.tsx` (chart, table, reference range section)
-- Server action: `getBiomarkerDetail(slug)` joins `biomarker_results` with `reports`, sorted by `collection_date ASC`. Uses `idx_biomarker_results_slug_report` index.
-- `reference_ranges` DB table is auto-populated from PDF extractions (see "Extraction View Improvements" section).
-- BiomarkersTab rows are now `<Link>` elements pointing to `/biomarkers/[slug]` (replaced inline expand/collapse).
-- AppShell reads `?tab=` query param on mount for back-navigation from detail pages (`/?tab=biomarkers`).
-- Charting: `recharts` library added as dependency.
+Each biomarker links to `/biomarkers/[slug]` with:
+- **History chart** — time-proportional X-axis, dots colored by flag status (recomputed client-side from custom reference range), reference range as shaded zone.
+- **History table** — all data points with date, value, unit, flag, source. Click a row to preview the source PDF page in a modal.
+- **Reference range section** — editable custom range (auto-backfilled from lab data on first visit), goal direction auto-inferred, lab-reported ranges shown for comparison. Unit-normalized values shown with originals in parentheses.
 
-**Time-proportional chart X-axis (Implemented — 2026-02-25):** X-axis uses `scale="time"` with timestamp-based domain and 30-day padding, so spacing between points reflects actual elapsed time.
+### Dashboards
 
-**Remaining work:**
-- Biomarker summary/explanation text (what it is, why it matters)
+Named collections of biomarker charts (e.g., "Heart Health"). Create/edit via modal with biomarker combobox selection. Detail view shows a responsive chart grid with drag-to-reorder (`@dnd-kit/sortable`). Chart data batch-fetched in 2 queries (not N). Charts link to biomarker detail pages.
 
-### PDF Preview from History Table (Implemented — 2026-02-25)
+### Reports & Files
 
-Clicking a row in the biomarker detail history table opens a modal with the source PDF, navigated to the page where that biomarker appears. The modal fetches the PDF on demand from `/api/reports/[id]/pdf`, shows a loading spinner while fetching, and renders it via `PdfViewer` (no highlight, just the page). Close via X button, backdrop click, or Escape key. The `page` field was added to `BiomarkerHistoryPoint` and the `getBiomarkerDetail()` query.
+Metadata-centric table (collection date + lab/source as primary identifier, not filename). PDFs stored as `bytea` in `reports.pdf_data`, fetched on demand via `/api/reports/[id]/pdf`. Inline-editable report info (date, source, lab name). CSV export of all biomarker data from Settings.
 
-**New file:** `components/PdfPreviewModal.tsx`
-**Files changed:** `lib/types.ts`, `lib/db/actions/biomarkers.ts`, `components/biomarker-detail/HistoryTable.tsx`, `components/BiomarkerDetailPage.tsx`, `components/BiomarkersTab.tsx`
+### Auth & Account
 
-### Consistent Header Between Main Page and Detail Page (Implemented — 2026-02-25)
+Neon Auth (`@neondatabase/auth@^0.2.0-beta.1`, Google OAuth). Per-user data isolation on all DB queries via `requireUser()`. Middleware protects pages; API routes return 401 without valid session. Server actions bypass middleware auth (they authenticate independently). Account deletion cascades to reports, biomarkers, settings, profile, and dashboards.
 
-The header on BiomarkerDetailPage previously had different padding (`px-5` vs AppShell's `px-6`) and was much taller because it contained the biomarker title, category badge, and full name. This caused the logo to visibly shift when navigating between pages.
+### UI & Design System
 
-**Fix:** Header now contains only the logo and "← Biomarkers" back link (matching AppShell's single-row layout with `px-6 gap-3`). The biomarker name, category badge, unit, and full name subtitle moved into a title section below the header within the `max-w-4xl` content area.
+Apple Health-inspired design. CSS custom properties for colors, shadows, and radii. Flag colors use Apple system colors. Frosted-glass headers, pill-style tab navigation, card-wrapped sections. Geist Sans font. Expand/collapse all for category sections.
 
-**Files changed:** `components/BiomarkerDetailPage.tsx`
+## Biomarker Registry
 
-### Live Chart Updates on Reference Range Edit (Implemented — 2026-02-25)
+134+ canonical biomarkers in `web/lib/biomarker-registry.ts`. Each entry has `displayName`, `fullName` (expanded clinical name for abbreviations like AST → "Aspartate Aminotransferase"), `category`, `defaultUnit`, `aliases`, and `slug`. DEXA entries are generated programmatically for body composition (64 entries) and bone density (10 entries) regions.
 
-Two fixes to the biomarker detail page:
+**Category corrections** from audit: homocysteine → Heart, rheumatoid-factor → Autoimmune, methylmalonic-acid → Vitamins, leptin → Endocrinology, magnesium-rbc → Electrolytes.
 
-1. **Chart updates live** when the user edits the reference range — green/red zones and reference lines shift immediately without a page refresh. Previously, `ReferenceRangeSection` managed its own local state; now the reference range is lifted to `BiomarkerDetailPage` and passed down to both the chart and the range editor via props + callback.
-
-2. **Dot colors reflect the custom reference range** — flags (NORMAL/HIGH/LOW) are now recomputed client-side from the current reference range instead of reading the DB-stored `flag` (which reflects the lab-reported range at extraction time). If no custom range is set, all dots default to NORMAL (green). A `computeFlag()` helper in `HistoryChart.tsx` handles all three goal directions (below/above/within).
-
-**Files changed:** `BiomarkerDetailPage.tsx`, `biomarker-detail/ReferenceRangeSection.tsx`, `biomarker-detail/HistoryChart.tsx`
-
-### Re-extraction Updates Existing Report (Implemented — 2026-02-25)
-
-Previously, clicking "Re-attempt Extraction" on an existing report always created a new report row, producing duplicate biomarker data (visible as two identical data points on charts). Now re-extraction updates the existing report in-place via `reextractReport()` server action — it updates report metadata, deletes old biomarker_results, and inserts the new ones. The `savedFileId` is checked in `handleExtract`: if set (viewing existing report), calls `reextractReport`; if null (new extraction), calls `saveFile` as before.
-
-**New server action:** `reextractReport(id, data)` in `lib/db/actions/reports.ts` — verifies ownership, updates report fields, replaces biomarkers atomically.
-
-### Extraction View Improvements (Implemented — 2026-02-23)
-
-Four changes to the extraction step UI:
-
-1. **Page column removed** — The "Page" column and `onPageClick` handler removed from the results table. Row click already navigates to the correct page via `handleSelectBiomarker` → `buildHighlightTarget` → PdfViewer page-change effect, making the separate page button redundant. Column count reduced from 7 to 6.
-
-2. **Re-attempt extraction button** — After extraction completes, the "Extract Biomarkers" button changes to gray "Re-attempt Extraction" with a `window.confirm()` guard. Before first extraction, the button remains blue.
-
-3. **Reference range auto-population** — When biomarkers are extracted from a PDF, their reference ranges are automatically saved to the `reference_ranges` table if no stored range exists. If a stored range already exists and differs from the PDF, a conflict modal appears letting the user choose "Keep stored" or "Use PDF range" per biomarker.
-   - New server actions: `reconcileReferenceRanges()` (batch compare + auto-insert), `updateReferenceRange()` (upsert single range)
-   - New component: `RangeConflictModal.tsx`
-   - New type: `ReferenceRangeConflict` in `types.ts`
-
-4. **Highlight scroll jump-back fix** — The `handleTextLayerSuccess` callback in PdfViewer previously depended on `[highlightTarget, currentPage]`, causing react-pdf to re-render the text layer when clicking different biomarkers. This interrupted `scrollIntoView` smooth animations. Fixed by storing highlight target and current page in refs, making the callback stable (empty dependency array), and adding a separate `useEffect` for same-page highlight changes using `requestAnimationFrame`.
-
-**Files changed:** `ResultsPanel.tsx`, `BiomarkerRow.tsx`, `ExtractionView.tsx`, `PdfViewer.tsx`, `types.ts`, `lib/db/actions/biomarkers.ts`, `lib/db/actions.ts`
-**New files:** `components/RangeConflictModal.tsx`
-
-### Extraction UX Improvements (Implemented — 2026-02-23)
-
-Four changes to clean up the extraction experience:
-
-1. **Per-extraction model selector removed** — The model is configured in Settings and used automatically. `ModelSelector.tsx` deleted; `SettingsTab` uses an inline `<select>` from `AVAILABLE_MODELS`.
-
-2. **Lab-specific branding removed** — Upload zone now says "Upload any lab report PDF" instead of listing specific labs.
-
-3. **Editable report info bar** — After extraction, a blue info bar shows collection date, source, and lab name — all inline-editable (click-to-edit, blur/Enter saves, Escape cancels). Edits persist to DB via `updateReportInfo` server action.
-
-4. **Add/delete biomarkers** — Users can correct extraction errors:
-   - **Delete** — X button on each biomarker row removes it from state and syncs to DB.
-   - **Add** — "Add Biomarker" button below the table opens a `BiomarkerCombobox` that searches the canonical registry (134+ entries) by displayName, fullName, and aliases. Selecting an entry creates a new biomarker row with registry defaults.
-
-**New files:** `components/BiomarkerCombobox.tsx`
-**Deleted files:** `components/ModelSelector.tsx`
-**New server action:** `updateReportInfo(id, { source?, labName?, collectionDate? })` in `lib/db/actions/reports.ts`
-
-### Editable Reference Ranges + Expand/Collapse All (Implemented — 2026-02-23)
-
-**Editable reference ranges:** The biomarker detail page's Reference Range card now has a working Edit/Set Range button. When a range exists, clicking "Edit" opens an inline form with Low, High, and Unit fields. When no range exists, "Set Range" opens the same form. Save calls `updateReferenceRange()` server action with optimistic local state update. Goal direction is auto-inferred client-side via `inferGoalDirection()`. Clearing both Low and High clears the range entirely. Cancel discards edits.
-
-**Expand/Collapse All:** Both the Biomarkers tab and ResultsPanel extraction table have a toggle button. Shows "Collapse All" when all categories are expanded, "Expand All" when any are collapsed. The `useCategoryCollapse` hook now exposes `expandAll()`, `collapseAll(categories)`, and `anyCollapsed` boolean.
-
-**Files changed:** `components/biomarker-detail/ReferenceRangeSection.tsx`, `components/BiomarkerDetailPage.tsx`, `hooks/useCategoryCollapse.ts`, `components/BiomarkersTab.tsx`, `components/ResultsPanel.tsx`
-
-### Unknown Biomarker Remapping (Implemented — 2026-02-23)
-
-When the LLM extracts a biomarker that doesn't match the canonical registry, `matchBiomarker()` returns null and `canonicalSlug` is stored as null. These biomarkers are saved in the DB with all data intact but are hidden from the Biomarkers tab (which filters out null slugs).
-
-**Solution:** During extraction review, unmatched biomarkers show an amber "Unmatched" badge next to the metric name in `BiomarkerRow`. Clicking the badge opens a `BiomarkerCombobox` inline, letting the user search and select the correct registry entry. On selection, the row's `canonicalSlug`, `metricName`, and `category` are updated from the registry (unit is set only if currently null). The original `rawName`, `value`, reference ranges, `flag`, and `page` are preserved. After remapping, the biomarker appears in the Biomarkers tab and trend charts like any other matched entry.
-
-### Remove Server-Side API Key (Implemented — 2026-02-23)
-
-The server-side `OPENROUTER_API_KEY` env var fallback has been removed. Each user must provide their own OpenRouter API key in Settings. The extract route returns a 400 with a clear message if no key is provided. The UI disables the extract button and shows an inline message when no API key is configured.
-
-### Privacy & Data Flow Audit
-
-Before sharing the app with friends/family, do a thorough review of the full data flow and all third-party sub-processors to be able to clearly answer privacy questions:
-
-- What data leaves the browser and where does it go? (OpenRouter, Neon, Vercel, etc.)
-- What does OpenRouter do with the PDF content sent for extraction? Retention policies?
-- What does Neon store and where? Encryption at rest?
-- What does Vercel have access to? Logs, request bodies?
-- Is any data sent to places we don't realize? (analytics, error tracking, etc.)
-- Can we offer a clear, plain-language privacy summary for users?
-
-Goal: be able to confidently explain to a non-technical user exactly what happens with their health data.
-
-### New Extraction Empty State & Settings Link Fix (Implemented — 2026-02-23)
-
-Two UX fixes:
-
-1. **Single-column empty state** — When no file is selected on the New Extraction page, the awkward two-panel split pane is replaced with a full-width centered upload zone. The `<SplitPane>` only renders after a file is selected. An API key warning shows below the upload zone if no key is configured.
-
-2. **Broken Settings link removed** — `<UserButton disableDefaultLinks />` prevents the profile dropdown from rendering a "Settings" link to the nonexistent `/account/settings` route. Sign Out still works.
-
-3. **Upload zone visual polish** — Added an upload icon (inline SVG) above the text, refined padding and typography.
-
-**Files changed:** `ExtractionView.tsx`, `UploadZone.tsx`, `AppShell.tsx`
-
-### UI Polish Pass (Implemented — 2026-02-23)
-
-Comprehensive visual overhaul across all 22 component files, inspired by Apple Health / Apple system design. Changes:
-
-**Design system foundations (`globals.css`):**
-- Full CSS custom property system: primary accent (Apple system blue `#0A84FF`), health status flag colors (Apple system colors), warmer Apple-style neutrals, shadow/radius tokens
-- Base utility classes: `.card`, `.btn-primary`, `.btn-secondary`, `.input-base` for consistent styling
-- Body font fixed from hardcoded Arial to `var(--font-sans)` (Geist Sans)
-- Body background changed to off-white `--color-surface-secondary`
-
-**Color palette:**
-- Primary: `#0A84FF` (Apple system blue) with hover `#0070E0` and light bg `#E8F4FD`
-- Flag colors updated to Apple system colors: Normal `#34C759`, Low `#5856D6`, High `#FF3B30`, Abnormal `#FF9500`, Critical Low `#3634A3`, Critical High `#C5221F`
-- Warmer neutrals: borders `#E5E5EA`, text primary `#1C1C1E`, secondary `#636366`, tertiary `#AEAEB2`
-
-**Component changes:**
-- **AppShell:** Frosted-glass header (`bg-white/80 backdrop-blur-lg`), pill-style tab navigation with primary-light active state
-- **FilesTab:** Card-wrapped table, tertiary header bg, primary-light row hover, gradient blue FAB with scale animation
-- **BiomarkersTab:** Primary focus ring search input, chevron SVG icons (replacing unicode), primary-light count badges and row hover
-- **SettingsTab:** Card-wrapped sections, softer section titles, blue-tinted privacy FAQ card
-- **BiomarkerDetailPage:** Off-white page bg, arrow-icon back link, `text-2xl` title, primary-light category badge, card-wrapped sections
-- **HistoryChart:** Primary blue data line, larger dots (r=6), updated grid/zone/tooltip colors
-- **HistoryTable:** Card-wrapped with rounded border, tertiary header bg, primary-light row hover
-- **ReferenceRangeSection:** Goal direction colored badges, left-border accent on lab ranges
-- **ExtractionView:** Frosted-glass header, rounded error banner with icon, amber API key warning card
-- **ResultsPanel:** Primary/secondary button styles, subtle action bar shadow, chevron category icons
-- **BiomarkerRow:** Primary-light selected state with primary left border (replacing yellow), rounded hover states
-- **SplitPane:** Wider handle (`w-1.5`), grip indicator dots, primary color on hover/drag
-- **PdfViewer:** Clean white toolbar, chevron nav icons, consistent rounded button style
-- **UploadZone:** Rounded-2xl container, primary-tinted icon, hover/drag states in primary colors
-- **RangeConflictModal:** Frosted backdrop, `rounded-2xl` modal, close X button, primary selection styling
-- **Auth page:** Off-white bg, app name branding above auth form
-- **FlagBadge/Spinner:** Updated to Apple system colors
-
-### Neon Auth (Implemented — 2026-02-23)
-
-Auth is live using **`@neondatabase/auth@^0.2.0-beta.1`** (standalone package, powered by Better Auth under the hood). Google OAuth is the primary sign-in method.
-
-**What's in place:**
-- **Per-user data isolation** — all DB actions (`getFiles`, `saveFile`, `getSettings`, `saveSettings`, `getBiomarkerDetail`) are scoped by `userId` from the session. No user can see another user's data.
-- **Settings migrated from global to per-user** — each user gets their own settings row (API key, default model). The old global settings row was dropped.
-- **Orphan auto-claim** — `getFiles()` detects reports with `user_id IS NULL` (uploaded before auth existed) and assigns them to the current user on first load. One-time migration path.
-- **Route protection** — middleware protects `/`, `/biomarkers/*`, `/api/extract`, `/api/reports/*`. Unauthenticated requests redirect to `/auth/sign-in`.
-- **API guards** — extract and PDF routes return 401 without a valid session. PDF route also verifies report ownership.
-
-**File structure:**
-- `lib/auth/server.ts` — `createNeonAuth()` server instance
-- `lib/auth/client.ts` — `createAuthClient()` client instance (`'use client'`)
-- `components/AuthProvider.tsx` — wraps app with `NeonAuthUIProvider` (Google social provider)
-- `app/api/auth/[...path]/route.ts` — auth API catch-all (`auth.handler()`)
-- `app/auth/[path]/page.tsx` — sign-in/sign-up UI (`<AuthView>`)
-- `middleware.ts` — route protection via `auth.middleware({ loginUrl })`
-- `app/layout.tsx` — wraps children with `<AuthProvider>`
-- `components/AppShell.tsx` — `<UserButton>` in header
-
-### Codebase Refactor (2026-02-23)
-
-Full structural cleanup — no functionality changes.
-
-**Shared foundation:**
-- `lib/constants.ts` — consolidated magic values (API URLs, model defaults, highlight params, flag colors/options) previously scattered across 7+ files
-- `lib/utils.ts` — shared `formatDate` utility (previously duplicated in BiomarkerDetailPage)
-- `hooks/useCategoryCollapse.ts` — shared hook for collapsible category sections (previously duplicated in ResultsPanel and BiomarkersTab)
-- `components/Spinner.tsx` — shared `Spinner` and `PageSpinner` components (previously duplicated inline in 4 files)
-- `.env.example` — documents required env vars
-
-**BiomarkerDetailPage split (362 → 73 lines):**
-- `components/biomarker-detail/HistoryChart.tsx` — chart with CustomDot, CustomTooltip
-- `components/biomarker-detail/HistoryTable.tsx` — history table
-- `components/biomarker-detail/ReferenceRangeSection.tsx` — reference range display
-- `components/biomarker-detail/helpers.ts` — `formatValue` utility
-- `components/BiomarkerDetailPage.tsx` — thin composer importing subcomponents
-
-**Type cleanup:** BiomarkersTab local `BiomarkerHistory` interface replaced with `BiomarkerHistoryPoint` from types.ts (was a subset duplicate).
-
-**AppShell cleanup:** Removed unnecessary `dynamic()` import for ExtractionView (PdfViewer handles its own `ssr: false`). Derived `VALID_TABS` from `TABS` array instead of maintaining duplicate.
-
-### DB Actions: Modular Barrel Re-export (2026-02-23)
-
-The monolithic `lib/db/actions.ts` has been split into focused sub-modules under `lib/db/actions/`. The original file is now a barrel re-export, so all existing imports (`import { ... } from '@/lib/db/actions'`) continue to work unchanged.
-
-**Sub-modules:**
-- `lib/db/actions/auth.ts` — `requireUser()` helper (session guard)
-- `lib/db/actions/reports.ts` — File/report CRUD (`getFiles`, `getFile`, `saveFile`, `deleteFile`, `updateFileBiomarkers`) plus internal helpers (`reportColumns`, `ReportRow`, `toBiomarker`, `toMeta`, `toStoredFile`, `biomarkerToRow`)
-- `lib/db/actions/settings.ts` — `getSettings`, `updateSettings`
-- `lib/db/actions/biomarkers.ts` — `getBiomarkerDetail`, `getReferenceRange`, `backfillReferenceRange`
-- `lib/db/actions.ts` — Barrel file re-exporting all public functions
-
-Each sub-module has its own `"use server"` directive. Internal helpers in `reports.ts` are not exported.
-
-**Env vars:**
-- `NEON_AUTH_BASE_URL` — from Neon dashboard Auth tab
-- `NEON_AUTH_COOKIE_SECRET` — 32+ chars, generate with `openssl rand -base64 32`
-
-**Session access:** `auth.getSession()` returns `{ data: { session, user } | null, error }`. Server components using it must export `dynamic = 'force-dynamic'`. Client-side: `authClient.useSession()` hook.
-
-**DB migration applied (2026-02-23):** `settings` table now has `user_id UUID NOT NULL UNIQUE` column. Old global settings row was deleted — users re-enter API key after signing in.
-
-**Setup prerequisites (manual):**
-1. Neon dashboard → Auth tab → enable Google as social provider (requires Google OAuth client ID/secret)
-2. Neon dashboard → Auth tab → copy `NEON_AUTH_BASE_URL`
-3. Add `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET` to `.env.local` (local) and Vercel project env vars (production)
-
-### Unit Normalization Across Labs (Implemented — 2026-02-23)
-
-Different labs report the same biomarker in different units (e.g., glucose in mg/dL vs mmol/L). The app now normalizes values to the registry's canonical unit at display time using a deterministic conversion table based on molecular weights.
-
-**Design decisions:**
-- **Display-time normalization, not ingestion-time** — originals stored in DB untouched, conversion applied when rendering charts/tables. This preserves source data fidelity and makes conversions reversible.
-- **Hardcoded lookup table** (`web/lib/unit-conversions.ts`) — ~17 conversion entries covering all common biomarkers. Conversion factors are well-established medical constants (based on molecular weights), so a static table is appropriate. No DB storage needed.
-- **Missing/unrecognized units pass through unchanged** — if unit is null or not in the conversion table, the original value is shown as-is. No data is ever lost or corrupted.
-
-**What's normalized:**
-- **History chart** — Y-axis plots all values in canonical unit, tooltip shows canonical unit
-- **History table** — converted rows show normalized value with original in gray parentheses (e.g., "95.0 (5.27 mmol/L)")
-- **Reference range section** — lab-reported ranges normalized before deduplication, so equivalent ranges in different units collapse into one
-- **Y-axis bounds** — lab-reported reference ranges from history points are normalized before computing chart bounds
-
-**Covered conversions:** Glucose, Total/HDL/LDL/Non-HDL Cholesterol, Triglycerides, Calcium, Creatinine, Uric Acid, BUN, Bilirubin Total, Iron Total, Ferritin, TIBC, Testosterone Total/Free, Cortisol, Insulin, Homocysteine, Vitamin D.
-
-**New file:** `web/lib/unit-conversions.ts` — `normalizeUnitString()` and `convertToCanonical()` functions.
-
-### Chunked PDF Extraction for Large Reports (Implemented — 2026-02-24)
-
-Large PDFs (17+ pages, 150+ biomarkers) caused 504 gateway timeouts on Vercel because a single LLM call generating ~20K+ output tokens took longer than the function timeout allowed.
-
-**Solution:** PDFs exceeding `CHUNK_PAGE_THRESHOLD` (8 pages) are split into chunks of `CHUNK_SIZE` (6 pages) using `pdf-lib`. Each chunk is extracted in parallel via `Promise.all()`, then results are merged:
-- `reportInfo` taken from the first chunk (page 1 has patient/lab info)
-- Biomarker page numbers adjusted by chunk offset to preserve correct PDF page references
-- Token usage aggregated across all chunks
-
-**Post-extraction dedup (2026-02-24):** After slug matching but before UUID assignment, a universal dedup pass runs on ALL extractions (not just chunked). For biomarkers with a `canonicalSlug`, dedup is by slug alone — same biomarker in a single report = duplicate, regardless of rawName or value rounding. For unmatched biomarkers (null slug), falls back to `rawName|value` key. First occurrence (lowest page number) wins. This handles summary/appendix pages that repeat earlier results with different names (e.g., "EPA+DPA+DHA" on page 8 vs "Omega-3 Index (EPA+DPA+DHA)" on page 14).
-
-A `FETCH_TIMEOUT_MS` (240s) `AbortController` wraps all fetch calls as a safety net before Vercel kills the function. `maxDuration` is set to 300s to use full Vercel Pro headroom. Small PDFs (≤8 pages) use the single-call path unchanged.
-
-**Stream keep-alive (2026-02-24):** Long extractions (up to ~240s) caused `ERR_NETWORK_IO_SUSPENDED` because the browser killed the idle connection when no bytes were sent. Fix: the extract route now returns a `ReadableStream` that sends a space byte every 15s as keep-alive, then writes the JSON result at the end. Leading whitespace is valid before JSON — the client reads the full body with `response.text()`, trims, and parses. Early validation errors (auth, missing file) still return normal `NextResponse.json()` with proper status codes; streaming only wraps the long-running extraction phase. HTTP 200 is always returned for streamed responses since headers are sent before the outcome is known — errors are encoded in the JSON body and the client checks for `parsed.error`.
-
-**Dependency added:** `pdf-lib` (lightweight, zero-dependency PDF manipulation)
-
-**Files changed:** `web/app/api/extract/route.ts`, `web/lib/constants.ts`
-
-### Bad PDF Handling
-
-The app currently assumes uploaded files are well-formed lab report PDFs with a text layer. We need graceful handling for common failure cases:
-
-- **Image-only PDFs** (scanned documents with no text layer) — the LLM receives no text to extract from. Detect this and show a clear error suggesting the user needs an OCR'd version.
-- **Non-lab-report PDFs** — someone uploads a random document. The LLM will return empty or garbage results. Detect zero-biomarker extractions and show a helpful message.
-- **Corrupted/unreadable files** — malformed PDFs that fail to parse. Catch errors from react-pdf and show a user-friendly error instead of a blank screen.
-- **Password-protected PDFs** — some lab portals generate these. Detect and inform the user.
-
-Goal: no matter what file someone uploads, they get a clear, helpful message — never a broken UI or cryptic error.
-
-### Data Export — CSV (Implemented — 2026-02-24)
-
-Users can download all their biomarker data as a CSV file from Settings → Export Data. The GET endpoint at `/api/account/export` joins `biomarker_results` with `reports`, sorted by collection date then category. Columns: Date, Biomarker, Value, Unit, Flag, Reference Range Low/High, Source File, Lab Name. Empty accounts get a header-only CSV. Auth-guarded (401 for unauthenticated requests).
-
-**Future:** JSON export, FHIR format, per-report export.
-
-### Account Deletion (Implemented — 2026-02-24)
-
-Users can permanently delete their account and all data from Settings → Delete Account. A confirmation modal requires typing "DELETE" to enable the button. On confirm:
-1. `deleteAccount()` server action deletes reports (CASCADE → biomarker_results), settings, and profile
-2. Client-side `authClient.signOut()` clears the session
-3. Full page redirect to `/auth/sign-in`
-
-Does NOT delete `reference_ranges` (global, not user-scoped). Auth user record deletion is handled by the signOut/session expiry flow.
-
-### Mobile Responsiveness (Lower Priority)
-
-The current layout is desktop-oriented (split-pane PDF viewer + results table). Lab results are something people check on their phone, so the app should be usable on small screens. Considerations:
-
-- The split-pane extraction view won't work on mobile — needs a stacked or tabbed layout
-- Biomarkers tab and detail pages are more straightforward to make responsive
-- Charts (Recharts) may need touch-friendly sizing and interactions
-- Settings page should be responsive
-
-### Trend Alerts (Lowest Priority)
-
-Beyond single-report flags (high/low), the app could surface when a biomarker is trending in a concerning direction across multiple reports. For example:
-
-- A value that's still in range but has been steadily increasing over 3+ reports
-- A value that crossed from normal to abnormal between the two most recent reports
-- Significant jumps between consecutive readings
-
-This is a nice-to-have that depends on multi-file support and unit normalization being in place first.
-
-### De-emphasize File Name, Show Report Metadata Instead (Implemented — 2026-02-24)
-
-PDF filenames are meaningless to users. The UI now shows **collection date** and **lab/source** as the primary report identifier everywhere instead of filename.
-
-**Changes:**
-- **FilesTab:** Replaced Filename + Lab + Collection Date columns with Report | Type | Lab | Source | Biomarkers | (delete). Lab and Source are separate columns (not merged with `||` fallback). Filter bar has separate Lab and Source dropdowns.
-- **HistoryTable (biomarker detail):** Separate Lab and Source columns (not merged). Each shows `"—"` when null.
-- **ReferenceRangeSection:** Lab-reported ranges show `labName || source` (attribution of who reported the range — appropriate to merge here).
-- **ExtractionView header:** Shows both lab and source joined with `" · "` when both exist; shows whichever is available if only one exists.
-- **`BiomarkerHistoryPoint` type:** Added `source: string | null` field.
-- **`getBiomarkerDetail` server action:** Now selects `reports.source` and maps it to history points.
-
-Filename is still stored in the DB and used in CSV exports for data lineage.
-
-**Remove "Added" column (Implemented — 2026-02-25):** The "Added" date column has been removed from FilesTab.
-
-
-### Extraction Results: Group by Page, Not Category (Implemented — 2026-02-24)
-
-During extraction review, the right panel previously grouped biomarkers by category (Liver, Electrolytes, etc.), which caused the user to jump between different PDF pages as they scan down the list. Grouping by page makes left and right panels flow together.
-
-**Change:** The results table now groups biomarkers by **page number** instead of category. Group headers show "Page 1 (n)", "Page 2 (n)", etc., sorted by page number. A **Category column** was added to the results table so that information isn't lost. Column order: Metric | Category | Value | Unit | Ref Range | Flag | [delete]. ColSpan updated from 6 to 7 for group header rows and remap rows. Expand/Collapse All works with string-coerced page keys.
-
-**Files changed:** `components/ResultsPanel.tsx`, `components/BiomarkerRow.tsx`
-
-### Undo for Biomarker Deletion (Implemented — 2026-02-24)
-
-Deleting a biomarker during extraction review now shows a toast with an "Undo" button for 5 seconds. If undo is clicked, the biomarker is restored at its original position. If the toast expires, deletion is finalized to DB. DB sync is deferred until the toast disappears (no unnecessary writes on undo).
-
-**Behavior:**
-- One toast at a time — deleting B while A's toast is showing finalizes A immediately and shows B's toast
-- Back button flushes any pending deletion before navigating away
-- Custom toast component (`UndoToast.tsx`) — no UI library added, consistent with hand-rolled design system
-
-**Files changed:** `components/ExtractionView.tsx`, `lib/constants.ts`
-**New files:** `components/UndoToast.tsx`
-
-### DEXA Biomarker Matching Fix (Implemented — 2026-02-24)
-
-BodySpec DEXA PDFs extract ~40+ biomarkers, but most showed as "Unmatched" due to two problems:
-
-1. **Region-prefixed names failed alias lookup.** The LLM extracted rawNames like "Android Fat %" or "Gynoid Lean Mass". The `matchBiomarker` function normalized to "ANDROID FAT %" but the alias map only had "FAT %" — no match.
-
-2. **Missing registry entries.** "Lean %" wasn't a metric (only Fat % existed), and Bone regions only covered Total Body + L1-L4 + femurs — missing Head, Arms, Legs, Trunk, Ribs, Spine, Pelvis.
-
-**Fix — Registry additions:**
-- Added 7 bone regions (Head, Arms, Legs, Trunk, Ribs, Spine, Pelvis) to `BONE_REGIONS`
-
-**Registry pruning (2026-02-24):** Removed 30 empty DEXA entries that will never have data from BodySpec scans:
-- **Lean %** (10 entries) — kept in `BODY_COMP_METRICS`. BodySpec reports Lean % on trend pages (pages 6-7) and these are real trackable values.
-- **Subcutaneous Adipose** (1 entry) — removed from special metrics. Not in any BodySpec report.
-- **Regional T-Score and Z-Score** (14 entries) — T-Score and Z-Score now only generate for Total Body. BodySpec shows "-" for all regional T/Z scores.
-- **Clinical DEXA sites** (14 entries) — removed L1-L4 and all 4 femur regions from `BONE_REGIONS`. These are hospital/clinical DEXA sites not present in BodySpec consumer scans. Can be re-added if a clinical DEXA is ever uploaded.
-- **Final counts:** Body Composition 64 entries (was 65), Bone 10 entries (was 39)
-
-**Fix — `matchBiomarker` fallback chain:** When direct alias lookup fails, the function now tries:
-1. `aliasMap.get(normalize(rawName))` — existing behavior
-2. Strip region prefix from rawName, retry — only for `body_composition` specimenType
-3. `aliasMap.get(normalize(metricName))` — try LLM-normalized name (new optional 4th parameter)
-4. Strip region prefix from metricName, retry — only for `body_composition`
-
-Region stripping uses a sorted list of all region names (longest first to avoid partial matches like "Left" before "Left Femur Neck"). Gated to `body_composition` specimenType to avoid affecting blood/urine matching.
-
-**Prompt update:** DEXA examples now explicitly show metricName should NOT include the region prefix (e.g., rawName "Android Fat %" → metricName "Fat %", region "Android").
-
-**Files changed:** `web/lib/biomarker-registry.ts`, `web/app/api/extract/route.ts`, `web/lib/prompt.ts`
-
-### Custom Dashboards (Implemented — 2026-02-25)
-
-Users can create named collections of biomarker charts (e.g., "Heart Health" with Total Cholesterol, LDL, HDL, Triglycerides, etc.) and view them all on a single page. The Dashboards tab sits between Biomarkers and Settings in the main nav.
-
-**Architecture:**
-- **DB tables:** `dashboards` (user-scoped, named) + `dashboard_items` (biomarker membership + sort order, CASCADE delete). Both indexed.
-- **Server actions:** `web/lib/db/actions/dashboards.ts` — full CRUD (create, read, update, delete) + `getDashboardChartData(slugs)` which batch-fetches history + reference ranges for multiple biomarkers in 2 queries (not N).
-- **UI:** Master-detail pattern within the Dashboards tab (no new routes). List view shows cards with name + biomarker count + FAB to create. Detail view shows a responsive chart grid (`grid-cols-1 md:grid-cols-2`) with drag-to-reorder via `@dnd-kit/sortable`.
-- **Chart cards** wrap the existing `HistoryChart` component. Each card has a drag handle, clickable header (navigates to `/biomarkers/[slug]`), and remove button.
-- **Create/Edit modal** uses `BiomarkerCombobox` for biomarker selection with removable chips.
-- **Account deletion** cascades to dashboards.
-
-**Dependencies added:** `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
-
-**New files:** `DashboardsTab.tsx`, `DashboardView.tsx`, `DashboardChartCard.tsx`, `CreateDashboardModal.tsx`, `lib/db/actions/dashboards.ts`
-**Modified files:** `schema.ts` (2 tables), `types.ts` (TabId + 3 interfaces), `actions.ts` (barrel), `account.ts` (cascade), `AppShell.tsx` (tab + render)
-
-**Future:**
-- Preset templates by category (Heart, Metabolic, Thyroid, etc.)
-- Shareable/exportable dashboards
-- Summary stats per dashboard (latest values, trend indicators)
-
-### Other Future Items
-
-- **General code cleanup** — Accumulated tech debt pass: remove dead code, consolidate duplicated patterns, tighten types, clean up TODOs, improve naming consistency across components.
-- Batch PDF processing (upload multiple files at once)
-- PII stripping before sending to LLM
-- Model comparison diff view (run same PDF through multiple models)
-- Custom per-lab extraction prompt overrides
+`matchBiomarker()` maps extracted rawName/metricName to registry entries via alias lookup with region-prefix stripping fallback for DEXA (see Design Decisions).
 
 ## Extraction Prompt
 
@@ -536,68 +147,13 @@ The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:
 - **Unit cleanup**: Strip "(calc)" suffix from unit strings
 - **Clinical cutoff fallback** (Rule 9): If no formal reference range is printed but an optimal/clinical cutoff is noted, use that as the reference range
 
-## Registry: fullName + Audit Sync (2026-02-23)
+## Future Plans
 
-The `CanonicalBiomarker` interface now includes a `fullName` field alongside `displayName`. For most entries fullName === displayName, but abbreviations get expanded clinical names (e.g. displayName "AST", fullName "Aspartate Aminotransferase"). This supports:
-- **Search**: BiomarkersTab search matches against fullName, so "aminotransferase" finds AST/ALT
-- **Detail pages**: fullName shown as subtitle under displayName when they differ
-- **Reference/accessibility**: Full clinical names available for tooltips, exports, etc.
-
-**Category corrections** (from audit reconciliation):
-- `homocysteine`: Metabolic → Heart
-- `rheumatoid-factor`: Inflammation → Autoimmune
-- `methylmalonic-acid`: Metabolic → Vitamins
-- `leptin`: Metabolic → Endocrinology
-- `magnesium-rbc`: Vitamins → Electrolytes
-
-**New entry:** `non-hdl-cholesterol` (Heart category)
-
-**New aliases added:** MCHC → "MEAN CORPUSCULAR HEMOGLOBIN CONCENTRATION", eGFR → "ESTIMATED GLOMERULAR FILTRATION RATE", tTG IgG/IgA → "TISSUE TRANSGLUTAMINASE ANTIBODY IGG/IGA", TPO → "THYROID PEROXIDASE ANTIBODY" (singular)
-
-DEXA generators (body comp + bone) also propagate fullName through their metric arrays (e.g. BMD → "Bone Mineral Density", BMC → "Bone Mineral Content").
-
-## Biomarker Audit (2026-02-23)
-
-A comprehensive multi-wave audit was conducted across all 4 example PDFs (320 biomarker instances, 166 unique types). All audit files live in `docs/audit/`.
-
-**Result: PASS (with conditions)**
-
-Key findings:
-- Zero missing biomarkers, zero phantom entries across all 4 PDFs
-- 11 metricName normalization inconsistencies (all in PDF3 — abbreviations vs expanded names). Fixed by expanding Rule 12 normalization examples.
-- 3 category inconsistencies (thyroid antibodies, insulin). Fixed by adding category guidance to Rule 10.
-- 6 unit inconsistencies (all "(calc)" suffix). Fixed by adding stripping rule to Rule 12.
-- PDF4 pixel-level verification was CONDITIONAL (pdftoppm not available for direct PDF rendering). Internal consistency and cross-audit validation confirmed all 124 biomarkers correct.
-
-**Conditions remaining for full pass:**
-- Install poppler (`brew install poppler`) and re-run PDF3/PDF4 pixel verification to confirm values against actual PDF rendering. Current risk: very low — all values cross-validated via internal consistency and cross-audit comparison.
-
-### Server Action Error Sanitization Fix (Implemented — 2026-02-23)
-
-Next.js production builds sanitize errors thrown by server actions — the client receives a generic "An unexpected response was received from the server" instead of the actual error message. This made the Settings tab show "Failed to load settings" with no diagnostic information.
-
-**Fix:** Added `getSettingsSafe()` and `updateSettingsSafe()` wrapper functions that catch errors server-side and return them as `{ data, error }` discriminated unions. Returned data is properly serialized by Next.js (only thrown errors are sanitized). SettingsTab and ExtractionView now use the safe wrappers, so real error messages (e.g., "Unauthorized", "column user_id does not exist") propagate to the UI. The load error banner includes a Retry button.
-
-**Files changed:** `lib/db/actions/settings.ts`, `lib/db/actions.ts`, `components/SettingsTab.tsx`, `components/ExtractionView.tsx`
-
-### Middleware Server Action Bypass (Implemented — 2026-02-23)
-
-The Neon Auth middleware (`auth.middleware()`) was intercepting ALL requests matching the middleware config — including server action POST requests to `/`. When the upstream session check failed or timed out, it redirected to `/auth/sign-in`. The redirect response was HTML, which the server action client couldn't parse as React Flight data, producing the generic "An unexpected response was received from the server" error. This affected the Settings and Files tabs.
-
-**Root cause:** The middleware auth check was redundant for server actions — every server action already authenticates independently via `requireUser()` → `auth.getSession()`. The middleware intercepts requests BEFORE the server action function executes, so the `getSettingsSafe()` try/catch couldn't catch this failure.
-
-**Fix:** The middleware now detects server action requests via the `next-action` header and passes them through immediately with `NextResponse.next()`. Page-level auth protection is unchanged — unauthenticated users visiting `/` are still redirected to sign-in. Also added explicit `size="icon"` prop to `<UserButton>` to suppress a console warning.
-
-**Files changed:** `middleware.ts`, `components/AppShell.tsx`
-
-**Audit file index:**
-- `pdf1-blood-results-audit.md` — 47 biomarkers (PASS)
-- `pdf2-dexa-scan-audit.md` — 64 biomarkers (PASS)
-- `pdf3-lab-results-1-audit.md` — 85 biomarkers (PASS)
-- `pdf4-lab-results-2-audit.md` — 124 biomarkers (PASS)
-- `pdf1-crosscheck.md`, `pdf2-crosscheck.md` — Independent verifications (PASS)
-- `pdf3-crosscheck.md`, `pdf4-crosscheck.md` — Independent verifications (CONDITIONAL PASS)
-- `pdf3-pixel-verification.md` — Pixel-level verification (PASS)
-- `pdf4-pixel-verification.md`, `pdf4-final-pixel-verification.md` — Pixel-level attempts (CONDITIONAL PASS)
-- `cross-pdf-consistency-check.md` — Cross-PDF consistency (CONDITIONAL PASS)
-- `FINAL-RECONCILIATION.md` — Master reconciliation with canonical biomarker registry (166 types)
+- **MCP Server** — Expose biomarker data so Claude/ChatGPT can answer health trend questions, compare values against ranges, and summarize changes between reports.
+- **Bad PDF handling** — Graceful errors for image-only PDFs (no text layer), non-lab-report PDFs (zero biomarkers), corrupted files, and password-protected PDFs.
+- **Mobile responsiveness** — The split-pane extraction view needs a stacked/tabbed layout for small screens. Detail pages and settings are more straightforward.
+- **Trend alerts** — Surface concerning trends across reports: values trending toward out-of-range, recent normal→abnormal crossings, significant jumps between readings.
+- **Privacy audit** — Full data flow review of all third-party sub-processors (OpenRouter, Neon, Vercel) before sharing with friends/family. Goal: plain-language privacy summary for non-technical users.
+- **Biomarker summary text** — What each biomarker is, why it matters — shown on detail pages.
+- **Dashboard enhancements** — Preset templates by category (Heart, Metabolic, Thyroid), shareable/exportable dashboards, summary stats (latest values, trend indicators).
+- **Other** — Batch PDF upload, PII stripping before LLM, model comparison diff view, custom per-lab prompt overrides, general code cleanup pass.

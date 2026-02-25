@@ -157,6 +157,7 @@ export function CreateDashboardModal({
               <BiomarkerCombobox
                 onSelect={handleSelect}
                 onClose={() => setShowCombobox(false)}
+                inline
               />
             ) : (
               <button

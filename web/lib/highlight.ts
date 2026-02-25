@@ -35,7 +35,10 @@ function scoreRow(rowText: string, target: HighlightTarget): number {
     .filter((t) => t.length > 1);
 
   if (nameTokens.length > 0) {
-    const matched = nameTokens.filter((token) => text.includes(token));
+    const matched = nameTokens.filter((token) => {
+      const re = new RegExp(`\\b${escapeRegex(token)}\\b`, "i");
+      return re.test(text);
+    });
     const ratio = matched.length / nameTokens.length;
     if (ratio >= 0.5) {
       score += ratio * 10;
@@ -76,7 +79,7 @@ export function applyHighlights(
   if (!textLayer) return () => {};
 
   const spans = Array.from(
-    textLayer.querySelectorAll("span:not(.markedContent)")
+    textLayer.querySelectorAll('span[role="presentation"]')
   ) as HTMLElement[];
   if (spans.length === 0) return () => {};
 
@@ -93,6 +96,11 @@ export function applyHighlights(
     .filter((s) => s.text.length > 0);
 
   if (spanInfos.length === 0) return () => {};
+
+  console.debug(
+    `highlight: ${spanInfos.length} spans collected for "${target.rawName}"`,
+    spanInfos.slice(0, 5).map((s) => ({ top: s.top.toFixed(1), text: s.text }))
+  );
 
   // Sort by vertical position
   spanInfos.sort((a, b) => a.top - b.top);
@@ -120,17 +128,45 @@ export function applyHighlights(
     text: currentSpans.map((s) => s.text).join(" "),
   });
 
+  console.debug(
+    `highlight: ${rows.length} rows formed`,
+    rows.map((r, i) => ({
+      row: i,
+      top: r.spans[0]?.top.toFixed(1),
+      spans: r.spans.length,
+      text: r.text.slice(0, 80),
+    }))
+  );
+
   // Find the single best-scoring row
   let bestScore = 0;
   let bestRow: Row | null = null;
 
   for (const row of rows) {
     const score = scoreRow(row.text, target);
-    if (score > bestScore) {
-      bestScore = score;
+    // Bonus: a span whose full text exactly matches rawName
+    const hasExactSpan = row.spans.some(
+      (s) => s.text.toLowerCase() === target.rawName.toLowerCase()
+    );
+    const adjusted = score + (hasExactSpan ? 3 : 0);
+    console.debug(
+      `highlight: row score=${score} adjusted=${adjusted} exact=${hasExactSpan} len=${row.text.length} text="${row.text.slice(0, 60)}"`
+    );
+    // Prefer higher score; on tie, prefer shorter row (more specific)
+    if (
+      adjusted > bestScore ||
+      (adjusted === bestScore &&
+        bestRow &&
+        row.text.length < bestRow.text.length)
+    ) {
+      bestScore = adjusted;
       bestRow = row;
     }
   }
+
+  console.debug(
+    `highlight: winner score=${bestScore} text="${bestRow?.text.slice(0, 80)}"`
+  );
 
   // Require at least a partial name match
   if (!bestRow || bestScore < HIGHLIGHT_MIN_SCORE) return () => {};

@@ -69,11 +69,16 @@ export function PdfViewer({
 
     const target = highlightTargetRef.current;
     if (target && target.page === currentPageRef.current && pageRef.current) {
+      // Double rAF: first frame lets the browser resolve CSS custom properties
+      // (calc(var(--total-scale-factor) * Npx)) and complete layout; second
+      // frame ensures offsetTop values are fully settled before we measure.
       pendingRafRef.current = requestAnimationFrame(() => {
-        pendingRafRef.current = null;
-        if (pageRef.current && highlightTargetRef.current) {
-          cleanupHighlightRef.current = applyHighlights(pageRef.current, highlightTargetRef.current);
-        }
+        pendingRafRef.current = requestAnimationFrame(() => {
+          pendingRafRef.current = null;
+          if (pageRef.current && highlightTargetRef.current) {
+            cleanupHighlightRef.current = applyHighlights(pageRef.current, highlightTargetRef.current);
+          }
+        });
       });
     }
   }, []);

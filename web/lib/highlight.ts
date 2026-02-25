@@ -83,21 +83,22 @@ export function applyHighlights(
   ) as HTMLElement[];
   if (spans.length === 0) return () => {};
 
-  // Collect spans with their vertical positions (use getBoundingClientRect
-  // for transform-aware Y-offsets — offsetTop is unreliable when pdfjs uses
-  // CSS transforms for span positioning)
-  const textLayerRect = (textLayer as HTMLElement).getBoundingClientRect();
+  // Collect spans with their vertical positions. Use offsetTop instead of
+  // getBoundingClientRect — pdfjs applies compound CSS transforms (scale,
+  // scaleX) to text spans, which can cause getBoundingClientRect Y-drift
+  // that grows toward the bottom of the page. offsetTop gives the resolved
+  // CSS `top` value unaffected by transforms.
   const spanInfos: SpanInfo[] = spans
     .map((el) => ({
       el,
       text: (el.textContent || "").trim(),
-      top: el.getBoundingClientRect().top - textLayerRect.top,
+      top: el.offsetTop,
     }))
     .filter((s) => s.text.length > 0);
 
   if (spanInfos.length === 0) return () => {};
 
-  console.debug(
+  console.warn(
     `highlight: ${spanInfos.length} spans collected for "${target.rawName}"`,
     spanInfos.slice(0, 5).map((s) => ({ top: s.top.toFixed(1), text: s.text }))
   );
@@ -128,7 +129,7 @@ export function applyHighlights(
     text: currentSpans.map((s) => s.text).join(" "),
   });
 
-  console.debug(
+  console.warn(
     `highlight: ${rows.length} rows formed`,
     rows.map((r, i) => ({
       row: i,
@@ -149,7 +150,7 @@ export function applyHighlights(
       (s) => s.text.toLowerCase() === target.rawName.toLowerCase()
     );
     const adjusted = score + (hasExactSpan ? 3 : 0);
-    console.debug(
+    console.warn(
       `highlight: row score=${score} adjusted=${adjusted} exact=${hasExactSpan} len=${row.text.length} text="${row.text.slice(0, 60)}"`
     );
     // Prefer higher score; on tie, prefer shorter row (more specific)
@@ -164,7 +165,7 @@ export function applyHighlights(
     }
   }
 
-  console.debug(
+  console.warn(
     `highlight: winner score=${bestScore} text="${bestRow?.text.slice(0, 80)}"`
   );
 

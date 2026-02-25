@@ -26,7 +26,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [collectionDateFrom, setCollectionDateFrom] = useState("");
   const [collectionDateTo, setCollectionDateTo] = useState("");
-  const [reportSort, setReportSort] = useState<"none" | "desc" | "asc">("none");
+
 
   const loadFiles = useCallback(async () => {
     try {
@@ -78,17 +78,14 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
       if (collectionDateTo && (!f.collectionDate || f.collectionDate > collectionDateTo)) return false;
       return true;
     });
-    if (reportSort !== "none") {
-      result.sort((a, b) => {
-        if (!a.collectionDate && !b.collectionDate) return 0;
-        if (!a.collectionDate) return 1;
-        if (!b.collectionDate) return -1;
-        const cmp = a.collectionDate.localeCompare(b.collectionDate);
-        return reportSort === "asc" ? cmp : -cmp;
-      });
-    }
+    result.sort((a, b) => {
+      if (!a.collectionDate && !b.collectionDate) return 0;
+      if (!a.collectionDate) return 1;
+      if (!b.collectionDate) return -1;
+      return b.collectionDate.localeCompare(a.collectionDate);
+    });
     return result;
-  }, [files, typeFilter, labFilter, sourceFilter, collectionDateFrom, collectionDateTo, reportSort]);
+  }, [files, typeFilter, labFilter, sourceFilter, collectionDateFrom, collectionDateTo]);
 
   const filtersActive = typeFilter !== "all" || labFilter !== "all" || sourceFilter !== "all" || collectionDateFrom || collectionDateTo;
 
@@ -216,17 +213,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
             <table className="w-full text-left">
               <thead>
                 <tr className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wider bg-[var(--color-surface-tertiary)]">
-                  <th className="px-5 py-3 font-medium">
-                    <button
-                      onClick={() => setReportSort(prev => prev === "none" ? "desc" : prev === "desc" ? "asc" : "none")}
-                      className="inline-flex items-center gap-1 hover:text-[var(--color-text-secondary)] transition-colors"
-                    >
-                      Report
-                      {reportSort === "desc" && <span>↓</span>}
-                      {reportSort === "asc" && <span>↑</span>}
-                      {reportSort === "none" && <span className="text-[var(--color-text-tertiary)]/50">↕</span>}
-                    </button>
-                  </th>
+                  <th className="px-5 py-3 font-medium">Report</th>
                   <th className="px-5 py-3 font-medium">Type</th>
                   <th className="px-5 py-3 font-medium">Lab</th>
                   <th className="px-5 py-3 font-medium">Source</th>

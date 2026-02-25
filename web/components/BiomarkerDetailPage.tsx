@@ -9,34 +9,39 @@ import { ReferenceRangeSection } from "./biomarker-detail/ReferenceRangeSection"
 export function BiomarkerDetailPage({ data }: { data: BiomarkerDetailData }) {
   return (
     <div className="min-h-screen bg-[var(--color-surface-secondary)]">
-      {/* Header */}
-      <header className="border-b border-[var(--color-border-light)] bg-white px-5 py-4">
-        <Link
-          href="/?tab=biomarkers"
-          className="inline-flex items-center gap-1 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)] transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Biomarkers
+      {/* Header — frosted glass */}
+      <header className="flex items-center gap-4 border-b border-[var(--color-border-light)] bg-white/80 backdrop-blur-lg px-5 py-3" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <Link href="/">
+          <img src="/logo.svg" alt="Biomarker Hub" className="h-10" />
         </Link>
-        <div className="mt-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
-              {data.displayName}
-            </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] font-medium">
-              {data.category}
-            </span>
-            {data.defaultUnit && (
-              <span className="text-sm text-[var(--color-text-tertiary)]">
-                {data.defaultUnit}
+        <div>
+          <Link
+            href="/?tab=biomarkers"
+            className="inline-flex items-center gap-1 text-sm text-[var(--color-text-tertiary)] hover:text-[var(--color-primary)] transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Biomarkers
+          </Link>
+          <div className="mt-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+                {data.displayName}
+              </h1>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] font-medium">
+                {data.category}
               </span>
+              {data.defaultUnit && (
+                <span className="text-sm text-[var(--color-text-tertiary)]">
+                  {data.defaultUnit}
+                </span>
+              )}
+            </div>
+            {data.fullName !== data.displayName && (
+              <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{data.fullName}</p>
             )}
           </div>
-          {data.fullName !== data.displayName && (
-            <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{data.fullName}</p>
-          )}
         </div>
       </header>
 

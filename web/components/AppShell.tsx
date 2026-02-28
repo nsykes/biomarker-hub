@@ -29,7 +29,18 @@ export function AppShell() {
       : "files";
 
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const [mountedTabs, setMountedTabs] = useState<Set<TabId>>(
+    new Set([initialTab])
+  );
   const [initialBiomarkerSlug] = useState<string | null>(biomarkerParam);
+
+  const handleTabSwitch = useCallback((tabId: TabId) => {
+    setActiveTab(tabId);
+    setMountedTabs((prev: Set<TabId>) => {
+      if (prev.has(tabId)) return prev;
+      return new Set(prev).add(tabId);
+    });
+  }, []);
 
   // Clear search params from URL after reading them so a refresh always lands on Files
   useEffect(() => {
@@ -73,7 +84,7 @@ export function AppShell() {
           {TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabSwitch(tab.id)}
               className={`
                 px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200
                 ${
@@ -92,17 +103,27 @@ export function AppShell() {
         </div>
       </header>
 
-      {/* Tab content */}
+      {/* Tab content — lazy-mount: tabs mount on first activation, stay mounted (hidden via CSS) */}
       <main className="flex-1 overflow-auto bg-[var(--color-surface-secondary)]">
-        {activeTab === "files" && (
-          <FilesTab
-            onNewExtraction={handleNewExtraction}
-            onViewFile={handleViewFile}
-          />
-        )}
-        {activeTab === "biomarkers" && <BiomarkersTab initialBiomarkerSlug={initialBiomarkerSlug} />}
-        {activeTab === "dashboards" && <DashboardsTab />}
-        {activeTab === "settings" && <SettingsTab />}
+        <div className={activeTab === "files" ? "h-full" : "hidden"}>
+          {mountedTabs.has("files") && (
+            <FilesTab
+              onNewExtraction={handleNewExtraction}
+              onViewFile={handleViewFile}
+            />
+          )}
+        </div>
+        <div className={activeTab === "biomarkers" ? "h-full" : "hidden"}>
+          {mountedTabs.has("biomarkers") && (
+            <BiomarkersTab initialBiomarkerSlug={initialBiomarkerSlug} />
+          )}
+        </div>
+        <div className={activeTab === "dashboards" ? "h-full" : "hidden"}>
+          {mountedTabs.has("dashboards") && <DashboardsTab />}
+        </div>
+        <div className={activeTab === "settings" ? "h-full" : "hidden"}>
+          {mountedTabs.has("settings") && <SettingsTab />}
+        </div>
       </main>
     </>
   );

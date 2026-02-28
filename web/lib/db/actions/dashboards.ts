@@ -307,6 +307,7 @@ export async function getDashboardChartData(
       fullName: entry?.fullName ?? slug,
       category: entry?.category ?? "Unknown",
       defaultUnit: entry?.defaultUnit ?? null,
+      summary: entry?.summary,
       history: historyMap.get(slug) || [],
       referenceRange: refMap.get(slug) || null,
     };

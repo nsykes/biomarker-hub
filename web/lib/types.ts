@@ -52,6 +52,7 @@ export interface HighlightTarget {
   rawName: string;
   value: string | null;
   unit: string | null;
+  region: string | null;
 }
 
 export interface ModelOption {

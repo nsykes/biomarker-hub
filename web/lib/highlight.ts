@@ -23,25 +23,38 @@ function escapeRegex(str: string): string {
 /**
  * Score a row of concatenated text against the biomarker's identifying info.
  * Higher score = better match.
+ *
+ * For DEXA biomarkers (target.region is set), uses region-aware scoring
+ * because DEXA tables put metric names in column headers and region names
+ * in data rows — the full rawName won't appear on any single row.
  */
 function scoreRow(rowText: string, target: HighlightTarget): number {
   const text = rowText.toLowerCase();
   let score = 0;
 
-  // Name matching: split rawName into tokens, require majority match
-  const nameTokens = target.rawName
-    .toLowerCase()
-    .split(/[\s,()]+/)
-    .filter((t) => t.length > 1);
+  if (target.region) {
+    // DEXA region-aware scoring: match region name in row instead of full rawName
+    const regionLower = target.region.toLowerCase();
+    const regionRe = new RegExp(`\\b${escapeRegex(regionLower)}\\b`, "i");
+    if (regionRe.test(text)) {
+      score += 8;
+    }
+  } else {
+    // Standard scoring: split rawName into tokens, require majority match
+    const nameTokens = target.rawName
+      .toLowerCase()
+      .split(/[\s,()]+/)
+      .filter((t) => t.length > 1);
 
-  if (nameTokens.length > 0) {
-    const matched = nameTokens.filter((token) => {
-      const re = new RegExp(`\\b${escapeRegex(token)}\\b`, "i");
-      return re.test(text);
-    });
-    const ratio = matched.length / nameTokens.length;
-    if (ratio >= 0.5) {
-      score += ratio * 10;
+    if (nameTokens.length > 0) {
+      const matched = nameTokens.filter((token) => {
+        const re = new RegExp(`\\b${escapeRegex(token)}\\b`, "i");
+        return re.test(text);
+      });
+      const ratio = matched.length / nameTokens.length;
+      if (ratio >= 0.5) {
+        score += ratio * 10;
+      }
     }
   }
 
@@ -218,6 +231,7 @@ export function buildHighlightTarget(biomarker: {
   valueText: string | null;
   unit: string | null;
   page: number;
+  region?: string | null;
 }): HighlightTarget {
   return {
     page: biomarker.page,
@@ -227,5 +241,6 @@ export function buildHighlightTarget(biomarker: {
         ? String(biomarker.value)
         : biomarker.valueText || null,
     unit: biomarker.unit,
+    region: biomarker.region ?? null,
   };
 }

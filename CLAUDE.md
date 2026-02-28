@@ -4,7 +4,7 @@ Monorepo for biomarker extraction and health data tools.
 
 ## Structure
 
-- `web/` — Next.js 15 app (App Router) for biomarker extraction and health data tracking
+- `web/` — Next.js 16 app (App Router) for biomarker extraction and health data tracking
 - `mcp/` — MCP server (stdio) for exposing biomarker data to AI assistants (Claude Desktop, Claude Code)
 - `docs/` — Product context, design decisions, and future plans
 

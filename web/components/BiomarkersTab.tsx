@@ -118,7 +118,7 @@ export function BiomarkersTab({ initialBiomarkerSlug }: BiomarkersTabProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Search bar */}
-      <div className="px-5 py-3 border-b border-[var(--color-border-light)] bg-white flex-shrink-0">
+      <div className="px-5 py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] flex-shrink-0">
         <div className="relative max-w-md">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]"
@@ -139,7 +139,7 @@ export function BiomarkersTab({ initialBiomarkerSlug }: BiomarkersTabProps) {
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search biomarkers..."
             className="input-base !pl-10 !rounded-xl"
-            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+            style={{ boxShadow: 'var(--shadow-sm)' }}
           />
         </div>
         <div className="flex items-center gap-3 mt-1.5">

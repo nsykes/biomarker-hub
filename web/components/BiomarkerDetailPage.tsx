@@ -41,11 +41,11 @@ function DetailContent({ data }: { data: BiomarkerDetailData }) {
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{data.fullName}</p>
           )}
           {derivativeInfo && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-[#F8F8FF] rounded-xl border border-[#E8E8F8]">
-              <svg className="w-4 h-4 text-[#5856D6] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex items-center gap-2 px-3 py-2 bg-[var(--color-calculated-bg)] rounded-xl border border-[var(--color-calculated-badge-bg)]">
+              <svg className="w-4 h-4 text-[var(--color-calculated)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              <span className="text-sm text-[#5856D6]">
+              <span className="text-sm text-[var(--color-calculated)]">
                 Calculated as: {derivativeInfo.derivative.formulaDisplay}
               </span>
             </div>
@@ -154,7 +154,7 @@ export function BiomarkerDetailView({ slug, onBack }: BiomarkerDetailViewProps) 
   return (
     <div className="overflow-auto h-full">
       {/* Sub-header (DashboardView style) */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border-light)] bg-white sticky top-0 z-10">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-10">
         <button
           onClick={onBack}
           className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] transition-colors text-[var(--color-text-tertiary)] flex-shrink-0"

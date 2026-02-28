@@ -24,9 +24,9 @@ function inferGoalDirection(
 }
 
 const GOAL_BADGE_COLORS: Record<string, string> = {
-  within: "bg-[#E8FAF0] text-[#1B7F37]",
-  below: "bg-[#E8F4FD] text-[#0A84FF]",
-  above: "bg-[#FFF3E0] text-[#B36B00]",
+  within: "bg-[var(--color-flag-normal-bg)] text-[var(--color-flag-normal-text)]",
+  below: "bg-[var(--color-primary-light)] text-[var(--color-primary)]",
+  above: "bg-[var(--color-flag-abnormal-bg)] text-[var(--color-flag-abnormal-text)]",
 };
 
 interface ReferenceRangeSectionProps {

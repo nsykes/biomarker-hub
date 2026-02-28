@@ -74,7 +74,7 @@ export function DashboardChartCard({
         {/* Remove button */}
         <button
           onClick={onRemove}
-          className="ml-auto p-1.5 rounded-lg hover:bg-[#FDE8E8] text-[var(--color-text-tertiary)] hover:text-[#FF3B30] transition-colors flex-shrink-0"
+          className="ml-auto p-1.5 rounded-lg hover:bg-[var(--color-error-bg)] text-[var(--color-text-tertiary)] hover:text-[var(--color-error)] transition-colors flex-shrink-0"
           title="Remove from dashboard"
         >
           <svg

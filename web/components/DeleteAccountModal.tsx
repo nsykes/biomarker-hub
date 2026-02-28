@@ -28,10 +28,10 @@ export function DeleteAccountModal({ onConfirm, onClose }: DeleteAccountModalPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 flex flex-col" style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
+      <div className="bg-[var(--color-surface)] rounded-2xl shadow-2xl max-w-md w-full mx-4 flex flex-col" style={{ boxShadow: 'var(--color-modal-shadow)' }}>
         {/* Header */}
         <div className="px-5 py-4 border-b border-[var(--color-border-light)] flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#FF3B30]">Delete Account</h2>
+          <h2 className="text-lg font-semibold text-[var(--color-error)]">Delete Account</h2>
           <button
             onClick={onClose}
             disabled={deleting}
@@ -54,7 +54,7 @@ export function DeleteAccountModal({ onConfirm, onClose }: DeleteAccountModalPro
             <li>Your profile and settings</li>
             <li>Your authentication account</li>
           </ul>
-          <p className="text-sm font-medium text-[#FF3B30]">
+          <p className="text-sm font-medium text-[var(--color-error)]">
             This action is permanent and cannot be undone.
           </p>
           <div>
@@ -72,7 +72,7 @@ export function DeleteAccountModal({ onConfirm, onClose }: DeleteAccountModalPro
             />
           </div>
           {error && (
-            <div className="rounded-lg px-3 py-2 text-sm text-[#CC2D24] bg-[#FDE8E8]">
+            <div className="rounded-lg px-3 py-2 text-sm text-[var(--color-error-text)] bg-[var(--color-error-bg)]">
               {error}
             </div>
           )}
@@ -90,7 +90,7 @@ export function DeleteAccountModal({ onConfirm, onClose }: DeleteAccountModalPro
           <button
             onClick={handleDelete}
             disabled={!confirmed || deleting}
-            className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 text-white bg-[#FF3B30] hover:bg-[#E0352B] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 text-white bg-[var(--color-error)] hover:bg-[var(--color-error-hover)] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {deleting && <Spinner size="sm" />}
             {deleting ? "Deleting..." : "Delete Account"}

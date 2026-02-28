@@ -40,7 +40,7 @@ export function RangeConflictModal({ conflicts, onClose }: RangeConflictModalPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col" style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
+      <div className="bg-[var(--color-surface)] rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col" style={{ boxShadow: 'var(--color-modal-shadow)' }}>
         <div className="px-5 py-4 border-b border-[var(--color-border-light)] flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Reference Range Conflicts</h2>

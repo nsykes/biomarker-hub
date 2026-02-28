@@ -123,7 +123,7 @@ export function PdfViewer({
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--color-border-light)] bg-white text-sm flex-shrink-0" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] text-sm flex-shrink-0" style={{ boxShadow: 'var(--shadow-sm)' }}>
         <div className="flex items-center">
           <button
             onClick={() => onPageChange(Math.max(1, currentPage - 1))}

@@ -60,8 +60,8 @@ export function PdfPreviewModal({ reportId, page, onClose }: PdfPreviewModalProp
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 h-[85vh] flex flex-col"
-        style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}
+        className="bg-[var(--color-surface)] rounded-2xl shadow-2xl max-w-4xl w-full mx-4 h-[85vh] flex flex-col"
+        style={{ boxShadow: "var(--color-modal-shadow)" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-light)] flex-shrink-0">

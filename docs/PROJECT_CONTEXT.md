@@ -127,6 +127,8 @@ Neon Auth (`@neondatabase/auth@^0.2.0-beta.1`, Google OAuth). Per-user data isol
 
 Apple Health-inspired design. CSS custom properties for colors, shadows, and radii. Flag colors use Apple system colors. Frosted-glass headers, pill-style tab navigation, card-wrapped sections. Geist Sans font. Expand/collapse all for category sections.
 
+**Dark mode:** Fully supported via `next-themes` with `attribute="class"` (adds `.dark` class to `<html>`). Three modes: light, dark, system (follows OS preference). Toggle button in header cycles light → dark → system. All colors are defined as CSS custom properties in `globals.css` with `:root` (light) and `.dark` overrides — components reference `var(--color-*)` tokens and automatically adapt. Semantic color groups: `--color-error-*`, `--color-warning-*`, `--color-success-*`, `--color-calculated-*`, `--color-flag-*-bg/text`, `--color-badge-*`. Recharts colors resolved via `useChartColors()` hook (reads computed CSS vars with `getComputedStyle`, re-runs on theme change). No hardcoded hex colors in components — all use CSS variable references.
+
 ## Biomarker Registry
 
 134+ canonical biomarkers in `web/lib/biomarker-registry.ts`. Each entry has `displayName`, `fullName` (expanded clinical name for abbreviations like AST → "Aspartate Aminotransferase"), `category`, `defaultUnit`, `summary` (3-5 sentence clinical description), `aliases`, and `slug`. DEXA entries are generated programmatically for body composition (64 entries) and bone density (10 entries) regions, with summaries templated per-region from base metric descriptions.

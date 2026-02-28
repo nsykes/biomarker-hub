@@ -411,7 +411,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       )}
 
       {/* Header — frosted glass */}
-      <header className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-light)] bg-white/80 backdrop-blur-lg flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <header className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
         <button
           onClick={() => { flushPendingDelete(); onBack(); }}
           className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
@@ -441,12 +441,12 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
 
       {/* Error banner */}
       {error && (
-        <div className="px-4 py-2.5 flex items-center gap-3 text-sm border-b border-[#FDE8E8] flex-shrink-0" style={{ background: '#FDE8E8' }}>
-          <svg className="w-4 h-4 text-[#FF3B30] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="px-4 py-2.5 flex items-center gap-3 text-sm border-b border-[var(--color-error-bg)] flex-shrink-0" style={{ background: 'var(--color-error-bg)' }}>
+          <svg className="w-4 h-4 text-[var(--color-error)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
-          <span className="text-[#CC2D24]">{error}</span>
-          <button onClick={() => setError(null)} className="ml-auto text-xs text-[#CC2D24] hover:text-[#991b1b] font-medium">
+          <span className="text-[var(--color-error-text)]">{error}</span>
+          <button onClick={() => setError(null)} className="ml-auto text-xs text-[var(--color-error-text)] hover:text-[var(--color-error-hover)] font-medium">
             Dismiss
           </button>
         </div>
@@ -459,8 +459,8 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
             <div className="w-full max-w-lg">
               <UploadZone onFileSelect={handleFileSelect} currentFile={null} onError={setError} />
               {!apiKey && (
-                <div className="mt-4 card px-4 py-3 text-sm text-center" style={{ background: '#FFF3E0', borderColor: '#FFE0B2' }}>
-                  <span className="text-[#B36B00]">No API key set. Add one in Settings before extracting.</span>
+                <div className="mt-4 card px-4 py-3 text-sm text-center" style={{ background: 'var(--color-warning-bg)', borderColor: 'var(--color-warning-border)' }}>
+                  <span className="text-[var(--color-warning-text)]">No API key set. Add one in Settings before extracting.</span>
                 </div>
               )}
             </div>

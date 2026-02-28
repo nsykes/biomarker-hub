@@ -160,7 +160,7 @@ export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
   return (
     <div className="overflow-auto h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border-light)] bg-white sticky top-0 z-10">
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-10">
         <button
           onClick={onBack}
           className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] transition-colors text-[var(--color-text-tertiary)] flex-shrink-0"
@@ -215,7 +215,7 @@ export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
           </button>
           <button
             onClick={handleDelete}
-            className="p-2 rounded-lg hover:bg-[#FDE8E8] text-[var(--color-text-tertiary)] hover:text-[#FF3B30] transition-colors"
+            className="p-2 rounded-lg hover:bg-[var(--color-error-bg)] text-[var(--color-text-tertiary)] hover:text-[var(--color-error)] transition-colors"
             title="Delete dashboard"
           >
             <svg
@@ -237,7 +237,7 @@ export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
 
       {/* Combobox overlay */}
       {showCombobox && (
-        <div className="px-5 py-3 border-b border-[var(--color-border-light)] bg-white">
+        <div className="px-5 py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
           <BiomarkerCombobox
             onSelect={handleAddBiomarker}
             onClose={() => setShowCombobox(false)}

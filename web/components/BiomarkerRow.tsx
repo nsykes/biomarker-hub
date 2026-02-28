@@ -151,7 +151,7 @@ export function BiomarkerRow({
                   e.stopPropagation();
                   setShowRemap((v) => !v);
                 }}
-                className="shrink-0 text-[10px] font-medium text-[#B36B00] bg-[#FFF3E0] border border-[#FFE0B2] rounded-md px-1.5 py-0.5 hover:bg-[#FFE0B2] cursor-pointer transition-colors"
+                className="shrink-0 text-[10px] font-medium text-[var(--color-warning-text)] bg-[var(--color-warning-bg)] border border-[var(--color-warning-border)] rounded-md px-1.5 py-0.5 hover:bg-[var(--color-warning-border)] cursor-pointer transition-colors"
                 title="This biomarker doesn't match any known entry. Click to remap."
               >
                 Unmatched
@@ -185,7 +185,7 @@ export function BiomarkerRow({
               e.stopPropagation();
               onDelete(biomarker.id);
             }}
-            className="text-[var(--color-text-tertiary)] hover:text-[#FF3B30] hover:bg-[#FDE8E8] rounded-md transition-colors p-1"
+            className="text-[var(--color-text-tertiary)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-bg)] rounded-md transition-colors p-1"
             title="Remove biomarker"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -195,7 +195,7 @@ export function BiomarkerRow({
         </td>
       </tr>
       {showRemap && (
-        <tr className="border-b border-[var(--color-border-light)] bg-[#FFF3E0]/30">
+        <tr className="border-b border-[var(--color-border-light)] bg-[var(--color-warning-bg)]/30">
           <td colSpan={7} className="px-3 py-2">
             <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--color-text-secondary)] shrink-0">Remap to:</span>

@@ -67,8 +67,8 @@ export function CreateDashboardModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 flex flex-col max-h-[80vh]"
-        style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}
+        className="bg-[var(--color-surface)] rounded-2xl shadow-2xl max-w-lg w-full mx-4 flex flex-col max-h-[80vh]"
+        style={{ boxShadow: "var(--color-modal-shadow)" }}
       >
         {/* Header */}
         <div className="px-5 py-4 border-b border-[var(--color-border-light)] flex items-center justify-between flex-shrink-0">
@@ -171,7 +171,7 @@ export function CreateDashboardModal({
           </div>
 
           {error && (
-            <div className="rounded-lg px-3 py-2 text-sm text-[#CC2D24] bg-[#FDE8E8]">
+            <div className="rounded-lg px-3 py-2 text-sm text-[var(--color-error-text)] bg-[var(--color-error-bg)]">
               {error}
             </div>
           )}

@@ -13,8 +13,8 @@ interface FilesTabProps {
 }
 
 const REPORT_TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  blood_panel: { label: "Blood", color: "bg-[#FDE8E8] text-[#CC2D24]" },
-  dexa_scan: { label: "DEXA", color: "bg-[#EDEDFB] text-[#4240B0]" },
+  blood_panel: { label: "Blood", color: "bg-[var(--color-badge-blood-bg)] text-[var(--color-badge-blood-text)]" },
+  dexa_scan: { label: "DEXA", color: "bg-[var(--color-badge-dexa-bg)] text-[var(--color-badge-dexa-text)]" },
   other: { label: "Other", color: "bg-[var(--color-surface-tertiary)] text-[var(--color-text-secondary)]" },
 };
 
@@ -135,7 +135,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
     <div className="relative h-full">
       <div className="overflow-auto h-full">
         {/* Filter bar */}
-        <div className="flex flex-wrap gap-4 items-end px-5 py-3 border-b border-[var(--color-border-light)] bg-white sticky top-0 z-20">
+        <div className="flex flex-wrap gap-4 items-end px-5 py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-20">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Type</label>
             <select
@@ -203,7 +203,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
           )}
         </div>
         {filtersActive && (
-          <div className="px-5 py-1.5 text-xs text-[var(--color-text-tertiary)] bg-white border-b border-[var(--color-border-light)]">
+          <div className="px-5 py-1.5 text-xs text-[var(--color-text-tertiary)] bg-[var(--color-surface)] border-b border-[var(--color-border-light)]">
             Showing {filteredFiles.length} of {files.length} files
           </div>
         )}
@@ -266,7 +266,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
                         <button
                           onClick={(e) => handleDelete(e, f.id)}
                           disabled={deletingId === f.id}
-                          className="p-1.5 text-[var(--color-text-tertiary)] hover:text-[#FF3B30] hover:bg-[#FDE8E8] rounded-lg transition-colors disabled:opacity-50"
+                          className="p-1.5 text-[var(--color-text-tertiary)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-bg)] rounded-lg transition-colors disabled:opacity-50"
                           title="Delete file"
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

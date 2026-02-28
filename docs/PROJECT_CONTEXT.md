@@ -137,17 +137,19 @@ Apple Health-inspired design. CSS custom properties for colors, shadows, and rad
 
 ### Derivative/Calculated Biomarkers
 
-17 biomarkers can be auto-calculated from extracted components when the PDF doesn't include them. Defined via `derivative` field on `CanonicalBiomarker` entries in the registry, with a `DerivativeDefinition` containing `components` (slugs), `compute` (function), `precision`, and `formulaDisplay`.
+77 biomarkers can be auto-calculated from extracted components when the PDF doesn't include them. Defined via `derivative` field on `CanonicalBiomarker` entries in the registry, with a `DerivativeDefinition` containing `components` (slugs), `compute` (function), `precision`, and `formulaDisplay`.
 
 **Calculation engine** (`web/lib/derivative-calc.ts`): runs after dedup in the extract API route. For each registry entry with a `derivative` definition, checks if all component values are present and the slug isn't already extracted (PDF wins). Computes the value and adds it with `isCalculated: true`.
 
-**13 existing entries** with derivatives: TG/HDL Ratio, TC/HDL Ratio, Non-HDL Cholesterol, BUN/Creatinine Ratio, A/G Ratio, Iron Saturation, Android/Gynoid Ratio, PSA % Free, AA/EPA Ratio, Omega-6/Omega-3 Ratio, EPA+DPA+DHA, Globulin, LDL Cholesterol (Friedewald, TG < 400 guard).
+**17 blood/urine derivatives**: TG/HDL Ratio, TC/HDL Ratio, Non-HDL Cholesterol, BUN/Creatinine Ratio, A/G Ratio, Iron Saturation, Android/Gynoid Ratio, PSA % Free, AA/EPA Ratio, Omega-6/Omega-3 Ratio, EPA+DPA+DHA, Globulin, LDL Cholesterol (Friedewald, TG < 400 guard), HOMA-IR, NLR (Neutrophil/Lymphocyte Ratio), VLDL Cholesterol, Anion Gap.
 
-**4 new derivative-only entries**: HOMA-IR, NLR (Neutrophil/Lymphocyte Ratio), VLDL Cholesterol, Anion Gap.
+**60 DEXA body composition derivatives** (generated in `getBodyCompDerivative()`): Fat % and Lean % for all 10 regions (percentage from tissue mass / total mass), L/R aggregation for arms/legs (4 mass metrics × 2 = 8), and mass decomposition for the other 8 regions (4 metrics × 8 = 32).
 
 **UI differentiation**: Calculated values get a purple "CALC" section in ResultsPanel, hollow dashed dots in HistoryChart, "Calculated" badge instead of lab/source in HistoryTable (no PDF click), and a formula callout on the biomarker detail page.
 
 **DB column**: `is_calculated` boolean on `biomarker_results` (default false). Requires `npx drizzle-kit push` migration.
+
+**Backfill script** (`web/scripts/backfill-derivatives.ts`): one-time script to compute and insert derivative biomarkers for existing reports that were uploaded before derivatives were added. Connects directly to DB, runs `computeDerivatives()` per report, inserts missing derivatives. Idempotent — checks existing slugs before inserting. Run with `cd web && npx tsx scripts/backfill-derivatives.ts`.
 
 ## Extraction Prompt
 

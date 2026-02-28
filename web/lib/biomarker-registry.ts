@@ -75,12 +75,83 @@ const BODY_COMP_METRICS = [
   { groupSlug: "lean-pct", displayName: "Lean %", fullName: "Lean %", unit: "%", aliases: ["LEAN %", "LEAN PERCENTAGE", "% LEAN"], summaryTemplate: "Lean % measures the proportion of lean tissue relative to total tissue in {region}. It is measured by DEXA scan and provides insight into body composition by region. Higher lean percentages generally indicate better physical fitness and metabolic health. Comparing lean mass between left and right limbs can help identify muscular asymmetries." },
 ] as const;
 
+function getBodyCompDerivative(groupSlug: string, regionSuffix: string): DerivativeDefinition | undefined {
+  const r = regionSuffix;
+
+  // Percentages: compute from tissue mass / total mass
+  if (groupSlug === "fat-pct") {
+    return {
+      components: [`fat-tissue-mass-${r}`, `total-mass-${r}`],
+      compute: ([fat, total]: number[]) => (fat / total) * 100,
+      precision: 1,
+      formulaDisplay: "(Fat Tissue Mass ÷ Total Mass) × 100",
+    };
+  }
+  if (groupSlug === "lean-pct") {
+    return {
+      components: [`lean-tissue-mass-${r}`, `total-mass-${r}`],
+      compute: ([lean, total]: number[]) => (lean / total) * 100,
+      precision: 1,
+      formulaDisplay: "(Lean Tissue Mass ÷ Total Mass) × 100",
+    };
+  }
+
+  // Mass metrics: L/R aggregation for arms/legs
+  const isAggregate = r === "arms" || r === "legs";
+  if (isAggregate) {
+    const side = r === "arms" ? "arm" : "leg";
+    return {
+      components: [`${groupSlug}-right-${side}`, `${groupSlug}-left-${side}`],
+      compute: ([right, left]: number[]) => right + left,
+      precision: 2,
+      formulaDisplay: `Right ${side === "arm" ? "Arm" : "Leg"} + Left ${side === "arm" ? "Arm" : "Leg"}`,
+    };
+  }
+
+  // Mass metrics: decomposition for all other regions
+  if (groupSlug === "total-mass") {
+    return {
+      components: [`fat-tissue-mass-${r}`, `lean-tissue-mass-${r}`, `bmc-${r}`],
+      compute: ([fat, lean, bmc]: number[]) => fat + lean + bmc,
+      precision: 2,
+      formulaDisplay: "Fat Tissue Mass + Lean Tissue Mass + BMC",
+    };
+  }
+  if (groupSlug === "fat-tissue-mass") {
+    return {
+      components: [`total-mass-${r}`, `lean-tissue-mass-${r}`, `bmc-${r}`],
+      compute: ([total, lean, bmc]: number[]) => total - lean - bmc,
+      precision: 2,
+      formulaDisplay: "Total Mass − Lean Tissue Mass − BMC",
+    };
+  }
+  if (groupSlug === "lean-tissue-mass") {
+    return {
+      components: [`total-mass-${r}`, `fat-tissue-mass-${r}`, `bmc-${r}`],
+      compute: ([total, fat, bmc]: number[]) => total - fat - bmc,
+      precision: 2,
+      formulaDisplay: "Total Mass − Fat Tissue Mass − BMC",
+    };
+  }
+  if (groupSlug === "bmc") {
+    return {
+      components: [`total-mass-${r}`, `fat-tissue-mass-${r}`, `lean-tissue-mass-${r}`],
+      compute: ([total, fat, lean]: number[]) => total - fat - lean,
+      precision: 2,
+      formulaDisplay: "Total Mass − Fat Tissue Mass − Lean Tissue Mass",
+    };
+  }
+
+  return undefined;
+}
+
 function generateBodyCompEntries(): CanonicalBiomarker[] {
   const entries: CanonicalBiomarker[] = [];
   for (const metric of BODY_COMP_METRICS) {
     for (const region of BODY_COMP_REGIONS) {
       const isTotal = region.name === "Total Body";
       const regionLabel = isTotal ? "the entire body" : `the ${region.name} region`;
+      const derivative = getBodyCompDerivative(metric.groupSlug, region.slugSuffix);
       entries.push({
         slug: `${metric.groupSlug}-${region.slugSuffix}`,
         displayName: isTotal ? metric.displayName : `${metric.displayName} (${region.name})`,
@@ -92,6 +163,7 @@ function generateBodyCompEntries(): CanonicalBiomarker[] {
         region: isTotal ? null : region.name,
         regionGroupSlug: metric.groupSlug,
         specimenType: "body_composition",
+        ...(derivative ? { derivative } : {}),
       });
     }
   }

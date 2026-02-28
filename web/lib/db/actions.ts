@@ -39,4 +39,6 @@ export {
   removeDashboardItem,
   reorderDashboardItems,
   getDashboardChartData,
+  groupDashboardItems,
+  ungroupDashboardItems,
 } from "./actions/dashboards";

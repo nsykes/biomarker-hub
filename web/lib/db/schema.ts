@@ -160,6 +160,7 @@ export const dashboardItems = pgTable(
       .references(() => dashboards.id, { onDelete: "cascade" }),
     canonicalSlug: text("canonical_slug").notNull(),
     sortOrder: integer("sort_order").notNull().default(0),
+    groupId: text("group_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

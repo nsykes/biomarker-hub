@@ -27,10 +27,13 @@ Monorepo for biomarker extraction and health data tools.
 - `web/components/RangeConflictModal.tsx` — Modal for resolving reference range conflicts between PDF and stored ranges
 - `web/components/DeleteAccountModal.tsx` — Confirmation modal for account deletion (type "DELETE" to confirm)
 - `web/components/DashboardsTab.tsx` — Dashboard list view with create FAB
-- `web/components/DashboardView.tsx` — Single dashboard detail with chart grid and drag-to-reorder
-- `web/components/DashboardChartCard.tsx` — Sortable chart card wrapping HistoryChart
-- `web/components/CreateDashboardModal.tsx` — Modal for creating/editing dashboards with biomarker selection
-- `web/lib/db/actions/dashboards.ts` — Dashboard CRUD + batch chart data server actions
+- `web/components/DashboardView.tsx` — Single dashboard detail with chart grid, drag-to-reorder, and merge mode
+- `web/components/DashboardChartCard.tsx` — Sortable chart card wrapping HistoryChart, with trend indicator
+- `web/components/MultiMetricChart.tsx` — Multi-line Recharts chart for overlaid biomarker comparison
+- `web/components/MultiMetricChartCard.tsx` — Sortable card wrapper for MultiMetricChart with split/ungroup
+- `web/components/CreateDashboardModal.tsx` — Modal for creating/editing dashboards with templates and biomarker grouping
+- `web/lib/db/actions/dashboards.ts` — Dashboard CRUD + batch chart data + group/ungroup server actions
+- `web/lib/trend.ts` — Trend computation (latest value, direction, sentiment) for dashboard cards
 - `web/components/Spinner.tsx` — Shared loading spinner (Spinner, PageSpinner)
 - `web/app/api/account/export/route.ts` — CSV export endpoint (all biomarker data)
 - `web/lib/db/actions/account.ts` — Account deletion server action

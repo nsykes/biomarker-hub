@@ -43,3 +43,103 @@ export const PDF_MAGIC_BYTES = [0x25, 0x50, 0x44, 0x46]; // %PDF
 
 // Undo toast
 export const UNDO_TOAST_DURATION_MS = 5000;
+
+// Dashboard templates
+export interface DashboardTemplate {
+  id: string;
+  name: string;
+  slugs: string[];
+}
+
+export const DASHBOARD_TEMPLATES: DashboardTemplate[] = [
+  {
+    id: "heart-health",
+    name: "Heart Health",
+    slugs: [
+      "total-cholesterol",
+      "hdl-cholesterol",
+      "ldl-cholesterol",
+      "triglycerides",
+      "tg-hdl-ratio",
+      "homocysteine",
+    ],
+  },
+  {
+    id: "metabolic",
+    name: "Metabolic",
+    slugs: [
+      "glucose",
+      "hemoglobin-a1c",
+      "insulin",
+      "homa-ir",
+      "uric-acid",
+    ],
+  },
+  {
+    id: "thyroid",
+    name: "Thyroid",
+    slugs: [
+      "tsh",
+      "free-t4",
+      "free-t3",
+      "tpo-antibody",
+      "thyroglobulin-antibody",
+    ],
+  },
+  {
+    id: "lipid-panel",
+    name: "Lipid Panel",
+    slugs: [
+      "total-cholesterol",
+      "hdl-cholesterol",
+      "ldl-cholesterol",
+      "triglycerides",
+      "non-hdl-cholesterol",
+      "apolipoprotein-b",
+      "lipoprotein-a",
+    ],
+  },
+  {
+    id: "cbc",
+    name: "CBC",
+    slugs: [
+      "wbc",
+      "rbc",
+      "hemoglobin",
+      "hematocrit",
+      "platelets",
+      "mcv",
+      "mch",
+      "mchc",
+    ],
+  },
+  {
+    id: "iron-panel",
+    name: "Iron Panel",
+    slugs: ["iron-total", "ferritin", "tibc", "iron-saturation"],
+  },
+  {
+    id: "inflammation",
+    name: "Inflammation",
+    slugs: ["hs-crp", "nlr"],
+  },
+];
+
+// Trend sentiment colors
+export const TREND_SENTIMENT_COLORS: Record<string, string> = {
+  good: "#34C759",
+  bad: "#FF3B30",
+  neutral: "#8E8E93",
+};
+
+// Multi-metric chart colors
+export const CHART_COLORS = [
+  "#0A84FF",
+  "#FF3B30",
+  "#34C759",
+  "#FF9500",
+  "#AF52DE",
+  "#5AC8FA",
+  "#FF2D55",
+  "#FFCC00",
+];

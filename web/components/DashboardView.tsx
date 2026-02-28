@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -20,6 +20,7 @@ import {
 import {
   DashboardDetail,
   DashboardItem,
+  DashboardCardEntry,
   BiomarkerDetailData,
 } from "@/lib/types";
 import {
@@ -30,11 +31,62 @@ import {
   addDashboardItem,
   removeDashboardItem,
   reorderDashboardItems,
+  groupDashboardItems,
+  ungroupDashboardItems,
 } from "@/lib/db/actions";
 import { CanonicalBiomarker } from "@/lib/biomarker-registry";
 import { BiomarkerCombobox } from "./BiomarkerCombobox";
 import { DashboardChartCard } from "./DashboardChartCard";
+import { MultiMetricChartCard } from "./MultiMetricChartCard";
 import { PageSpinner } from "./Spinner";
+
+function buildCardEntries(
+  items: DashboardItem[],
+  chartData: Map<string, BiomarkerDetailData>
+): DashboardCardEntry[] {
+  const groups = new Map<string, DashboardItem[]>();
+  const singles: DashboardItem[] = [];
+
+  for (const item of items) {
+    if (item.groupId) {
+      const list = groups.get(item.groupId) || [];
+      list.push(item);
+      groups.set(item.groupId, list);
+    } else {
+      singles.push(item);
+    }
+  }
+
+  const entries: DashboardCardEntry[] = [];
+
+  for (const item of singles) {
+    const data = chartData.get(item.canonicalSlug);
+    if (!data) continue;
+    entries.push({
+      type: "single",
+      itemId: item.id,
+      slug: item.canonicalSlug,
+      data,
+      sortOrder: item.sortOrder,
+    });
+  }
+
+  for (const [groupId, groupItems] of groups) {
+    const dataList = groupItems
+      .map((i) => chartData.get(i.canonicalSlug))
+      .filter(Boolean) as BiomarkerDetailData[];
+    if (dataList.length === 0) continue;
+    entries.push({
+      type: "group",
+      groupId,
+      items: groupItems.map((i) => ({ itemId: i.id, slug: i.canonicalSlug })),
+      dataList,
+      sortOrder: Math.min(...groupItems.map((i) => i.sortOrder)),
+    });
+  }
+
+  return entries.sort((a, b) => a.sortOrder - b.sortOrder);
+}
 
 interface DashboardViewProps {
   dashboardId: string;
@@ -52,6 +104,8 @@ export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
   const [nameInput, setNameInput] = useState("");
   const [showCombobox, setShowCombobox] = useState(false);
   const [items, setItems] = useState<DashboardItem[]>([]);
+  const [mergeMode, setMergeMode] = useState(false);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -109,6 +163,7 @@ export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
       id: tempId,
       canonicalSlug: entry.slug,
       sortOrder: items.length,
+      groupId: null,
     };
     setItems((prev) => [...prev, newItem]);
 
@@ -135,20 +190,78 @@ export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = items.findIndex((i) => i.id === active.id);
-    const newIndex = items.findIndex((i) => i.id === over.id);
+    const oldIndex = cardEntries.findIndex((e) =>
+      e.type === "single" ? e.itemId === active.id : e.groupId === active.id
+    );
+    const newIndex = cardEntries.findIndex((e) =>
+      e.type === "single" ? e.itemId === over.id : e.groupId === over.id
+    );
+    if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(items, oldIndex, newIndex);
-    setItems(reordered);
+    const reordered = arrayMove(cardEntries, oldIndex, newIndex);
+    // Flatten back to items with updated sort orders
+    const newItems: DashboardItem[] = [];
+    let sortIdx = 0;
+    for (const entry of reordered) {
+      if (entry.type === "single") {
+        const item = items.find((i) => i.id === entry.itemId);
+        if (item) newItems.push({ ...item, sortOrder: sortIdx++ });
+      } else {
+        for (const gi of entry.items) {
+          const item = items.find((i) => i.id === gi.itemId);
+          if (item) newItems.push({ ...item, sortOrder: sortIdx++ });
+        }
+      }
+    }
+    setItems(newItems);
 
     await reorderDashboardItems(
       dashboardId,
-      reordered.map((i) => i.id)
+      newItems.map((i) => i.id)
     );
   };
 
   const handleNavigate = (slug: string) => {
     router.push(`/?tab=biomarkers&biomarker=${slug}`);
+  };
+
+  const cardEntries = useMemo(
+    () => buildCardEntries(items, chartData),
+    [items, chartData]
+  );
+
+  const toggleSelectItem = (id: string) => {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleMerge = async () => {
+    if (selectedItemIds.size < 2) return;
+    const ids = Array.from(selectedItemIds);
+    // Optimistic: assign a temporary groupId
+    const tempGroupId = crypto.randomUUID();
+    setItems((prev) =>
+      prev.map((i) =>
+        ids.includes(i.id) ? { ...i, groupId: tempGroupId } : i
+      )
+    );
+    setSelectedItemIds(new Set());
+    setMergeMode(false);
+    await groupDashboardItems(dashboardId, ids);
+    // Reload to get real groupId
+    loadData();
+  };
+
+  const handleUngroup = async (groupId: string) => {
+    // Optimistic
+    setItems((prev) =>
+      prev.map((i) => (i.groupId === groupId ? { ...i, groupId: null } : i))
+    );
+    await ungroupDashboardItems(dashboardId, groupId);
   };
 
   if (loading) {
@@ -207,6 +320,17 @@ export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
         )}
 
         <div className="ml-auto flex items-center gap-2">
+          {items.length >= 2 && (
+            <button
+              onClick={() => {
+                setMergeMode((m) => !m);
+                setSelectedItemIds(new Set());
+              }}
+              className={`btn-secondary text-sm ${mergeMode ? "!bg-[var(--color-primary-light)] !text-[var(--color-primary)] !border-[var(--color-primary)]" : ""}`}
+            >
+              {mergeMode ? "Cancel" : "Merge"}
+            </button>
+          )}
           <button
             onClick={() => setShowCombobox(true)}
             className="btn-secondary text-sm"
@@ -280,32 +404,77 @@ export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
             </button>
           </div>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={items.map((i) => i.id)}
-              strategy={rectSortingStrategy}
+          <>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {items.map((item) => {
-                  const data = chartData.get(item.canonicalSlug);
-                  if (!data) return null;
-                  return (
-                    <DashboardChartCard
-                      key={item.id}
-                      itemId={item.id}
-                      data={data}
-                      onRemove={() => handleRemoveItem(item)}
-                      onNavigate={handleNavigate}
-                    />
-                  );
-                })}
+              <SortableContext
+                items={cardEntries.map((e) =>
+                  e.type === "single" ? e.itemId : e.groupId
+                )}
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {cardEntries.map((entry) => {
+                    if (entry.type === "group") {
+                      return (
+                        <MultiMetricChartCard
+                          key={entry.groupId}
+                          groupId={entry.groupId}
+                          dataList={entry.dataList}
+                          onUngroup={() => handleUngroup(entry.groupId)}
+                          onNavigate={handleNavigate}
+                        />
+                      );
+                    }
+                    return (
+                      <div key={entry.itemId} className="relative">
+                        {mergeMode && (
+                          <button
+                            onClick={() => toggleSelectItem(entry.itemId)}
+                            className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                              selectedItemIds.has(entry.itemId)
+                                ? "bg-[var(--color-primary)] border-[var(--color-primary)]"
+                                : "bg-white border-[var(--color-border)] hover:border-[var(--color-primary)]"
+                            }`}
+                          >
+                            {selectedItemIds.has(entry.itemId) && (
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        )}
+                        <DashboardChartCard
+                          itemId={entry.itemId}
+                          data={entry.data}
+                          onRemove={() => {
+                            const item = items.find((i) => i.id === entry.itemId);
+                            if (item) handleRemoveItem(item);
+                          }}
+                          onNavigate={handleNavigate}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </SortableContext>
+            </DndContext>
+
+            {/* Merge floating bar */}
+            {mergeMode && selectedItemIds.size >= 2 && (
+              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+                <button
+                  onClick={handleMerge}
+                  className="btn-primary shadow-xl px-6 py-3 rounded-full text-sm font-semibold"
+                >
+                  Merge {selectedItemIds.size} charts
+                </button>
               </div>
-            </SortableContext>
-          </DndContext>
+            )}
+          </>
         )}
       </div>
     </div>

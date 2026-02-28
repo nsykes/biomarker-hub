@@ -159,7 +159,7 @@ Apple Health-inspired design. CSS custom properties for colors, shadows, and rad
 
 **Calculation engine** (`web/lib/derivative-calc.ts`): runs after dedup in the extract API route. For each registry entry with a `derivative` definition, checks if all component values are present and the slug isn't already extracted (PDF wins). Computes the value and adds it with `isCalculated: true`.
 
-**17 blood/urine derivatives**: TG/HDL Ratio, TC/HDL Ratio, Non-HDL Cholesterol, BUN/Creatinine Ratio, A/G Ratio, Iron Saturation, Android/Gynoid Ratio, PSA % Free, AA/EPA Ratio, Omega-6/Omega-3 Ratio, EPA+DPA+DHA, Globulin, LDL Cholesterol (Friedewald, TG < 400 guard), HOMA-IR, NLR (Neutrophil/Lymphocyte Ratio), VLDL Cholesterol, Anion Gap.
+**18 blood/urine derivatives**: TG/HDL Ratio, TC/HDL Ratio, LDL/HDL Ratio, Non-HDL Cholesterol, BUN/Creatinine Ratio, A/G Ratio, Iron Saturation, Android/Gynoid Ratio, PSA % Free, AA/EPA Ratio, Omega-6/Omega-3 Ratio, EPA+DPA+DHA, Globulin, LDL Cholesterol (Friedewald, TG < 400 guard), HOMA-IR, NLR (Neutrophil/Lymphocyte Ratio), VLDL Cholesterol, Anion Gap.
 
 **60 DEXA body composition derivatives** (generated in `getBodyCompDerivative()`): Fat % and Lean % for all 10 regions (percentage from tissue mass / total mass), L/R aggregation for arms/legs (4 mass metrics × 2 = 8), and mass decomposition for the other 8 regions (4 metrics × 8 = 32).
 

@@ -437,20 +437,24 @@ export function DashboardView({ dashboardId, onBack, onNavigateToBiomarker }: Da
                     return (
                       <div key={entry.itemId} className="relative">
                         {mergeMode && (
-                          <button
+                          <div
                             onClick={() => toggleSelectItem(entry.itemId)}
-                            className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                              selectedItemIds.has(entry.itemId)
-                                ? "bg-[var(--color-primary)] border-[var(--color-primary)]"
-                                : "bg-white border-[var(--color-border)] hover:border-[var(--color-primary)]"
-                            }`}
+                            className="absolute inset-0 z-20 cursor-pointer rounded-xl"
                           >
-                            {selectedItemIds.has(entry.itemId) && (
-                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </button>
+                            <div
+                              className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                selectedItemIds.has(entry.itemId)
+                                  ? "bg-[var(--color-primary)] border-[var(--color-primary)]"
+                                  : "bg-white border-[var(--color-border)] hover:border-[var(--color-primary)]"
+                              }`}
+                            >
+                              {selectedItemIds.has(entry.itemId) && (
+                                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
                         )}
                         <DashboardChartCard
                           itemId={entry.itemId}

@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { TabId } from "@/lib/types";
 import { useNavigationState } from "@/hooks/useNavigationState";
+import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { FilesTab } from "./FilesTab";
 import { BiomarkersTab } from "./BiomarkersTab";
@@ -46,7 +47,7 @@ export function AppShell() {
     <>
       {/* Header — frosted glass */}
       <header className="flex items-center gap-3 px-6 py-3 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
-        <img src="/logo.svg" alt="Biomarker Hub" className="h-10" />
+        <Logo className="h-10" />
         <nav className="flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5">
           {TABS.map((tab) => (
             <button

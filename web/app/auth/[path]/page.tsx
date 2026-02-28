@@ -12,7 +12,7 @@ export default async function AuthPage({
       <AuthView
         path={path}
         classNames={{
-          footerLink: "!text-[#0A84FF] font-medium",
+          footerLink: "!text-[var(--color-primary)] font-medium",
         }}
       />
     </div>

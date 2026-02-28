@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { UserButton } from "@neondatabase/auth/react";
 import { TabId, StoredFile } from "@/lib/types";
+import { ThemeToggle } from "./ThemeToggle";
 import { FilesTab } from "./FilesTab";
 import { BiomarkersTab } from "./BiomarkersTab";
 import { DashboardsTab } from "./DashboardsTab";
@@ -78,7 +79,7 @@ export function AppShell() {
   return (
     <>
       {/* Header — frosted glass */}
-      <header className="flex items-center gap-3 px-6 py-3 border-b border-[var(--color-border-light)] bg-white/80 backdrop-blur-lg flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <header className="flex items-center gap-3 px-6 py-3 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
         <img src="/logo.svg" alt="Biomarker Hub" className="h-10" />
         <nav className="flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5">
           {TABS.map((tab) => (
@@ -98,7 +99,8 @@ export function AppShell() {
             </button>
           ))}
         </nav>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
           <UserButton size="icon" disableDefaultLinks />
         </div>
       </header>

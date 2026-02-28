@@ -97,11 +97,11 @@ export function SettingsTab() {
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       {loadError && (
-        <div className="card px-4 py-3 text-sm text-[#CC2D24] bg-[#FDE8E8] border-[#FDE8E8] flex items-center justify-between">
+        <div className="card px-4 py-3 text-sm text-[var(--color-error-text)] bg-[var(--color-error-bg)] border-[var(--color-error-bg)] flex items-center justify-between">
           <span>{loadError}</span>
           <button
             onClick={loadSettings}
-            className="ml-4 px-3 py-1 text-xs font-medium bg-white/60 hover:bg-white rounded-lg transition-colors flex-shrink-0"
+            className="ml-4 px-3 py-1 text-xs font-medium bg-[var(--color-surface)]/60 hover:bg-[var(--color-surface)] rounded-lg transition-colors flex-shrink-0"
           >
             Retry
           </button>
@@ -138,7 +138,7 @@ export function SettingsTab() {
             <button
               onClick={saveApiKey}
               disabled={saving === "apiKey"}
-              className={saved ? "btn-primary !bg-[#34C759]" : "btn-primary"}
+              className={saved ? "btn-primary !bg-[var(--color-success)]" : "btn-primary"}
             >
               {saving === "apiKey"
                 ? "Saving..."
@@ -148,12 +148,12 @@ export function SettingsTab() {
             </button>
           </div>
           {saveError && (
-            <div className="rounded-lg px-3 py-2 text-sm text-[#CC2D24] bg-[#FDE8E8]">
+            <div className="rounded-lg px-3 py-2 text-sm text-[var(--color-error-text)] bg-[var(--color-error-bg)]">
               {saveError}
             </div>
           )}
           {keyStored && !keyDirty && !saveError && (
-            <p className="text-xs text-[#34C759] font-medium">Key saved</p>
+            <p className="text-xs text-[var(--color-success)] font-medium">Key saved</p>
           )}
           <p className="text-xs text-[var(--color-text-tertiary)]">
             Your OpenRouter API key. Stored as plaintext in your Neon database
@@ -193,7 +193,7 @@ export function SettingsTab() {
         <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
           Privacy
         </h2>
-        <div className="rounded-xl p-4 space-y-3 text-sm text-[var(--color-text-secondary)]" style={{ background: 'linear-gradient(135deg, #E8F4FD, #F0F0F5)' }}>
+        <div className="rounded-xl p-4 space-y-3 text-sm text-[var(--color-text-secondary)]" style={{ background: 'var(--color-privacy-gradient)' }}>
           <div>
             <p className="font-medium text-[var(--color-text-primary)]">Sub-processor</p>
             <p>OpenRouter routes LLM requests to model providers.</p>
@@ -260,8 +260,8 @@ export function SettingsTab() {
       </section>
 
       {/* Delete Account */}
-      <section className="card p-5 border-[#FF3B30]/20">
-        <h2 className="text-base font-semibold text-[#FF3B30] mb-3">
+      <section className="card p-5 border-[var(--color-error)]/20">
+        <h2 className="text-base font-semibold text-[var(--color-error)] mb-3">
           Delete Account
         </h2>
         <p className="text-sm text-[var(--color-text-secondary)] mb-3">
@@ -269,7 +269,7 @@ export function SettingsTab() {
         </p>
         <button
           onClick={() => setShowDeleteModal(true)}
-          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 text-[#FF3B30] border border-[#FF3B30]/30 hover:bg-[#FDE8E8]"
+          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150 text-[var(--color-error)] border border-[var(--color-error)]/30 hover:bg-[var(--color-error-bg)]"
         >
           Delete Account
         </button>

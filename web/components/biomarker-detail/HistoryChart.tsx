@@ -5,6 +5,7 @@ import { FLAG_COLORS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { formatValue } from "./helpers";
 import { convertToCanonical } from "@/lib/unit-conversions";
+import { useChartColors } from "@/hooks/useChartColors";
 import {
   LineChart,
   Line,
@@ -40,9 +41,9 @@ function CustomDot(props: {
   if (cx == null || cy == null || !payload || payload.value === null) return null;
   const color = FLAG_COLORS[payload.flag] ?? "#AEAEB2";
   if (payload.isCalculated) {
-    return <circle cx={cx} cy={cy} r={6} fill="#fff" stroke={color} strokeWidth={2.5} strokeDasharray="3 2" />;
+    return <circle cx={cx} cy={cy} r={6} fill="var(--color-surface)" stroke={color} strokeWidth={2.5} strokeDasharray="3 2" />;
   }
-  return <circle cx={cx} cy={cy} r={6} fill={color} stroke="#fff" strokeWidth={2.5} />;
+  return <circle cx={cx} cy={cy} r={6} fill={color} stroke="var(--color-surface)" strokeWidth={2.5} />;
 }
 
 function CustomTooltip({
@@ -55,11 +56,11 @@ function CustomTooltip({
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="bg-white border border-[var(--color-border-light)] rounded-xl shadow-lg px-3 py-2 text-sm">
+    <div className="bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-xl shadow-lg px-3 py-2 text-sm">
       <p className="font-medium text-[var(--color-text-primary)]">{p.label}</p>
       <p className="text-[var(--color-text-secondary)]">{p.date}</p>
       {p.isCalculated && (
-        <p className="text-[#5856D6] text-xs mt-0.5">Calculated value</p>
+        <p className="text-[var(--color-calculated)] text-xs mt-0.5">Calculated value</p>
       )}
     </div>
   );
@@ -75,7 +76,7 @@ function buildRangeZones(
   const red = "#FF3B30";
   const greenOpacity = 0.06;
   const redOpacity = 0.05;
-  const lineColor = "#AEAEB2";
+  const lineColor = "var(--color-text-tertiary)";
 
   const { goalDirection, rangeLow, rangeHigh } = referenceRange;
 
@@ -130,6 +131,7 @@ export function HistoryChart({
   data: BiomarkerDetailData;
 }) {
   const numericPoints = data.history.filter((h) => h.value !== null);
+  const chartColors = useChartColors();
 
   if (numericPoints.length === 0) {
     return (
@@ -220,22 +222,22 @@ export function HistoryChart({
   return (
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F5" />
+        <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
         <XAxis
           dataKey="timestamp"
           type="number"
           scale="time"
           domain={xDomain}
           tickFormatter={formatTimestamp}
-          tick={{ fontSize: 12, fill: "#AEAEB2" }}
+          tick={{ fontSize: 12, fill: chartColors.tick }}
           tickLine={false}
-          axisLine={{ stroke: "#E5E5EA" }}
+          axisLine={{ stroke: chartColors.axis }}
         />
         <YAxis
           domain={[yMin, yMax]}
-          tick={{ fontSize: 12, fill: "#AEAEB2" }}
+          tick={{ fontSize: 12, fill: chartColors.tick }}
           tickLine={false}
-          axisLine={{ stroke: "#E5E5EA" }}
+          axisLine={{ stroke: chartColors.axis }}
           tickFormatter={(v: number) => v.toFixed(yDecimals)}
           width={60}
         />
@@ -244,10 +246,10 @@ export function HistoryChart({
         <Line
           type="monotone"
           dataKey="value"
-          stroke="#0A84FF"
+          stroke={chartColors.primary}
           strokeWidth={2.5}
           dot={<CustomDot />}
-          activeDot={{ r: 8, stroke: "#0A84FF", strokeWidth: 2.5, fill: "#fff" }}
+          activeDot={{ r: 8, stroke: chartColors.primary, strokeWidth: 2.5, fill: chartColors.surface }}
           connectNulls
         />
       </LineChart>

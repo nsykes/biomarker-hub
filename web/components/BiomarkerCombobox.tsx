@@ -61,7 +61,7 @@ export function BiomarkerCombobox({ onSelect, onClose, inline }: BiomarkerCombob
         className="input-base rounded-xl"
       />
       {filtered.length > 0 && (
-        <ul ref={listRef} className={`${inline ? "" : "absolute z-20 "}mt-1.5 w-full max-h-60 overflow-auto bg-white rounded-xl shadow-lg border border-[var(--color-border-light)]`}>
+        <ul ref={listRef} className={`${inline ? "" : "absolute z-20 "}mt-1.5 w-full max-h-60 overflow-auto bg-[var(--color-surface)] rounded-xl shadow-lg border border-[var(--color-border-light)]`}>
           {filtered.map((entry) => (
             <li
               key={entry.slug}
@@ -75,7 +75,7 @@ export function BiomarkerCombobox({ onSelect, onClose, inline }: BiomarkerCombob
         </ul>
       )}
       {filtered.length === 0 && query.trim() && (
-        <div className={`${inline ? "" : "absolute z-20 "}mt-1.5 w-full bg-white rounded-xl shadow-lg border border-[var(--color-border-light)] px-3 py-3 text-sm text-[var(--color-text-tertiary)]`}>
+        <div className={`${inline ? "" : "absolute z-20 "}mt-1.5 w-full bg-[var(--color-surface)] rounded-xl shadow-lg border border-[var(--color-border-light)] px-3 py-3 text-sm text-[var(--color-text-tertiary)]`}>
           No matching biomarkers
         </div>
       )}

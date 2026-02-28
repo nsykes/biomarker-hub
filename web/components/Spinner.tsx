@@ -15,7 +15,7 @@ export function Spinner({
 }) {
   return (
     <span
-      className={`${SIZES[size]} border-[#E5E5EA] border-t-[#0A84FF] rounded-full animate-spin inline-block ${className}`}
+      className={`${SIZES[size]} border-[var(--color-border)] border-t-[var(--color-primary)] rounded-full animate-spin inline-block ${className}`}
     />
   );
 }

@@ -146,7 +146,7 @@ export function DatePickerInput({ value, onChange, placeholder = "Select date", 
 
       {/* Calendar popover */}
       {open && (
-        <div className="absolute top-full left-0 mt-1.5 w-[280px] bg-white rounded-xl shadow-lg border border-[var(--color-border-light)] z-30 p-3">
+        <div className="absolute top-full left-0 mt-1.5 w-[280px] bg-[var(--color-surface)] rounded-xl shadow-lg border border-[var(--color-border-light)] z-30 p-3">
           {/* Month/year header */}
           <div className="flex items-center justify-between mb-2">
             <button

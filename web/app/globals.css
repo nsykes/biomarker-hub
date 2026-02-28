@@ -10,16 +10,22 @@
   /* Health status flags */
   --color-flag-normal: #34C759;
   --color-flag-normal-bg: #E8FAF0;
+  --color-flag-normal-text: #1B7F37;
   --color-flag-low: #5856D6;
   --color-flag-low-bg: #EDEDFB;
+  --color-flag-low-text: #4240B0;
   --color-flag-high: #FF3B30;
   --color-flag-high-bg: #FDE8E8;
+  --color-flag-high-text: #CC2D24;
   --color-flag-abnormal: #FF9500;
   --color-flag-abnormal-bg: #FFF3E0;
+  --color-flag-abnormal-text: #B36B00;
   --color-flag-critical-low: #3634A3;
   --color-flag-critical-low-bg: #E0E0F5;
+  --color-flag-critical-low-text: #2A288A;
   --color-flag-critical-high: #C5221F;
   --color-flag-critical-high-bg: #FBD5D5;
+  --color-flag-critical-high-text: #9E1A17;
 
   /* Neutrals — warmer Apple-style */
   --color-surface: #FFFFFF;
@@ -30,6 +36,33 @@
   --color-text-primary: #1C1C1E;
   --color-text-secondary: #636366;
   --color-text-tertiary: #AEAEB2;
+
+  /* Semantic colors */
+  --color-error: #FF3B30;
+  --color-error-bg: #FDE8E8;
+  --color-error-text: #CC2D24;
+  --color-error-hover: #E0352B;
+  --color-success: #34C759;
+  --color-success-text: #1B7F37;
+  --color-warning-text: #B36B00;
+  --color-warning-bg: #FFF3E0;
+  --color-warning-border: #FFE0B2;
+  --color-calculated: #5856D6;
+  --color-calculated-bg: #F0F0FF;
+  --color-calculated-bg-hover: #E8E8F8;
+  --color-calculated-badge-bg: #E8E8F8;
+
+  /* Report type badges */
+  --color-badge-blood-bg: #FDE8E8;
+  --color-badge-blood-text: #CC2D24;
+  --color-badge-dexa-bg: #EDEDFB;
+  --color-badge-dexa-text: #4240B0;
+
+  /* UI chrome */
+  --color-header-bg: rgba(255, 255, 255, 0.8);
+  --color-header-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  --color-modal-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  --color-privacy-gradient: linear-gradient(135deg, #E8F4FD, #F0F0F5);
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
@@ -42,24 +75,85 @@
   --foreground: var(--color-text-primary);
 }
 
+.dark {
+  /* Primary accent — slightly brighter for dark bg */
+  --color-primary: #0A84FF;
+  --color-primary-hover: #409CFF;
+  --color-primary-light: rgba(10, 132, 255, 0.15);
+
+  /* Health status flags — same hues, translucent backgrounds */
+  --color-flag-normal: #30D158;
+  --color-flag-normal-bg: rgba(48, 209, 88, 0.15);
+  --color-flag-normal-text: #30D158;
+  --color-flag-low: #7D7AFF;
+  --color-flag-low-bg: rgba(88, 86, 214, 0.15);
+  --color-flag-low-text: #7D7AFF;
+  --color-flag-high: #FF453A;
+  --color-flag-high-bg: rgba(255, 69, 58, 0.15);
+  --color-flag-high-text: #FF6961;
+  --color-flag-abnormal: #FF9F0A;
+  --color-flag-abnormal-bg: rgba(255, 159, 10, 0.12);
+  --color-flag-abnormal-text: #FFB84D;
+  --color-flag-critical-low: #7D7AFF;
+  --color-flag-critical-low-bg: rgba(54, 52, 163, 0.2);
+  --color-flag-critical-low-text: #BDB9FF;
+  --color-flag-critical-high: #FF6961;
+  --color-flag-critical-high-bg: rgba(197, 34, 31, 0.2);
+  --color-flag-critical-high-text: #FF6961;
+
+  /* Neutrals — dark Apple-style */
+  --color-surface: #1C1C1E;
+  --color-surface-secondary: #000000;
+  --color-surface-tertiary: #2C2C2E;
+  --color-border: #38383A;
+  --color-border-light: #2C2C2E;
+  --color-text-primary: #F5F5F7;
+  --color-text-secondary: #A1A1A6;
+  --color-text-tertiary: #636366;
+
+  /* Semantic colors */
+  --color-error: #FF453A;
+  --color-error-bg: rgba(255, 69, 58, 0.15);
+  --color-error-text: #FF6961;
+  --color-error-hover: #FF6961;
+  --color-success: #30D158;
+  --color-success-text: #30D158;
+  --color-warning-text: #FFB84D;
+  --color-warning-bg: rgba(255, 159, 10, 0.12);
+  --color-warning-border: rgba(255, 159, 10, 0.25);
+  --color-calculated: #7D7AFF;
+  --color-calculated-bg: rgba(125, 122, 255, 0.1);
+  --color-calculated-bg-hover: rgba(125, 122, 255, 0.15);
+  --color-calculated-badge-bg: rgba(125, 122, 255, 0.2);
+
+  /* Report type badges */
+  --color-badge-blood-bg: rgba(255, 69, 58, 0.15);
+  --color-badge-blood-text: #FF6961;
+  --color-badge-dexa-bg: rgba(88, 86, 214, 0.15);
+  --color-badge-dexa-text: #7D7AFF;
+
+  /* UI chrome */
+  --color-header-bg: rgba(28, 28, 30, 0.8);
+  --color-header-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --color-modal-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  --color-privacy-gradient: linear-gradient(135deg, rgba(10, 132, 255, 0.08), rgba(44, 44, 46, 0.8));
+
+  /* Shadows — stronger for dark mode */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3);
+
+  /* Legacy mappings */
+  --background: var(--color-surface-secondary);
+  --foreground: var(--color-text-primary);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-
-  /* Expose design tokens as Tailwind utilities */
-  --color-primary: #0A84FF;
-  --color-primary-hover: #0070E0;
-  --color-primary-light: #E8F4FD;
-  --color-surface: #FFFFFF;
-  --color-surface-secondary: #F9FAFB;
-  --color-surface-tertiary: #F2F2F7;
-  --color-border: #E5E5EA;
-  --color-border-light: #F0F0F5;
-  --color-text-primary: #1C1C1E;
-  --color-text-secondary: #636366;
-  --color-text-tertiary: #AEAEB2;
 }
 
 body {
@@ -124,7 +218,7 @@ a[href] {
 }
 .btn-secondary:hover:not(:disabled) {
   background: var(--color-surface-tertiary);
-  border-color: #D1D1D6;
+  border-color: var(--color-border);
 }
 .btn-secondary:disabled {
   opacity: 0.5;
@@ -138,6 +232,7 @@ a[href] {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
+  color: var(--color-text-primary);
   outline: none;
   transition: border-color 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { UserButton } from "@neondatabase/auth/react";
-import { TabId, StoredFile } from "@/lib/types";
+import { TabId } from "@/lib/types";
+import { useNavigationState } from "@/hooks/useNavigationState";
+import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
+import { UserMenu } from "./UserMenu";
 import { FilesTab } from "./FilesTab";
 import { BiomarkersTab } from "./BiomarkersTab";
 import { DashboardsTab } from "./DashboardsTab";
@@ -29,49 +31,15 @@ export function AppShell() {
       ? (tabParam as TabId)
       : "files";
 
-  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
-  const [mountedTabs, setMountedTabs] = useState<Set<TabId>>(
-    new Set([initialTab])
-  );
-  const [initialBiomarkerSlug] = useState<string | null>(biomarkerParam);
+  const [state, nav] = useNavigationState(initialTab, biomarkerParam);
 
-  const handleTabSwitch = useCallback((tabId: TabId) => {
-    setActiveTab(tabId);
-    setMountedTabs((prev: Set<TabId>) => {
-      if (prev.has(tabId)) return prev;
-      return new Set(prev).add(tabId);
-    });
-  }, []);
+  const goBack = useCallback(() => window.history.back(), []);
 
-  // Clear search params from URL after reading them so a refresh always lands on Files
-  useEffect(() => {
-    if (tabParam || biomarkerParam) {
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, []);
-  const [extractionMode, setExtractionMode] = useState<
-    | { type: "new" }
-    | { type: "view"; file: StoredFile }
-    | null
-  >(null);
-
-  const handleNewExtraction = useCallback(() => {
-    setExtractionMode({ type: "new" });
-  }, []);
-
-  const handleViewFile = useCallback((file: StoredFile) => {
-    setExtractionMode({ type: "view", file });
-  }, []);
-
-  const handleBack = useCallback(() => {
-    setExtractionMode(null);
-  }, []);
-
-  if (extractionMode) {
+  if (state.extractionMode) {
     return (
       <ExtractionView
-        mode={extractionMode}
-        onBack={handleBack}
+        mode={state.extractionMode}
+        onBack={goBack}
       />
     );
   }
@@ -79,17 +47,19 @@ export function AppShell() {
   return (
     <>
       {/* Header — frosted glass */}
-      <header className="flex items-center gap-3 px-6 py-3 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
-        <img src="/logo.svg" alt="Biomarker Hub" className="h-10" />
+      <header className="relative z-50 flex items-center gap-3 px-6 py-3 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
+        <button onClick={() => nav.switchTab("files")} className="cursor-pointer" aria-label="Go to Files">
+          <Logo className="h-10" />
+        </button>
         <nav className="flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5">
           {TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => handleTabSwitch(tab.id)}
+              onClick={() => nav.switchTab(tab.id)}
               className={`
                 px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200
                 ${
-                  activeTab === tab.id
+                  state.activeTab === tab.id
                     ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] shadow-sm"
                     : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                 }
@@ -101,30 +71,41 @@ export function AppShell() {
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
-          <UserButton size="icon" disableDefaultLinks />
+          <UserMenu />
         </div>
       </header>
 
       {/* Tab content — lazy-mount: tabs mount on first activation, stay mounted (hidden via CSS) */}
       <main className="flex-1 overflow-auto bg-[var(--color-surface-secondary)]">
-        <div className={activeTab === "files" ? "h-full" : "hidden"}>
-          {mountedTabs.has("files") && (
+        <div className={state.activeTab === "files" ? "h-full" : "hidden"}>
+          {state.mountedTabs.has("files") && (
             <FilesTab
-              onNewExtraction={handleNewExtraction}
-              onViewFile={handleViewFile}
+              onNewExtraction={() => nav.openExtraction({ type: "new" })}
+              onViewFile={(file) => nav.openExtraction({ type: "view", file })}
             />
           )}
         </div>
-        <div className={activeTab === "biomarkers" ? "h-full" : "hidden"}>
-          {mountedTabs.has("biomarkers") && (
-            <BiomarkersTab initialBiomarkerSlug={initialBiomarkerSlug} />
+        <div className={state.activeTab === "biomarkers" ? "h-full" : "hidden"}>
+          {state.mountedTabs.has("biomarkers") && (
+            <BiomarkersTab
+              activeBiomarkerSlug={state.biomarkerSlug}
+              onOpenBiomarker={nav.openBiomarker}
+              onBack={goBack}
+            />
           )}
         </div>
-        <div className={activeTab === "dashboards" ? "h-full" : "hidden"}>
-          {mountedTabs.has("dashboards") && <DashboardsTab />}
+        <div className={state.activeTab === "dashboards" ? "h-full" : "hidden"}>
+          {state.mountedTabs.has("dashboards") && (
+            <DashboardsTab
+              activeDashboardId={state.dashboardId}
+              onOpenDashboard={nav.openDashboard}
+              onBack={goBack}
+              onNavigateToBiomarker={nav.openBiomarker}
+            />
+          )}
         </div>
-        <div className={activeTab === "settings" ? "h-full" : "hidden"}>
-          {mountedTabs.has("settings") && <SettingsTab />}
+        <div className={state.activeTab === "settings" ? "h-full" : "hidden"}>
+          {state.mountedTabs.has("settings") && <SettingsTab />}
         </div>
       </main>
     </>

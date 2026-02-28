@@ -2,6 +2,7 @@
 
 import { BiomarkerDetailData } from "@/lib/types";
 import { MultiMetricChart } from "./MultiMetricChart";
+import { InfoTooltip } from "./InfoTooltip";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -72,6 +73,21 @@ export function MultiMetricChartCard({
               )}
             </button>
           ))}
+          {/* Info tooltip */}
+          {dataList.some((d) => d.summary) && (
+            <InfoTooltip>
+              {dataList.map((d) =>
+                d.summary ? (
+                  <div key={d.slug} className={dataList.filter((x) => x.summary).length > 1 ? "mb-2 last:mb-0" : ""}>
+                    {dataList.filter((x) => x.summary).length > 1 && (
+                      <p className="text-xs font-semibold text-[var(--color-text-primary)] mb-0.5">{d.displayName}</p>
+                    )}
+                    <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">{d.summary}</p>
+                  </div>
+                ) : null
+              )}
+            </InfoTooltip>
+          )}
         </div>
 
         {/* Split button */}

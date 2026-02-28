@@ -29,6 +29,12 @@ export function SettingsTab() {
   const [keyDirty, setKeyDirty] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // API Keys state
@@ -202,7 +208,8 @@ export function SettingsTab() {
             <p className="text-xs text-[var(--color-text-tertiary)]">Saving...</p>
           )}
           <p className="text-xs text-[var(--color-text-tertiary)]">
-            The model used for new extractions.
+            The model used for new extractions. We strongly recommend Gemini
+            2.5 Pro for the most accurate results.
           </p>
         </div>
       </section>
@@ -404,6 +411,105 @@ export function SettingsTab() {
             No API keys yet.
           </p>
         )}
+      </section>
+
+      {/* Change Password */}
+      <section className="card p-5">
+        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
+          Change Password
+        </h2>
+        <div className="space-y-2.5">
+          <div>
+            <label className="text-sm font-medium text-[var(--color-text-secondary)] block mb-1.5">
+              Current Password
+            </label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => {
+                setCurrentPassword(e.target.value);
+                setPasswordError(null);
+                setPasswordSuccess(false);
+              }}
+              disabled={passwordSaving}
+              className="input-base"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[var(--color-text-secondary)] block mb-1.5">
+              New Password
+            </label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                setPasswordError(null);
+                setPasswordSuccess(false);
+              }}
+              disabled={passwordSaving}
+              className="input-base"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[var(--color-text-secondary)] block mb-1.5">
+              Confirm New Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setPasswordError(null);
+                setPasswordSuccess(false);
+              }}
+              disabled={passwordSaving}
+              className="input-base"
+            />
+          </div>
+          {passwordError && (
+            <div className="rounded-lg px-3 py-2 text-sm text-[var(--color-error-text)] bg-[var(--color-error-bg)]">
+              {passwordError}
+            </div>
+          )}
+          {passwordSuccess && (
+            <p className="text-xs text-[var(--color-success)] font-medium">Password changed</p>
+          )}
+          <button
+            onClick={async () => {
+              if (newPassword !== confirmPassword) {
+                setPasswordError("Passwords do not match");
+                return;
+              }
+              setPasswordSaving(true);
+              setPasswordError(null);
+              try {
+                const { error } = await authClient.changePassword({
+                  currentPassword,
+                  newPassword,
+                  revokeOtherSessions: true,
+                });
+                if (error) {
+                  setPasswordError(error.message || "Failed to change password");
+                } else {
+                  setCurrentPassword("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                  setPasswordSuccess(true);
+                  setTimeout(() => setPasswordSuccess(false), 2000);
+                }
+              } catch (e) {
+                setPasswordError(e instanceof Error ? e.message : "Failed to change password");
+              } finally {
+                setPasswordSaving(false);
+              }
+            }}
+            disabled={passwordSaving || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+            className={passwordSuccess ? "btn-primary !bg-[var(--color-success)]" : "btn-primary"}
+          >
+            {passwordSaving ? "Saving..." : passwordSuccess ? "Changed!" : "Change Password"}
+          </button>
+        </div>
       </section>
 
       {/* Delete Account */}

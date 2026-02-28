@@ -1,4 +1,5 @@
 import { AuthView } from "@neondatabase/auth/react";
+import { Logo } from "@/components/Logo";
 
 export default async function AuthPage({
   params,
@@ -8,7 +9,7 @@ export default async function AuthPage({
   const { path } = await params;
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--color-surface-secondary)]">
-      <img src="/logo.svg" alt="Biomarker Hub" className="h-10 mb-6" />
+      <Logo className="h-10 mb-6" />
       <AuthView
         path={path}
         classNames={{

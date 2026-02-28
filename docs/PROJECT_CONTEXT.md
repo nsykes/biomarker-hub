@@ -58,6 +58,16 @@ The highlight algorithm groups text-layer spans into rows by Y-position, then sc
 
 **Debounced scheduling:** `scheduleHighlight` in PdfViewer uses `clearTimeout` + `setTimeout(100)` to debounce multiple triggers (React StrictMode double-invoke, `useEffect`, `onRenderTextLayerSuccess`). Only the last call executes, 100ms after the text layer has settled. This prevents the "jump down then back up" visual bug caused by multiple executions measuring unsettled CSS positions.
 
+### Browser History & Navigation
+
+All in-app navigation (tab switches, opening biomarker/dashboard detail views, extraction view) is synchronized with the browser history via a centralized `useNavigationState` hook (`web/hooks/useNavigationState.ts`). The hook owns all navigation state (`activeTab`, `biomarkerSlug`, `dashboardId`, `extractionMode`, `mountedTabs`) and pushes entries to `window.history` on each navigation action.
+
+**How it works:** Every navigation action calls `pushState` with a serialized `ViewState` object (stamped with a `_biomarkerNav` sentinel). A `popstate` listener restores React state from `history.state` when the browser back/forward buttons are pressed. In-app back arrows call `window.history.back()` so both paths converge through the same popstate handler.
+
+**Refresh restoration:** On mount, the hook checks `window.history.state` for a previously stamped view state, so refreshing the page restores the current view (e.g., a biomarker detail page). Extraction mode is not fully restorable from history (the `StoredFile` object isn't serializable), so refresh during extraction falls back to the Files tab.
+
+**Cross-tab navigation:** Dashboard→biomarker navigation uses `openBiomarker()` from the hook (not `router.push`), which creates a proper history entry. Pressing back from the biomarker detail returns to the dashboard detail view.
+
 ### Auth & Data Model: One User = One Patient
 
 Every logged-in user tracks only their own health data — it's a strict 1:1 relationship. Because of this, there's no separate `patients` table. Instead:
@@ -172,7 +182,7 @@ Apple Health-inspired design. CSS custom properties for colors, shadows, and rad
 
 **Calculation engine** (`web/lib/derivative-calc.ts`): runs after dedup in the extract API route. For each registry entry with a `derivative` definition, checks if all component values are present and the slug isn't already extracted (PDF wins). Computes the value and adds it with `isCalculated: true`.
 
-**17 blood/urine derivatives**: TG/HDL Ratio, TC/HDL Ratio, Non-HDL Cholesterol, BUN/Creatinine Ratio, A/G Ratio, Iron Saturation, Android/Gynoid Ratio, PSA % Free, AA/EPA Ratio, Omega-6/Omega-3 Ratio, EPA+DPA+DHA, Globulin, LDL Cholesterol (Friedewald, TG < 400 guard), HOMA-IR, NLR (Neutrophil/Lymphocyte Ratio), VLDL Cholesterol, Anion Gap.
+**18 blood/urine derivatives**: TG/HDL Ratio, TC/HDL Ratio, LDL/HDL Ratio, Non-HDL Cholesterol, BUN/Creatinine Ratio, A/G Ratio, Iron Saturation, Android/Gynoid Ratio, PSA % Free, AA/EPA Ratio, Omega-6/Omega-3 Ratio, EPA+DPA+DHA, Globulin, LDL Cholesterol (Friedewald, TG < 400 guard), HOMA-IR, NLR (Neutrophil/Lymphocyte Ratio), VLDL Cholesterol, Anion Gap.
 
 **60 DEXA body composition derivatives** (generated in `getBodyCompDerivative()`): Fat % and Lean % for all 10 regions (percentage from tissue mass / total mass), L/R aggregation for arms/legs (4 mass metrics × 2 = 8), and mass decomposition for the other 8 regions (4 metrics × 8 = 32).
 
@@ -206,8 +216,8 @@ The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:
 - **Privacy audit** — Full data flow review of all third-party sub-processors (OpenRouter, Neon, Vercel) before sharing with friends/family. Goal: plain-language privacy summary for non-technical users.
 - **Dashboard enhancements** — Shareable/exportable dashboards, chart export (PNG/PDF).
 - **Tab switching performance** — Navigating between tabs (Files, Biomarkers, Dashboards, Settings) feels slow; investigate lazy loading, skeleton states, or caching to make transitions snappier.
-- **Back button navigation** — Browser back button sometimes goes back too far (e.g., leaving the app entirely instead of returning to the previous in-app view). Likely needs proper history state management for inline views (biomarker detail, dashboard detail) so back navigates within the app correctly.
+- **DEXA PDF highlighting** — Highlighting doesn't work correctly on BodySpec DEXA scan PDFs. The row-based matching algorithm may need adjustments for DEXA's different layout/formatting compared to standard blood panel PDFs.
 - ~~**Light / dark mode**~~ — **Done.** Supports system preference and manual toggle (light→dark→system cycle). Uses CSS custom properties with `ThemeToggle` component.
-- **User initials avatar** — The initials display in the top-right corner needs fixing.
+- ~~**User initials avatar**~~ — **Done.** Replaced Neon Auth `UserButton` (showed initials) with a static person icon SVG. Auth actions (sign out) are handled independently in Settings.
 - **Dashboards broken** — Dashboards tab is broken and needs debugging.
 - **Other** — Batch PDF upload, PII stripping before LLM, model comparison diff view, custom per-lab prompt overrides, general code cleanup pass.

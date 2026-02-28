@@ -31,6 +31,8 @@ Monorepo for biomarker extraction and health data tools.
 - `web/components/RangeConflictModal.tsx` — Modal for resolving reference range conflicts between PDF and stored ranges
 - `web/components/DeleteAccountModal.tsx` — Confirmation modal for account deletion (type "DELETE" to confirm)
 - `web/components/ThemeToggle.tsx` — Light/dark/system theme toggle (cycles light→dark→system)
+- `web/components/UserMenu.tsx` — Header user dropdown (name, email, sign-out) using authClient.useSession()
+- `web/hooks/useNavigationState.ts` — Centralized browser history + navigation state hook (tabs, detail views, extraction)
 - `web/hooks/useChartColors.ts` — Reads computed CSS color vars for Recharts (re-runs on theme change)
 - `web/components/DashboardsTab.tsx` — Dashboard list view with create FAB
 - `web/components/DashboardView.tsx` — Single dashboard detail with chart grid, drag-to-reorder, and merge mode

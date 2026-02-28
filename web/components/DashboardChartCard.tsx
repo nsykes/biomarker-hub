@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { BiomarkerDetailData } from "@/lib/types";
 import { HistoryChart } from "./biomarker-detail/HistoryChart";
+import { InfoTooltip } from "./InfoTooltip";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { computeTrend } from "@/lib/trend";
@@ -14,6 +15,9 @@ interface DashboardChartCardProps {
   data: BiomarkerDetailData;
   onRemove: () => void;
   onNavigate: (slug: string) => void;
+  mergeMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 export function DashboardChartCard({
@@ -21,6 +25,9 @@ export function DashboardChartCard({
   data,
   onRemove,
   onNavigate,
+  mergeMode,
+  selected,
+  onToggleSelect,
 }: DashboardChartCardProps) {
   const trend = useMemo(
     () => computeTrend(data.slug, data.history, data.referenceRange),
@@ -46,26 +53,44 @@ export function DashboardChartCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="card overflow-hidden"
+      className={`card overflow-hidden ${mergeMode ? "cursor-pointer" : ""}`}
+      onClick={mergeMode ? onToggleSelect : undefined}
     >
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-border-light)]">
-        {/* Drag handle */}
-        <button
-          {...attributes}
-          {...listeners}
-          className="p-1 rounded hover:bg-[var(--color-surface-tertiary)] cursor-grab active:cursor-grabbing text-[var(--color-text-tertiary)] flex-shrink-0 touch-none"
-          title="Drag to reorder"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-            <circle cx="5" cy="3" r="1.5" />
-            <circle cx="11" cy="3" r="1.5" />
-            <circle cx="5" cy="8" r="1.5" />
-            <circle cx="11" cy="8" r="1.5" />
-            <circle cx="5" cy="13" r="1.5" />
-            <circle cx="11" cy="13" r="1.5" />
-          </svg>
-        </button>
+        {mergeMode ? (
+          /* Merge-mode checkbox (replaces drag handle) */
+          <div
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+              selected
+                ? "bg-[var(--color-primary)] border-[var(--color-primary)]"
+                : "bg-white border-[var(--color-border)]"
+            }`}
+          >
+            {selected && (
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+        ) : (
+          /* Drag handle */
+          <button
+            {...attributes}
+            {...listeners}
+            className="p-1 rounded hover:bg-[var(--color-surface-tertiary)] cursor-grab active:cursor-grabbing text-[var(--color-text-tertiary)] flex-shrink-0 touch-none"
+            title="Drag to reorder"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="5" cy="3" r="1.5" />
+              <circle cx="11" cy="3" r="1.5" />
+              <circle cx="5" cy="8" r="1.5" />
+              <circle cx="11" cy="8" r="1.5" />
+              <circle cx="5" cy="13" r="1.5" />
+              <circle cx="11" cy="13" r="1.5" />
+            </svg>
+          </button>
+        )}
 
         {/* Title — clickable */}
         <button
@@ -79,6 +104,13 @@ export function DashboardChartCard({
             {data.category}
           </span>
         </button>
+
+        {/* Info tooltip */}
+        {data.summary && (
+          <InfoTooltip width="w-64">
+            <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">{data.summary}</p>
+          </InfoTooltip>
+        )}
 
         {/* Remove button */}
         <button

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -91,10 +90,10 @@ function buildCardEntries(
 interface DashboardViewProps {
   dashboardId: string;
   onBack: () => void;
+  onNavigateToBiomarker: (slug: string) => void;
 }
 
-export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
-  const router = useRouter();
+export function DashboardView({ dashboardId, onBack, onNavigateToBiomarker }: DashboardViewProps) {
   const [dashboard, setDashboard] = useState<DashboardDetail | null>(null);
   const [chartData, setChartData] = useState<Map<string, BiomarkerDetailData>>(
     new Map()
@@ -222,7 +221,7 @@ export function DashboardView({ dashboardId, onBack }: DashboardViewProps) {
   };
 
   const handleNavigate = (slug: string) => {
-    router.push(`/?tab=biomarkers&biomarker=${slug}`);
+    onNavigateToBiomarker(slug);
   };
 
   const cardEntries = useMemo(

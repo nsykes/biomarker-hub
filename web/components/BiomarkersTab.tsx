@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { StoredFile, BiomarkerHistoryPoint } from "@/lib/types";
 import {
   REGISTRY,
@@ -14,13 +14,12 @@ import { getFiles } from "@/lib/db/actions";
 import { BiomarkerDetailView } from "./BiomarkerDetailPage";
 
 interface BiomarkersTabProps {
-  initialBiomarkerSlug?: string | null;
+  activeBiomarkerSlug: string | null;
+  onOpenBiomarker: (slug: string) => void;
+  onBack: () => void;
 }
 
-export function BiomarkersTab({ initialBiomarkerSlug }: BiomarkersTabProps) {
-  const [activeBiomarkerSlug, setActiveBiomarkerSlug] = useState<string | null>(
-    initialBiomarkerSlug ?? null
-  );
+export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: BiomarkersTabProps) {
   const [files, setFiles] = useState<StoredFile[]>([]);
   const [loading, setLoading] = useState(true);
   const { toggle: toggleCategory, isCollapsed, expandAll, collapseAll, anyCollapsed } = useCategoryCollapse();
@@ -98,15 +97,11 @@ export function BiomarkersTab({ initialBiomarkerSlug }: BiomarkersTabProps) {
     return entries[0]; // files are sorted by addedAt desc
   };
 
-  const handleBack = useCallback(() => {
-    setActiveBiomarkerSlug(null);
-  }, []);
-
   if (activeBiomarkerSlug) {
     return (
       <BiomarkerDetailView
         slug={activeBiomarkerSlug}
-        onBack={handleBack}
+        onBack={onBack}
       />
     );
   }
@@ -195,7 +190,7 @@ export function BiomarkersTab({ initialBiomarkerSlug }: BiomarkersTabProps) {
                   return (
                     <button
                       key={entry.slug}
-                      onClick={() => setActiveBiomarkerSlug(entry.slug)}
+                      onClick={() => onOpenBiomarker(entry.slug)}
                       className="w-full flex items-center gap-4 px-5 py-2.5 text-left hover:bg-[var(--color-primary-light)] transition-colors duration-150"
                     >
                       <span className="text-sm text-[var(--color-text-primary)] flex-1 min-w-0">

@@ -137,6 +137,7 @@ export interface BiomarkerDetailData {
   fullName: string;
   category: string;
   defaultUnit: string | null;
+  summary?: string;
   history: BiomarkerHistoryPoint[];
   referenceRange: ReferenceRange | null;
 }

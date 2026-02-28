@@ -40,6 +40,15 @@ function DetailContent({ data }: { data: BiomarkerDetailData }) {
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{data.fullName}</p>
           )}
         </div>
+        {/* Summary */}
+        {data.summary && (
+          <section className="card p-5">
+            <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              {data.summary}
+            </p>
+          </section>
+        )}
+
         {/* Chart section */}
         <section className="card p-5">
           <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
@@ -114,6 +123,7 @@ export function BiomarkerDetailView({ slug, onBack }: BiomarkerDetailViewProps) 
       fullName: entry.fullName,
       category: entry.category,
       defaultUnit: entry.defaultUnit,
+      summary: entry.summary,
       history,
       referenceRange: finalRange,
     });

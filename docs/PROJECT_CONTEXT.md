@@ -106,6 +106,7 @@ Upload a PDF → LLM extracts biomarkers into structured JSON → review in spli
 Biomarker detail views render inline within the Biomarkers tab (not as a separate page), following the same pattern as Dashboards. Clicking a biomarker row sets `activeBiomarkerSlug` state, which renders `BiomarkerDetailView` with a sticky sub-header (back button + name + category badge). The main AppShell header (logo + tabs) stays visible throughout. The `/biomarkers/[slug]` route redirects to `/?tab=biomarkers&biomarker=slug` so direct URLs and dashboard chart navigation both land in the inline view.
 
 Each biomarker detail view includes:
+- **Summary card** — 3-5 sentence clinical description (what it is, what it measures, why it matters). Sourced from the registry's `summary` field. DEXA entries use region-templated summaries. Only shown when a summary exists.
 - **History chart** — time-proportional X-axis, dots colored by flag status (recomputed client-side from custom reference range), reference range as shaded zone.
 - **History table** — all data points with date, value, unit, flag, source. Click a row to preview the source PDF page in a modal.
 - **Reference range section** — editable custom range (auto-backfilled from lab data on first visit), goal direction auto-inferred, lab-reported ranges shown for comparison. Unit-normalized values shown with originals in parentheses.
@@ -128,7 +129,7 @@ Apple Health-inspired design. CSS custom properties for colors, shadows, and rad
 
 ## Biomarker Registry
 
-134+ canonical biomarkers in `web/lib/biomarker-registry.ts`. Each entry has `displayName`, `fullName` (expanded clinical name for abbreviations like AST → "Aspartate Aminotransferase"), `category`, `defaultUnit`, `aliases`, and `slug`. DEXA entries are generated programmatically for body composition (64 entries) and bone density (10 entries) regions.
+134+ canonical biomarkers in `web/lib/biomarker-registry.ts`. Each entry has `displayName`, `fullName` (expanded clinical name for abbreviations like AST → "Aspartate Aminotransferase"), `category`, `defaultUnit`, `summary` (3-5 sentence clinical description), `aliases`, and `slug`. DEXA entries are generated programmatically for body composition (64 entries) and bone density (10 entries) regions, with summaries templated per-region from base metric descriptions.
 
 **Category corrections** from audit: homocysteine → Heart, rheumatoid-factor → Autoimmune, methylmalonic-acid → Vitamins, leptin → Endocrinology, magnesium-rbc → Electrolytes.
 
@@ -156,6 +157,6 @@ The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:
 - **Mobile responsiveness** — The split-pane extraction view needs a stacked/tabbed layout for small screens. Detail pages and settings are more straightforward.
 - **Trend alerts** — Surface concerning trends across reports: values trending toward out-of-range, recent normal→abnormal crossings, significant jumps between readings.
 - **Privacy audit** — Full data flow review of all third-party sub-processors (OpenRouter, Neon, Vercel) before sharing with friends/family. Goal: plain-language privacy summary for non-technical users.
-- **Biomarker summary text** — What each biomarker is, why it matters — shown on detail pages.
 - **Dashboard enhancements** — Preset templates by category (Heart, Metabolic, Thyroid), shareable/exportable dashboards, summary stats (latest values, trend indicators).
+- **Tab switching performance** — Navigating between tabs (Files, Biomarkers, Dashboards, Settings) feels slow; investigate lazy loading, skeleton states, or caching to make transitions snappier.
 - **Other** — Batch PDF upload, PII stripping before LLM, model comparison diff view, custom per-lab prompt overrides, general code cleanup pass.

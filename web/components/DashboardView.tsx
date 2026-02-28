@@ -114,25 +114,31 @@ export function DashboardView({ dashboardId, onBack, onNavigateToBiomarker }: Da
   );
 
   const loadData = useCallback(async () => {
-    const detail = await getDashboard(dashboardId);
-    if (!detail) {
-      onBack();
-      return;
-    }
-    setDashboard(detail);
-    setItems(detail.items);
-    setNameInput(detail.name);
-
-    const slugs = detail.items.map((i) => i.canonicalSlug);
-    if (slugs.length > 0) {
-      const data = await getDashboardChartData(slugs);
-      const map = new Map<string, BiomarkerDetailData>();
-      for (const d of data) {
-        map.set(d.slug, d);
+    try {
+      const detail = await getDashboard(dashboardId);
+      if (!detail) {
+        onBack();
+        return;
       }
-      setChartData(map);
+      setDashboard(detail);
+      setItems(detail.items);
+      setNameInput(detail.name);
+
+      const slugs = detail.items.map((i) => i.canonicalSlug);
+      if (slugs.length > 0) {
+        const data = await getDashboardChartData(slugs);
+        const map = new Map<string, BiomarkerDetailData>();
+        for (const d of data) {
+          map.set(d.slug, d);
+        }
+        setChartData(map);
+      }
+    } catch (err) {
+      console.error("Failed to load dashboard:", err);
+      onBack();
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [dashboardId, onBack]);
 
   useEffect(() => {

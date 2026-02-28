@@ -30,8 +30,8 @@ export function DashboardsTab() {
     loadDashboards();
   }, [loadDashboards]);
 
-  const handleCreate = async (name: string, slugs: string[]) => {
-    const id = await createDashboard(name, slugs);
+  const handleCreate = async (name: string, slugs: string[], groups?: string[][]) => {
+    const id = await createDashboard(name, slugs, groups);
     setShowCreate(false);
     await loadDashboards();
     setActiveDashboardId(id);

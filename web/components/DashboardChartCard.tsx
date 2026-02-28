@@ -1,9 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import { BiomarkerDetailData } from "@/lib/types";
 import { HistoryChart } from "./biomarker-detail/HistoryChart";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { computeTrend } from "@/lib/trend";
+import { FLAG_COLORS, TREND_SENTIMENT_COLORS } from "@/lib/constants";
+import { formatDate } from "@/lib/utils";
 
 interface DashboardChartCardProps {
   itemId: string;
@@ -18,6 +22,11 @@ export function DashboardChartCard({
   onRemove,
   onNavigate,
 }: DashboardChartCardProps) {
+  const trend = useMemo(
+    () => computeTrend(data.slug, data.history, data.referenceRange),
+    [data.slug, data.history, data.referenceRange]
+  );
+
   const {
     attributes,
     listeners,
@@ -92,6 +101,33 @@ export function DashboardChartCard({
           </svg>
         </button>
       </div>
+
+      {/* Latest value + trend */}
+      {trend && (
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--color-border-light)]">
+          <span
+            className="w-2 h-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: FLAG_COLORS[trend.latestFlag] ?? "#8E8E93" }}
+          />
+          <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+            {parseFloat(trend.latestValue.toFixed(2))}{" "}
+            <span className="font-normal text-[var(--color-text-tertiary)]">
+              {trend.latestUnit ?? ""}
+            </span>
+          </span>
+          {trend.direction && (
+            <span
+              className="text-xs font-semibold"
+              style={{ color: TREND_SENTIMENT_COLORS[trend.sentiment] }}
+            >
+              {trend.direction === "up" ? "\u2191" : trend.direction === "down" ? "\u2193" : "\u2192"}
+            </span>
+          )}
+          <span className="text-xs text-[var(--color-text-tertiary)] ml-auto">
+            {formatDate(trend.latestDate)}
+          </span>
+        </div>
+      )}
 
       {/* Chart */}
       <div className="p-3">

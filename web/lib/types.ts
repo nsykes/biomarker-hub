@@ -95,7 +95,24 @@ export interface DashboardItem {
   id: string;
   canonicalSlug: string;
   sortOrder: number;
+  groupId: string | null;
 }
+
+export type DashboardCardEntry =
+  | {
+      type: "single";
+      itemId: string;
+      slug: string;
+      data: BiomarkerDetailData;
+      sortOrder: number;
+    }
+  | {
+      type: "group";
+      groupId: string;
+      items: { itemId: string; slug: string }[];
+      dataList: BiomarkerDetailData[];
+      sortOrder: number;
+    };
 
 export interface DashboardDetail {
   id: string;

@@ -115,6 +115,12 @@ Each biomarker detail view includes:
 
 Named collections of biomarker charts (e.g., "Heart Health"). Create/edit via modal with biomarker combobox selection. Detail view shows a responsive chart grid with drag-to-reorder (`@dnd-kit/sortable`). Chart data batch-fetched in 2 queries (not N). Charts link to biomarker detail pages.
 
+**Dashboard templates:** 7 pre-made templates (Heart Health, Metabolic, Thyroid, Lipid Panel, CBC, Iron Panel, Inflammation) defined in `web/lib/constants.ts` as `DASHBOARD_TEMPLATES`. Shown as pill buttons in the create modal (create mode only). Clicking a template pre-populates the dashboard name and biomarker selection. Users can customize after.
+
+**Latest value + trend indicators:** Each dashboard chart card shows the most recent value with flag-colored dot, a directional trend arrow (comparing last two readings), and the collection date. Arrow color reflects whether the direction is favorable (green), unfavorable (red), or neutral (gray) based on the biomarker's `goalDirection`. Logic lives in `web/lib/trend.ts` (`computeTrend()`).
+
+**Multi-metric overlay charts:** Multiple biomarkers can be grouped into a single chart card with overlaid lines. Uses a `groupId` column on `dashboard_items` — items sharing the same `groupId` render as one `MultiMetricChart`. Supports dual Y-axes when units differ. Two grouping paths: (1) at creation time in the modal (select chips + "Group selected"), (2) merge mode in the dashboard detail view (select cards + "Merge" floating button). Ungroup via "Split" button on grouped cards. Max 8 distinct line colors from `CHART_COLORS` palette.
+
 ### Reports & Files
 
 Metadata-centric table (collection date + lab/source as primary identifier, not filename). PDFs stored as `bytea` in `reports.pdf_data`, fetched on demand via `/api/reports/[id]/pdf`. Inline-editable report info (date, source, lab name). CSV export of all biomarker data from Settings.
@@ -175,7 +181,7 @@ The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:
 - **Mobile responsiveness** — The split-pane extraction view needs a stacked/tabbed layout for small screens. Detail pages and settings are more straightforward.
 - **Trend alerts** — Surface concerning trends across reports: values trending toward out-of-range, recent normal→abnormal crossings, significant jumps between readings.
 - **Privacy audit** — Full data flow review of all third-party sub-processors (OpenRouter, Neon, Vercel) before sharing with friends/family. Goal: plain-language privacy summary for non-technical users.
-- **Dashboard enhancements** — Preset templates by category (Heart, Metabolic, Thyroid), shareable/exportable dashboards, summary stats (latest values, trend indicators).
+- **Dashboard enhancements** — Shareable/exportable dashboards, chart export (PNG/PDF).
 - **Tab switching performance** — Navigating between tabs (Files, Biomarkers, Dashboards, Settings) feels slow; investigate lazy loading, skeleton states, or caching to make transitions snappier.
 - **DEXA PDF highlighting** — Highlighting doesn't work correctly on BodySpec DEXA scan PDFs. The row-based matching algorithm may need adjustments for DEXA's different layout/formatting compared to standard blood panel PDFs.
 - **Back button navigation** — Browser back button sometimes goes back too far (e.g., leaving the app entirely instead of returning to the previous in-app view). Likely needs proper history state management for inline views (biomarker detail, dashboard detail) so back navigates within the app correctly.

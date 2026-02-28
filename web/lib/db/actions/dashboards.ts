@@ -60,6 +60,7 @@ export async function getDashboard(
       id: dashboardItems.id,
       canonicalSlug: dashboardItems.canonicalSlug,
       sortOrder: dashboardItems.sortOrder,
+      groupId: dashboardItems.groupId,
     })
     .from(dashboardItems)
     .where(eq(dashboardItems.dashboardId, id))
@@ -74,7 +75,8 @@ export async function getDashboard(
 
 export async function createDashboard(
   name: string,
-  slugs: string[]
+  slugs: string[],
+  groups?: string[][] // each sub-array is a group of slugs that share a chart
 ): Promise<string> {
   const userId = await requireUser();
 
@@ -84,11 +86,21 @@ export async function createDashboard(
     .returning({ id: dashboards.id });
 
   if (slugs.length > 0) {
+    // Build slug → groupId mapping from groups param
+    const slugToGroupId = new Map<string, string>();
+    if (groups) {
+      for (const group of groups) {
+        const gid = crypto.randomUUID();
+        for (const s of group) slugToGroupId.set(s, gid);
+      }
+    }
+
     await db.insert(dashboardItems).values(
       slugs.map((slug, i) => ({
         dashboardId: row.id,
         canonicalSlug: slug,
         sortOrder: i,
+        groupId: slugToGroupId.get(slug) ?? null,
       }))
     );
   }
@@ -299,4 +311,69 @@ export async function getDashboardChartData(
       referenceRange: refMap.get(slug) || null,
     };
   });
+}
+
+export async function groupDashboardItems(
+  dashboardId: string,
+  itemIds: string[]
+): Promise<string> {
+  const userId = await requireUser();
+
+  // Verify ownership
+  const rows = await db
+    .select({ id: dashboards.id })
+    .from(dashboards)
+    .where(
+      and(eq(dashboards.id, dashboardId), eq(dashboards.userId, userId))
+    );
+  if (rows.length === 0) throw new Error("Dashboard not found");
+
+  const groupId = crypto.randomUUID();
+  await db
+    .update(dashboardItems)
+    .set({ groupId })
+    .where(
+      and(
+        eq(dashboardItems.dashboardId, dashboardId),
+        inArray(dashboardItems.id, itemIds)
+      )
+    );
+
+  await db
+    .update(dashboards)
+    .set({ updatedAt: new Date() })
+    .where(eq(dashboards.id, dashboardId));
+
+  return groupId;
+}
+
+export async function ungroupDashboardItems(
+  dashboardId: string,
+  groupId: string
+): Promise<void> {
+  const userId = await requireUser();
+
+  // Verify ownership
+  const rows = await db
+    .select({ id: dashboards.id })
+    .from(dashboards)
+    .where(
+      and(eq(dashboards.id, dashboardId), eq(dashboards.userId, userId))
+    );
+  if (rows.length === 0) throw new Error("Dashboard not found");
+
+  await db
+    .update(dashboardItems)
+    .set({ groupId: null })
+    .where(
+      and(
+        eq(dashboardItems.dashboardId, dashboardId),
+        eq(dashboardItems.groupId, groupId)
+      )
+    );
+
+  await db
+    .update(dashboards)
+    .set({ updatedAt: new Date() })
+    .where(eq(dashboards.id, dashboardId));
 }

@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { UserButton } from "@neondatabase/auth/react";
 import { TabId, StoredFile } from "@/lib/types";
 import { ThemeToggle } from "./ThemeToggle";
 import { FilesTab } from "./FilesTab";
@@ -101,7 +100,10 @@ export function AppShell() {
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
-          <UserButton size="icon" disableDefaultLinks />
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-text-secondary)]">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M20 21a8 8 0 0 0-16 0" />
+          </svg>
         </div>
       </header>
 

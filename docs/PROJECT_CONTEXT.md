@@ -185,6 +185,6 @@ The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:
 - **Tab switching performance** — Navigating between tabs (Files, Biomarkers, Dashboards, Settings) feels slow; investigate lazy loading, skeleton states, or caching to make transitions snappier.
 - **Back button navigation** — Browser back button sometimes goes back too far (e.g., leaving the app entirely instead of returning to the previous in-app view). Likely needs proper history state management for inline views (biomarker detail, dashboard detail) so back navigates within the app correctly.
 - ~~**Light / dark mode**~~ — **Done.** Supports system preference and manual toggle (light→dark→system cycle). Uses CSS custom properties with `ThemeToggle` component.
-- **User initials avatar** — The initials display in the top-right corner needs fixing.
+- ~~**User initials avatar**~~ — **Done.** Replaced Neon Auth `UserButton` (showed initials) with a static person icon SVG. Auth actions (sign out) are handled independently in Settings.
 - **Dashboards broken** — Dashboards tab is broken and needs debugging.
 - **Other** — Batch PDF upload, PII stripping before LLM, model comparison diff view, custom per-lab prompt overrides, general code cleanup pass.

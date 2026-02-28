@@ -1,8 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { AppSettings } from "@/lib/types";
-import { getSettingsSafe, updateSettingsSafe, deleteAccount } from "@/lib/db/actions";
+import { AppSettings, ApiKeyInfo } from "@/lib/types";
+import {
+  getSettingsSafe,
+  updateSettingsSafe,
+  deleteAccount,
+  createApiKey,
+  listApiKeys,
+  revokeApiKey,
+} from "@/lib/db/actions";
 import { authClient } from "@/lib/auth/client";
 import { AVAILABLE_MODELS } from "@/lib/models";
 import { DEFAULT_MODEL } from "@/lib/constants";
@@ -30,11 +37,22 @@ export function SettingsTab() {
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  // API Keys state
+  const [apiKeysList, setApiKeysList] = useState<ApiKeyInfo[]>([]);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [newKeyValue, setNewKeyValue] = useState<string | null>(null);
+  const [keyCopied, setKeyCopied] = useState(false);
+  const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null);
+
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const result = await getSettingsSafe();
+      const [result, keys] = await Promise.all([
+        getSettingsSafe(),
+        listApiKeys(),
+      ]);
       if (result.error) {
         setLoadError(result.error);
       } else {
@@ -43,6 +61,7 @@ export function SettingsTab() {
         setApiKeyInput(s.openRouterApiKey || "");
         setKeyStored(!!s.openRouterApiKey);
       }
+      setApiKeysList(keys);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load settings");
     } finally {
@@ -264,6 +283,134 @@ export function SettingsTab() {
         >
           {exporting ? "Exporting..." : "Export CSV"}
         </button>
+      </section>
+
+      {/* API Keys */}
+      <section className="card p-5">
+        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">
+          API Keys
+        </h2>
+        <p className="text-xs text-[var(--color-text-tertiary)] mb-3">
+          For MCP server and external integrations.
+        </p>
+
+        {/* Create new key */}
+        {newKeyValue ? (
+          <div className="rounded-xl p-4 mb-4 bg-[var(--color-success)]/10 border border-[var(--color-success)]/20 space-y-2">
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">
+              API key created
+            </p>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              Copy this key now. It will only be shown once.
+            </p>
+            <div className="flex gap-2">
+              <code className="flex-1 px-3 py-2 rounded-lg text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] break-all select-all">
+                {newKeyValue}
+              </code>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(newKeyValue);
+                  setKeyCopied(true);
+                  setTimeout(() => setKeyCopied(false), 2000);
+                }}
+                className="btn-secondary flex-shrink-0"
+              >
+                {keyCopied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+            <button
+              onClick={() => {
+                setNewKeyValue(null);
+                setNewKeyName("");
+              }}
+              className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={newKeyName}
+              onChange={(e) => setNewKeyName(e.target.value)}
+              placeholder="Key name (e.g. Claude Desktop)"
+              className="input-base flex-1"
+            />
+            <button
+              onClick={async () => {
+                if (!newKeyName.trim()) return;
+                setCreatingKey(true);
+                try {
+                  const { key, info } = await createApiKey(newKeyName.trim());
+                  setNewKeyValue(key);
+                  setApiKeysList((prev) => [info, ...prev]);
+                } catch (err) {
+                  console.error("Failed to create API key:", err);
+                } finally {
+                  setCreatingKey(false);
+                }
+              }}
+              disabled={creatingKey || !newKeyName.trim()}
+              className="btn-primary"
+            >
+              {creatingKey ? "Creating..." : "Create"}
+            </button>
+          </div>
+        )}
+
+        {/* Existing keys */}
+        {apiKeysList.length > 0 ? (
+          <div className="space-y-2">
+            {apiKeysList.map((k) => (
+              <div
+                key={k.id}
+                className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)]"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                    {k.name}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-tertiary)]">
+                    <code className="font-mono">{k.keyPrefix}...</code>
+                    {" \u00b7 "}
+                    Created {new Date(k.createdAt).toLocaleDateString()}
+                    {k.lastUsedAt && (
+                      <>
+                        {" \u00b7 "}
+                        Last used {new Date(k.lastUsedAt).toLocaleDateString()}
+                      </>
+                    )}
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Revoke API key "${k.name}"?`)) return;
+                    setRevokingKeyId(k.id);
+                    try {
+                      await revokeApiKey(k.id);
+                      setApiKeysList((prev) =>
+                        prev.filter((key) => key.id !== k.id)
+                      );
+                    } catch (err) {
+                      console.error("Failed to revoke:", err);
+                    } finally {
+                      setRevokingKeyId(null);
+                    }
+                  }}
+                  disabled={revokingKeyId === k.id}
+                  className="text-xs font-medium text-[var(--color-error)] hover:text-[var(--color-error)]/80 flex-shrink-0"
+                >
+                  {revokingKeyId === k.id ? "Revoking..." : "Revoke"}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--color-text-tertiary)]">
+            No API keys yet.
+          </p>
+        )}
       </section>
 
       {/* Change Password */}

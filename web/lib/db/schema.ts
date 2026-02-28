@@ -167,3 +167,24 @@ export const dashboardItems = pgTable(
   },
   (table) => [index("idx_dashboard_items_dashboard").on(table.dashboardId)]
 );
+
+// 8. API keys — per-user keys for external API access (MCP server, etc.)
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(),
+    keyHash: text("key_hash").notNull(),
+    keyPrefix: text("key_prefix").notNull(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("idx_api_keys_user").on(table.userId),
+    index("idx_api_keys_hash").on(table.keyHash),
+  ]
+);

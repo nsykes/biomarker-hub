@@ -4,20 +4,15 @@ import { db } from "../index";
 import {
   dashboards,
   dashboardItems,
-  biomarkerResults,
-  reports,
-  referenceRanges,
 } from "../schema";
 import { eq, asc, and, inArray, sql } from "drizzle-orm";
 import {
   DashboardSummary,
   DashboardDetail,
   BiomarkerDetailData,
-  BiomarkerHistoryPoint,
-  ReferenceRange,
 } from "@/lib/types";
-import { REGISTRY } from "@/lib/biomarker-registry";
 import { requireUser } from "./auth";
+import { getBatchChartDataByUser } from "../queries/biomarkers";
 
 export async function getDashboards(): Promise<DashboardSummary[]> {
   const userId = await requireUser();
@@ -223,95 +218,8 @@ export async function reorderDashboardItems(
 export async function getDashboardChartData(
   slugs: string[]
 ): Promise<BiomarkerDetailData[]> {
-  if (slugs.length === 0) return [];
-
   const userId = await requireUser();
-
-  // 1. Batch fetch all history rows for these slugs
-  const historyRows = await db
-    .select({
-      canonicalSlug: biomarkerResults.canonicalSlug,
-      collectionDate: reports.collectionDate,
-      value: biomarkerResults.value,
-      valueText: biomarkerResults.valueText,
-      valueModifier: biomarkerResults.valueModifier,
-      unit: biomarkerResults.unit,
-      flag: biomarkerResults.flag,
-      reportId: biomarkerResults.reportId,
-      filename: reports.filename,
-      labName: reports.labName,
-      source: reports.source,
-      referenceRangeLow: biomarkerResults.referenceRangeLow,
-      referenceRangeHigh: biomarkerResults.referenceRangeHigh,
-      page: biomarkerResults.page,
-      isCalculated: biomarkerResults.isCalculated,
-    })
-    .from(biomarkerResults)
-    .innerJoin(reports, eq(biomarkerResults.reportId, reports.id))
-    .where(
-      and(
-        inArray(biomarkerResults.canonicalSlug, slugs),
-        eq(reports.userId, userId)
-      )
-    )
-    .orderBy(asc(reports.collectionDate));
-
-  // 2. Batch fetch all reference ranges for these slugs
-  const refRows = await db
-    .select()
-    .from(referenceRanges)
-    .where(inArray(referenceRanges.canonicalSlug, slugs));
-
-  // Build lookup maps
-  const historyMap = new Map<string, BiomarkerHistoryPoint[]>();
-  for (const r of historyRows) {
-    const slug = r.canonicalSlug!;
-    const points = historyMap.get(slug) || [];
-    points.push({
-      collectionDate: r.collectionDate,
-      value: r.value !== null ? Number(r.value) : null,
-      valueText: r.valueText,
-      valueModifier: r.valueModifier,
-      unit: r.unit,
-      flag: r.flag,
-      reportId: r.reportId,
-      filename: r.filename,
-      labName: r.labName,
-      source: r.source,
-      referenceRangeLow:
-        r.referenceRangeLow !== null ? Number(r.referenceRangeLow) : null,
-      referenceRangeHigh:
-        r.referenceRangeHigh !== null ? Number(r.referenceRangeHigh) : null,
-      page: r.page,
-      isCalculated: r.isCalculated,
-    });
-    historyMap.set(slug, points);
-  }
-
-  const refMap = new Map<string, ReferenceRange>();
-  for (const r of refRows) {
-    refMap.set(r.canonicalSlug, {
-      rangeLow: r.rangeLow !== null ? Number(r.rangeLow) : null,
-      rangeHigh: r.rangeHigh !== null ? Number(r.rangeHigh) : null,
-      goalDirection: r.goalDirection,
-      unit: r.unit,
-    });
-  }
-
-  // Assemble BiomarkerDetailData for each slug
-  return slugs.map((slug) => {
-    const entry = REGISTRY.find((e) => e.slug === slug);
-    return {
-      slug,
-      displayName: entry?.displayName ?? slug,
-      fullName: entry?.fullName ?? slug,
-      category: entry?.category ?? "Unknown",
-      defaultUnit: entry?.defaultUnit ?? null,
-      summary: entry?.summary,
-      history: historyMap.get(slug) || [],
-      referenceRange: refMap.get(slug) || null,
-    };
-  });
+  return getBatchChartDataByUser(userId, slugs);
 }
 
 export async function groupDashboardItems(

@@ -82,7 +82,8 @@ neon_auth.user (id, name, email — managed by Neon)
   └── reports (user_id FK)
   │     └── biomarker_results (report_id FK)
   └── dashboards (user_id FK)
-        └── dashboard_items (dashboard_id FK)
+  │     └── dashboard_items (dashboard_id FK)
+  └── api_keys (user_id FK, key_hash, key_prefix, revoked_at)
 ```
 
 ### LLM Extraction: Page Numbers Are Critical
@@ -137,7 +138,29 @@ Metadata-centric table (collection date + lab/source as primary identifier, not 
 
 ### Auth & Account
 
-Neon Auth (`@neondatabase/auth@^0.2.0-beta.1`, Google OAuth). Per-user data isolation on all DB queries via `requireUser()`. Middleware protects pages; API routes return 401 without valid session. Server actions bypass middleware auth (they authenticate independently). Account deletion cascades to reports, biomarkers, settings, profile, and dashboards.
+Neon Auth (`@neondatabase/auth@^0.2.0-beta.1`, Google OAuth). Per-user data isolation on all DB queries via `requireUser()`. Middleware protects pages; API routes return 401 without valid session. Server actions bypass middleware auth (they authenticate independently). Account deletion cascades to reports, biomarkers, API keys, settings, profile, and dashboards.
+
+### MCP Server
+
+A stdio-based MCP (Model Context Protocol) server exposes biomarker data to AI assistants like Claude Desktop and Claude Code. Architecture: `Claude → stdio → MCP server (local) → HTTP → Next.js API routes (Vercel) → Drizzle → Neon Postgres`.
+
+**API Key authentication:** Users generate API keys in Settings > API Keys. Keys use format `bh_` + 40 hex chars, stored as SHA-256 hashes in the `api_keys` table. The MCP server sends the key as `Authorization: Bearer bh_xxx` to the v1 API routes.
+
+**API routes** (`/api/v1/`): Versioned, API-key-authenticated routes that reuse shared query functions from `web/lib/db/queries/biomarkers.ts`:
+- `GET /api/v1/biomarkers` — list tracked biomarkers with optional category filter
+- `GET /api/v1/biomarkers/[slug]` — full history + trend + reference range for one biomarker
+- `GET /api/v1/biomarkers/batch?slugs=a,b,c` — batch fetch multiple biomarkers (2 DB queries)
+- `GET /api/v1/reports` — report metadata timeline
+- `GET /api/v1/registry` — biomarker registry (public, no auth required)
+- `GET /api/v1/reference-ranges` — all stored reference ranges
+
+**MCP tools:** `list-biomarkers`, `get-biomarker-detail`, `get-biomarker-batch`, `list-reports`, `search-registry`, `get-health-summary`.
+
+**MCP prompts:** `summarize-bloodwork`, `biomarkers-needing-attention`, `compare-reports`, `analyze-panel` (parameterized by panel type).
+
+**MCP resources:** `biomarker-hub://registry` (full biomarker registry), `biomarker-hub://reference-ranges` (all reference ranges).
+
+**Configuration:** Claude Desktop reads from `~/Library/Application Support/Claude/claude_desktop_config.json` with `BIOMARKER_HUB_API_KEY` and optional `BIOMARKER_HUB_URL` env vars.
 
 ### UI & Design System
 
@@ -186,7 +209,7 @@ The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:
 
 ## Future Plans
 
-- **MCP Server** — Expose biomarker data so Claude/ChatGPT can answer health trend questions, compare values against ranges, and summarize changes between reports.
+- ~~**MCP Server**~~ — **Done.** Stdio-based MCP server in `mcp/` with 6 tools, 4 prompts, and 2 resources. API key auth via v1 API routes. Supports Claude Desktop and Claude Code. Future: HTTP/SSE transport for Claude.ai web access, write operations.
 - ~~**Bad PDF handling**~~ — **Done.** Password-protected PDFs are detected with clear guidance, corrupted/invalid files are caught, zero-extraction shows a "No biomarkers found" warning with suggestions, and error messages are specific (size limits, timeouts, token truncation, missing API key). Image-only PDFs work for extraction because the raw PDF is sent to the multimodal LLM which handles OCR natively; highlighting won't work on scanned PDFs (no text layer) but this is a minor cosmetic issue.
 - **Mobile responsiveness** — The split-pane extraction view needs a stacked/tabbed layout for small screens. Detail pages and settings are more straightforward.
 - **Trend alerts** — Surface concerning trends across reports: values trending toward out-of-range, recent normal→abnormal crossings, significant jumps between readings.

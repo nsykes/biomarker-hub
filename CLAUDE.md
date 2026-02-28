@@ -5,6 +5,7 @@ Monorepo for biomarker extraction and health data tools.
 ## Structure
 
 - `web/` — Next.js 15 app (App Router) for biomarker extraction and health data tracking
+- `mcp/` — MCP server (stdio) for exposing biomarker data to AI assistants (Claude Desktop, Claude Code)
 - `docs/` — Product context, design decisions, and future plans
 
 ## Key Files
@@ -18,7 +19,10 @@ Monorepo for biomarker extraction and health data tools.
 - `web/lib/utils.ts` — Shared utilities (formatDate)
 - `web/app/api/extract/route.ts` — OpenRouter API route
 - `web/lib/db/actions.ts` — Barrel re-export for all server actions (do not add code here — add to sub-modules)
-- `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers, account, dashboards)
+- `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers, account, dashboards, api-keys)
+- `web/lib/db/queries/biomarkers.ts` — Shared query functions (accept userId param, used by both server actions and API routes)
+- `web/lib/api-auth.ts` — API key authentication helper for v1 API routes
+- `web/app/api/v1/` — External API routes (Bearer token auth via API keys) for MCP server and integrations
 - `web/components/BiomarkerDetailPage.tsx` — BiomarkerDetailView (inline, self-fetching) + BiomarkerDetailPage (standalone wrapper)
 - `web/components/biomarker-detail/` — Detail subcomponents (HistoryChart, HistoryTable, ReferenceRangeSection, helpers)
 - `web/components/BiomarkerCombobox.tsx` — Registry-backed biomarker search/select for adding biomarkers after extraction
@@ -49,6 +53,10 @@ Monorepo for biomarker extraction and health data tools.
 cd web
 npm run dev      # localhost:3000
 npx tsc --noEmit # type-check
+
+cd mcp
+npm run build    # compile MCP server
+npm start        # run MCP server (stdio)
 ```
 
 ## Conventions

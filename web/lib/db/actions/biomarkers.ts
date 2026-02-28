@@ -2,13 +2,13 @@
 
 import { db } from "../index";
 import { biomarkerResults, reports, referenceRanges } from "../schema";
-import { eq, asc, and, desc, isNotNull, or } from "drizzle-orm";
+import { eq, and, desc, isNotNull, or } from "drizzle-orm";
 import {
-  BiomarkerHistoryPoint,
   ReferenceRange,
   ReferenceRangeConflict,
 } from "@/lib/types";
 import { requireUser } from "./auth";
+import { getBiomarkerHistoryByUser } from "../queries/biomarkers";
 
 /** Infer goal direction from one-sided or two-sided bounds. */
 function inferGoalDirection(
@@ -39,61 +39,9 @@ export async function getReferenceRange(
   };
 }
 
-export async function getBiomarkerDetail(
-  slug: string
-): Promise<{ history: BiomarkerHistoryPoint[]; referenceRange: ReferenceRange | null }> {
+export async function getBiomarkerDetail(slug: string) {
   const userId = await requireUser();
-
-  const [historyRows, referenceRange] = await Promise.all([
-    db
-      .select({
-        collectionDate: reports.collectionDate,
-        value: biomarkerResults.value,
-        valueText: biomarkerResults.valueText,
-        valueModifier: biomarkerResults.valueModifier,
-        unit: biomarkerResults.unit,
-        flag: biomarkerResults.flag,
-        reportId: biomarkerResults.reportId,
-        filename: reports.filename,
-        labName: reports.labName,
-        source: reports.source,
-        referenceRangeLow: biomarkerResults.referenceRangeLow,
-        referenceRangeHigh: biomarkerResults.referenceRangeHigh,
-        page: biomarkerResults.page,
-        isCalculated: biomarkerResults.isCalculated,
-      })
-      .from(biomarkerResults)
-      .innerJoin(reports, eq(biomarkerResults.reportId, reports.id))
-      .where(
-        and(
-          eq(biomarkerResults.canonicalSlug, slug),
-          eq(reports.userId, userId)
-        )
-      )
-      .orderBy(asc(reports.collectionDate)),
-    getReferenceRange(slug),
-  ]);
-
-  const history: BiomarkerHistoryPoint[] = historyRows.map((r) => ({
-    collectionDate: r.collectionDate,
-    value: r.value !== null ? Number(r.value) : null,
-    valueText: r.valueText,
-    valueModifier: r.valueModifier,
-    unit: r.unit,
-    flag: r.flag,
-    reportId: r.reportId,
-    filename: r.filename,
-    labName: r.labName,
-    source: r.source,
-    referenceRangeLow:
-      r.referenceRangeLow !== null ? Number(r.referenceRangeLow) : null,
-    referenceRangeHigh:
-      r.referenceRangeHigh !== null ? Number(r.referenceRangeHigh) : null,
-    page: r.page,
-    isCalculated: r.isCalculated,
-  }));
-
-  return { history, referenceRange };
+  return getBiomarkerHistoryByUser(userId, slug);
 }
 
 export async function reconcileReferenceRanges(

@@ -346,6 +346,18 @@ export const REGISTRY: CanonicalBiomarker[] = [
     },
   },
   {
+    slug: "ldl-hdl-ratio", displayName: "LDL/HDL Ratio", fullName: "LDL/HDL Ratio",
+    category: "Heart", defaultUnit: null,
+    summary: "The LDL/HDL ratio compares atherogenic LDL cholesterol to protective HDL cholesterol. A lower ratio indicates a more favorable lipid profile and reduced cardiovascular risk, while a higher ratio suggests greater plaque-building potential relative to cholesterol clearance. It is commonly used alongside other lipid markers to assess heart disease risk. Optimal values are generally below 2.5, with ratios above 3.5 indicating elevated risk.",
+    aliases: ["LDL/HDL RATIO", "LDL-C/HDL-C RATIO", "LDL CHOLESTEROL/HDL CHOLESTEROL RATIO", "LDL/HDL-C RATIO"],
+    region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["ldl-cholesterol", "hdl-cholesterol"],
+      compute: ([ldl, hdl]) => hdl === 0 ? null : ldl / hdl,
+      formulaDisplay: "LDL Cholesterol ÷ HDL Cholesterol",
+    },
+  },
+  {
     slug: "homocysteine", displayName: "Homocysteine", fullName: "Homocysteine",
     category: "Heart", defaultUnit: "\u00B5mol/L",
     summary: "Homocysteine is an amino acid produced during the metabolism of methionine, an essential amino acid from dietary protein. It is normally converted to other substances with the help of B vitamins (B6, B12, and folate). Elevated homocysteine levels are associated with increased risk of cardiovascular disease, blood clots, and cognitive decline. High levels may indicate B vitamin deficiency or genetic variations in methionine metabolism.",

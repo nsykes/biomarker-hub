@@ -23,6 +23,7 @@ interface ChartPoint {
   value: number | null;
   flag: string;
   label: string;
+  isCalculated?: boolean;
 }
 
 function formatTimestamp(ts: number): string {
@@ -38,6 +39,9 @@ function CustomDot(props: {
   const { cx, cy, payload } = props;
   if (cx == null || cy == null || !payload || payload.value === null) return null;
   const color = FLAG_COLORS[payload.flag] ?? "#AEAEB2";
+  if (payload.isCalculated) {
+    return <circle cx={cx} cy={cy} r={6} fill="#fff" stroke={color} strokeWidth={2.5} strokeDasharray="3 2" />;
+  }
   return <circle cx={cx} cy={cy} r={6} fill={color} stroke="#fff" strokeWidth={2.5} />;
 }
 
@@ -54,6 +58,9 @@ function CustomTooltip({
     <div className="bg-white border border-[var(--color-border-light)] rounded-xl shadow-lg px-3 py-2 text-sm">
       <p className="font-medium text-[var(--color-text-primary)]">{p.label}</p>
       <p className="text-[var(--color-text-secondary)]">{p.date}</p>
+      {p.isCalculated && (
+        <p className="text-[#5856D6] text-xs mt-0.5">Calculated value</p>
+      )}
     </div>
   );
 }
@@ -161,6 +168,7 @@ export function HistoryChart({
     value,
     flag: computeFlag(value, data.referenceRange),
     label: `${point.valueModifier ?? ""}${parseFloat(value.toFixed(2))} ${canonicalUnit}`.trim(),
+    isCalculated: point.isCalculated,
   }));
 
   const values = convertedPoints.map((c) => c.value);

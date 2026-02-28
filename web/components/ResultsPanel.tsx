@@ -107,15 +107,23 @@ export function ResultsPanel({
   const { toggle: toggleCategory, isCollapsed, expandAll, collapseAll, anyCollapsed } = useCategoryCollapse();
   const [showCombobox, setShowCombobox] = useState(false);
 
-  const groupedBiomarkers = useMemo(() => {
-    if (!extraction) return new Map<number, Biomarker[]>();
+  const { groupedBiomarkers, calculatedBiomarkers } = useMemo(() => {
+    if (!extraction) return { groupedBiomarkers: new Map<number, Biomarker[]>(), calculatedBiomarkers: [] as Biomarker[] };
     const groups = new Map<number, Biomarker[]>();
+    const calc: Biomarker[] = [];
     for (const b of extraction.biomarkers) {
-      const existing = groups.get(b.page) || [];
-      existing.push(b);
-      groups.set(b.page, existing);
+      if (b.isCalculated) {
+        calc.push(b);
+      } else {
+        const existing = groups.get(b.page) || [];
+        existing.push(b);
+        groups.set(b.page, existing);
+      }
     }
-    return new Map([...groups.entries()].sort(([a], [b]) => a - b));
+    return {
+      groupedBiomarkers: new Map([...groups.entries()].sort(([a], [b]) => a - b)),
+      calculatedBiomarkers: calc,
+    };
   }, [extraction]);
 
   const handleExport = () => {
@@ -266,6 +274,45 @@ export function ResultsPanel({
                     </React.Fragment>
                     );
                   }
+                )}
+                {calculatedBiomarkers.length > 0 && (
+                  <>
+                    <tr
+                      onClick={() => toggleCategory("calc")}
+                      className="bg-[#F0F0FF] cursor-pointer hover:bg-[#E8E8F8] transition-colors"
+                    >
+                      <td
+                        colSpan={7}
+                        className="px-2 py-1.5 font-semibold text-sm text-[#5856D6]"
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          <svg
+                            className={`w-3 h-3 text-[#5856D6] transition-transform duration-200 ${isCollapsed("calc") ? '' : 'rotate-90'}`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                          Calculated Values ({calculatedBiomarkers.length})
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#E8E8F8] text-[#5856D6] uppercase tracking-wider">
+                            CALC
+                          </span>
+                        </span>
+                      </td>
+                    </tr>
+                    {!isCollapsed("calc") &&
+                      calculatedBiomarkers.map((b) => (
+                        <BiomarkerRow
+                          key={b.id}
+                          biomarker={b}
+                          isSelected={selectedBiomarker?.id === b.id}
+                          onSelect={onSelectBiomarker}
+                          onUpdate={onUpdateBiomarker}
+                          onDelete={onDeleteBiomarker}
+                        />
+                      ))}
+                  </>
                 )}
               </tbody>
             </table>

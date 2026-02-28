@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/server";
 import { EXTRACTION_PROMPT } from "@/lib/prompt";
 import { ExtractionResult, ExtractionResponse } from "@/lib/types";
 import { matchBiomarker } from "@/lib/biomarker-registry";
+import { computeDerivatives } from "@/lib/derivative-calc";
 import { PDFDocument } from "pdf-lib";
 import {
   OPENROUTER_API_URL,
@@ -284,6 +285,10 @@ export async function POST(request: NextRequest) {
             ...b,
             id: crypto.randomUUID(),
           }));
+
+          // Compute derivative biomarkers from extracted components
+          const derivatives = computeDerivatives(extraction.biomarkers);
+          extraction.biomarkers = [...extraction.biomarkers, ...derivatives];
 
           const duration = Date.now() - startTime;
 

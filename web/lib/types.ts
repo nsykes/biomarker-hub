@@ -29,6 +29,7 @@ export interface Biomarker {
   page: number;
   region: string | null;
   canonicalSlug: string | null;
+  isCalculated?: boolean;
 }
 
 export interface ExtractionResult {
@@ -115,6 +116,7 @@ export interface BiomarkerHistoryPoint {
   referenceRangeLow: number | null;
   referenceRangeHigh: number | null;
   page: number | null;
+  isCalculated?: boolean;
 }
 
 export interface ReferenceRange {

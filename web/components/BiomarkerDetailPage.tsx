@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { BiomarkerDetailData, ReferenceRange } from "@/lib/types";
-import { REGISTRY } from "@/lib/biomarker-registry";
+import { REGISTRY, getDerivativeInfo } from "@/lib/biomarker-registry";
 import { getBiomarkerDetail, backfillReferenceRange } from "@/lib/db/actions";
 import { HistoryChart } from "./biomarker-detail/HistoryChart";
 import { HistoryTable } from "./biomarker-detail/HistoryTable";
@@ -17,12 +17,13 @@ function DetailContent({ data }: { data: BiomarkerDetailData }) {
   const [referenceRange, setReferenceRange] = useState<ReferenceRange | null>(data.referenceRange);
   const [pdfPreview, setPdfPreview] = useState<{ reportId: string; page: number | null } | null>(null);
   const chartData = { ...data, referenceRange };
+  const derivativeInfo = getDerivativeInfo(data.slug);
 
   return (
     <>
       <div className="max-w-4xl mx-auto px-5 py-6 space-y-6">
         {/* Title section */}
-        <div>
+        <div className="space-y-2">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
               {data.displayName}
@@ -38,6 +39,16 @@ function DetailContent({ data }: { data: BiomarkerDetailData }) {
           </div>
           {data.fullName !== data.displayName && (
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">{data.fullName}</p>
+          )}
+          {derivativeInfo && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-[#F8F8FF] rounded-xl border border-[#E8E8F8]">
+              <svg className="w-4 h-4 text-[#5856D6] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <span className="text-sm text-[#5856D6]">
+                Calculated as: {derivativeInfo.derivative.formulaDisplay}
+              </span>
+            </div>
           )}
         </div>
         {/* Summary */}

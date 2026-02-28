@@ -135,6 +135,20 @@ Apple Health-inspired design. CSS custom properties for colors, shadows, and rad
 
 `matchBiomarker()` maps extracted rawName/metricName to registry entries via alias lookup with region-prefix stripping fallback for DEXA (see Design Decisions).
 
+### Derivative/Calculated Biomarkers
+
+17 biomarkers can be auto-calculated from extracted components when the PDF doesn't include them. Defined via `derivative` field on `CanonicalBiomarker` entries in the registry, with a `DerivativeDefinition` containing `components` (slugs), `compute` (function), `precision`, and `formulaDisplay`.
+
+**Calculation engine** (`web/lib/derivative-calc.ts`): runs after dedup in the extract API route. For each registry entry with a `derivative` definition, checks if all component values are present and the slug isn't already extracted (PDF wins). Computes the value and adds it with `isCalculated: true`.
+
+**13 existing entries** with derivatives: TG/HDL Ratio, TC/HDL Ratio, Non-HDL Cholesterol, BUN/Creatinine Ratio, A/G Ratio, Iron Saturation, Android/Gynoid Ratio, PSA % Free, AA/EPA Ratio, Omega-6/Omega-3 Ratio, EPA+DPA+DHA, Globulin, LDL Cholesterol (Friedewald, TG < 400 guard).
+
+**4 new derivative-only entries**: HOMA-IR, NLR (Neutrophil/Lymphocyte Ratio), VLDL Cholesterol, Anion Gap.
+
+**UI differentiation**: Calculated values get a purple "CALC" section in ResultsPanel, hollow dashed dots in HistoryChart, "Calculated" badge instead of lab/source in HistoryTable (no PDF click), and a formula callout on the biomarker detail page.
+
+**DB column**: `is_calculated` boolean on `biomarker_results` (default false). Requires `npx drizzle-kit push` migration.
+
 ## Extraction Prompt
 
 The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:

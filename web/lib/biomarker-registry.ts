@@ -30,6 +30,13 @@ export type BiomarkerCategory =
   | "Vitamins"
   | "Genetic";
 
+export interface DerivativeDefinition {
+  components: string[];
+  compute: (values: number[]) => number | null;
+  precision?: number;
+  formulaDisplay: string;
+}
+
 export interface CanonicalBiomarker {
   slug: string;
   displayName: string;
@@ -41,6 +48,7 @@ export interface CanonicalBiomarker {
   region: string | null;
   regionGroupSlug: string | null;
   specimenType: "blood" | "urine" | "body_composition" | null;
+  derivative?: DerivativeDefinition;
 }
 
 // ── DEXA Body Composition generator ─────────────
@@ -158,6 +166,12 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "LDL cholesterol, often called \u2018bad\u2019 cholesterol, carries cholesterol to your arteries where it can accumulate. It is the primary driver of atherosclerotic plaque buildup in blood vessel walls. Elevated LDL levels significantly increase the risk of heart attack and stroke. It is one of the most important targets for cardiovascular risk reduction.",
     aliases: ["LDL CHOLESTEROL", "LDL-C", "LDL CHOLESTEROL CALC", "LDL CHOL CALC (NIH)", "LDL-CHOLESTEROL"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["total-cholesterol", "hdl-cholesterol", "triglycerides"],
+      compute: ([tc, hdl, tg]) => tg >= 400 ? null : tc - hdl - (tg / 5),
+      precision: 0,
+      formulaDisplay: "Total Cholesterol − HDL − (Triglycerides ÷ 5)",
+    },
   },
   {
     slug: "non-hdl-cholesterol", displayName: "Non-HDL Cholesterol", fullName: "Non-HDL Cholesterol",
@@ -165,6 +179,12 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "Non-HDL cholesterol represents all cholesterol carried by atherogenic lipoproteins, calculated by subtracting HDL from total cholesterol. It captures LDL, VLDL, IDL, remnant lipoproteins, and Lp(a) in a single number. Elevated non-HDL cholesterol is a strong predictor of cardiovascular disease risk. Many clinicians consider it a more comprehensive risk marker than LDL alone.",
     aliases: ["NON-HDL CHOLESTEROL", "NON HDL CHOLESTEROL"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["total-cholesterol", "hdl-cholesterol"],
+      compute: ([tc, hdl]) => tc - hdl,
+      precision: 0,
+      formulaDisplay: "Total Cholesterol − HDL Cholesterol",
+    },
   },
   {
     slug: "triglycerides", displayName: "Triglycerides", fullName: "Triglycerides",
@@ -235,6 +255,11 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "The Total Cholesterol/HDL ratio compares your total cholesterol to your HDL cholesterol level. It provides a quick snapshot of cardiovascular risk by factoring in both harmful and protective cholesterol. A lower ratio indicates better cardiovascular health, while a higher ratio suggests increased risk. Many clinicians use this ratio as a simple screening tool for heart disease risk.",
     aliases: ["TC/HDL RATIO", "CHOL/HDL RATIO", "CHOLESTEROL/HDL RATIO", "CHOL/HDLC RATIO"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["total-cholesterol", "hdl-cholesterol"],
+      compute: ([tc, hdl]) => tc / hdl,
+      formulaDisplay: "Total Cholesterol ÷ HDL Cholesterol",
+    },
   },
   {
     slug: "tg-hdl-ratio", displayName: "Triglycerides/HDL Ratio", fullName: "Triglycerides/HDL Ratio",
@@ -242,6 +267,11 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "The Triglycerides/HDL ratio compares triglyceride levels to HDL cholesterol. It is a useful marker for insulin resistance and metabolic syndrome, with higher ratios suggesting greater metabolic dysfunction. This ratio has also been linked to cardiovascular disease risk and small, dense LDL particles. It is easily calculated from a standard lipid panel.",
     aliases: ["TG/HDL RATIO", "TRIGLYCERIDES/HDL RATIO", "TRIG/HDL-C"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["triglycerides", "hdl-cholesterol"],
+      compute: ([tg, hdl]) => tg / hdl,
+      formulaDisplay: "Triglycerides ÷ HDL Cholesterol",
+    },
   },
   {
     slug: "homocysteine", displayName: "Homocysteine", fullName: "Homocysteine",
@@ -330,6 +360,11 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "The BUN/Creatinine ratio compares blood urea nitrogen to creatinine levels to help distinguish between different causes of kidney dysfunction. A high ratio may suggest dehydration, gastrointestinal bleeding, or increased protein intake rather than intrinsic kidney disease. A low ratio may indicate liver disease or malnutrition. It is useful for identifying pre-renal causes of elevated kidney markers.",
     aliases: ["BUN/CREATININE RATIO"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["blood-urea-nitrogen", "creatinine"],
+      compute: ([bun, cr]) => bun / cr,
+      formulaDisplay: "BUN ÷ Creatinine",
+    },
   },
 
   // ─── Electrolytes (6) ───
@@ -397,6 +432,12 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "Globulin is a group of proteins in the blood that includes antibodies and other proteins involved in immune function and transport. It is calculated by subtracting albumin from total protein. Elevated globulin levels may indicate chronic infections, liver disease, or autoimmune conditions, while low levels may suggest immune deficiency. It provides a general overview of immune system activity.",
     aliases: ["GLOBULIN TOTAL", "GLOBULIN"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["total-protein", "albumin"],
+      compute: ([tp, alb]) => tp - alb,
+      precision: 1,
+      formulaDisplay: "Total Protein − Albumin",
+    },
   },
   {
     slug: "ag-ratio", displayName: "Albumin/Globulin Ratio", fullName: "Albumin/Globulin Ratio",
@@ -404,6 +445,11 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "The Albumin/Globulin (A/G) ratio compares the levels of albumin to globulin proteins in your blood. It helps identify protein imbalances that may indicate underlying disease. A low ratio may suggest overproduction of globulins (as in autoimmune disease or multiple myeloma) or reduced albumin production (as in liver disease). It is useful as a screening tool alongside individual protein measurements.",
     aliases: ["A/G RATIO", "ALBUMIN/GLOBULIN RATIO"],
     region: null, regionGroupSlug: null, specimenType: "blood",
+    derivative: {
+      components: ["albumin", "globulin"],
+      compute: ([alb, glob]) => alb / glob,
+      formulaDisplay: "Albumin ÷ Globulin",
+    },
   },
 
   // ─── Liver (5) ───
@@ -464,6 +510,12 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "Iron saturation (transferrin saturation) represents the percentage of iron-binding sites on transferrin that are occupied by iron. It is calculated from serum iron and TIBC. Low saturation suggests iron deficiency, while very high saturation may indicate iron overload conditions like hemochromatosis. It helps distinguish between different types of anemia and iron disorders.",
     aliases: ["IRON SATURATION", "% SATURATION", "IRON % SATURATION"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["iron-total", "tibc"],
+      compute: ([fe, tibc]) => (fe / tibc) * 100,
+      precision: 0,
+      formulaDisplay: "(Iron ÷ TIBC) × 100",
+    },
   },
   {
     slug: "ferritin", displayName: "Ferritin", fullName: "Ferritin",
@@ -761,6 +813,11 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "The EPA+DPA+DHA index measures the combined omega-3 fatty acids in red blood cell membranes as a percentage of total fatty acids. It provides a comprehensive view of overall omega-3 status and correlates with cardiovascular risk. Higher values indicate better omega-3 status and are associated with reduced risk of heart disease. It is part of comprehensive fatty acid panels that assess omega-3 sufficiency.",
     aliases: ["EPA+DPA+DHA", "EPA + DPA + DHA", "OMEGA-3 INDEX (EPA+DPA+DHA)", "OMEGA-3 INDEX", "OMEGA 3 INDEX"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["epa", "dpa", "dha"],
+      compute: ([a, b, c]) => a + b + c,
+      formulaDisplay: "EPA + DPA + DHA",
+    },
   },
   {
     slug: "omega-3-total", displayName: "Omega-3 Total", fullName: "Omega-3 Total",
@@ -796,6 +853,11 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "The AA/EPA ratio compares levels of arachidonic acid (an omega-6) to EPA (an omega-3), reflecting the balance between pro-inflammatory and anti-inflammatory fatty acids. A lower ratio suggests a more anti-inflammatory state and is associated with better cardiovascular health. High ratios are common in Western diets low in fish and high in vegetable oils. Reducing this ratio through increased omega-3 intake is a common health optimization target.",
     aliases: ["AA/EPA RATIO", "ARACHIDONIC/EPA RATIO", "ARACHIDONIC ACID/EPA RATIO", "AA / EPA RATIO"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["arachidonic-acid", "epa"],
+      compute: ([aa, epa]) => aa / epa,
+      formulaDisplay: "Arachidonic Acid ÷ EPA",
+    },
   },
   {
     slug: "omega-6-omega-3-ratio", displayName: "Omega-6/Omega-3 Ratio", fullName: "Omega-6/Omega-3 Ratio",
@@ -803,6 +865,11 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "The Omega-6/Omega-3 ratio compares total omega-6 to total omega-3 fatty acids in your blood. A lower ratio is associated with reduced inflammation and lower risk of chronic diseases. Modern Western diets often have ratios of 15:1 or higher, while ancestral diets were closer to 1:1 to 4:1. Improving this ratio typically involves increasing omega-3 intake through fatty fish or supplements.",
     aliases: ["OMEGA-6/OMEGA-3 RATIO", "OMEGA 6/OMEGA 3 RATIO", "OMEGA6/OMEGA3 RATIO"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["omega-6-total", "omega-3-total"],
+      compute: ([o6, o3]) => o6 / o3,
+      formulaDisplay: "Omega-6 Total ÷ Omega-3 Total",
+    },
   },
 
   // ─── Prostate (3) ───
@@ -826,6 +893,12 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "PSA % Free represents the percentage of total PSA that is circulating in its free (unbound) form. A lower percentage of free PSA is more concerning for prostate cancer, while a higher percentage suggests benign prostate conditions. This ratio is most useful when total PSA falls in the borderline range. It helps clinicians decide whether to proceed with further testing such as a prostate biopsy.",
     aliases: ["PSA % FREE", "% FREE PSA"],
     region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["psa-free", "psa-total"],
+      compute: ([free, total]) => (free / total) * 100,
+      precision: 0,
+      formulaDisplay: "(PSA Free ÷ PSA Total) × 100",
+    },
   },
 
   // ─── Vitamins (3) ───
@@ -1087,6 +1160,11 @@ export const REGISTRY: CanonicalBiomarker[] = [
     summary: "The Android/Gynoid ratio compares fat distribution in the abdominal (android) region to the hip and thigh (gynoid) region. It is measured by DEXA scan and reflects body fat distribution patterns. A higher ratio indicates more central or abdominal fat, which is associated with greater cardiovascular and metabolic risk. Lower ratios suggest a more peripheral fat distribution, which is generally considered healthier.",
     aliases: ["A/G RATIO", "ANDROID/GYNOID RATIO"],
     region: null, regionGroupSlug: null, specimenType: "body_composition",
+    derivative: {
+      components: ["fat-pct-android", "fat-pct-gynoid"],
+      compute: ([android, gynoid]) => android / gynoid,
+      formulaDisplay: "Android Fat % ÷ Gynoid Fat %",
+    },
   },
   {
     slug: "vat-mass", displayName: "VAT Mass", fullName: "Visceral Adipose Tissue Mass",
@@ -1107,6 +1185,58 @@ export const REGISTRY: CanonicalBiomarker[] = [
 
   // ─── Bone (10 generated: 8 BMD + 1 T-Score + 1 Z-Score) ───
   ...generateBoneEntries(),
+
+  // ─── Derivative-only entries (4) ───
+  {
+    slug: "homa-ir", displayName: "HOMA-IR", fullName: "Homeostatic Model Assessment for Insulin Resistance",
+    category: "Metabolic", defaultUnit: null,
+    summary: "HOMA-IR (Homeostatic Model Assessment for Insulin Resistance) estimates insulin resistance from fasting insulin and glucose levels. Higher values indicate greater insulin resistance, which is a precursor to type 2 diabetes and metabolic syndrome. Values below 1.0 suggest optimal insulin sensitivity, while values above 2.0 may indicate insulin resistance. It is widely used in clinical research and metabolic health assessment.",
+    aliases: ["HOMA-IR", "HOMA IR"],
+    region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["insulin", "glucose"],
+      compute: ([ins, glu]) => (ins * glu) / 405,
+      formulaDisplay: "(Insulin × Glucose) ÷ 405",
+    },
+  },
+  {
+    slug: "nlr", displayName: "NLR", fullName: "Neutrophil/Lymphocyte Ratio",
+    category: "Inflammation", defaultUnit: null,
+    summary: "The Neutrophil/Lymphocyte Ratio (NLR) is a simple marker of systemic inflammation calculated from routine blood counts. Higher NLR values indicate greater inflammatory burden and physiological stress. Elevated NLR is associated with cardiovascular disease, cancer prognosis, and infection severity. It is increasingly used as a low-cost inflammatory biomarker in clinical practice.",
+    aliases: ["NLR", "NEUTROPHIL/LYMPHOCYTE RATIO", "NEUTROPHIL LYMPHOCYTE RATIO"],
+    region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["neutrophils-absolute", "lymphocytes-absolute"],
+      compute: ([neut, lymph]) => neut / lymph,
+      formulaDisplay: "Neutrophils ÷ Lymphocytes",
+    },
+  },
+  {
+    slug: "vldl-cholesterol", displayName: "VLDL Cholesterol", fullName: "VLDL Cholesterol",
+    category: "Heart", defaultUnit: "mg/dL",
+    summary: "VLDL cholesterol (very-low-density lipoprotein) carries triglycerides from the liver to tissues throughout the body. It is typically estimated by dividing triglycerides by 5. Elevated VLDL contributes to plaque buildup in arteries and is associated with increased cardiovascular risk. It is considered an atherogenic lipoprotein alongside LDL.",
+    aliases: ["VLDL CHOLESTEROL", "VLDL", "VLDL-C", "VLDL CHOLESTEROL CALC"],
+    region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["triglycerides"],
+      compute: ([tg]) => tg / 5,
+      precision: 0,
+      formulaDisplay: "Triglycerides ÷ 5",
+    },
+  },
+  {
+    slug: "anion-gap", displayName: "Anion Gap", fullName: "Anion Gap",
+    category: "Electrolytes", defaultUnit: "mEq/L",
+    summary: "The Anion Gap measures the difference between measured cations (sodium) and measured anions (chloride and bicarbonate) in the blood. It helps identify the cause of metabolic acidosis. An elevated anion gap suggests conditions like diabetic ketoacidosis, lactic acidosis, or toxic ingestions. A normal anion gap acidosis points to different causes such as diarrhea or renal tubular acidosis.",
+    aliases: ["ANION GAP"],
+    region: null, regionGroupSlug: null, specimenType: null,
+    derivative: {
+      components: ["sodium", "chloride", "carbon-dioxide"],
+      compute: ([na, cl, co2]) => na - (cl + co2),
+      precision: 0,
+      formulaDisplay: "Sodium − (Chloride + CO₂)",
+    },
+  },
 ];
 
 // ── Alias lookup map ────────────────────────────
@@ -1212,4 +1342,12 @@ export function matchBiomarker(
   }
 
   return null;
+}
+
+// ── Derivative info helper ──────────────────────
+
+export function getDerivativeInfo(slug: string): { entry: CanonicalBiomarker; derivative: DerivativeDefinition } | null {
+  const entry = REGISTRY.find((e) => e.slug === slug && e.derivative);
+  if (!entry || !entry.derivative) return null;
+  return { entry, derivative: entry.derivative };
 }

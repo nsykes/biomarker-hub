@@ -60,6 +60,7 @@ export async function getBiomarkerDetail(
         referenceRangeLow: biomarkerResults.referenceRangeLow,
         referenceRangeHigh: biomarkerResults.referenceRangeHigh,
         page: biomarkerResults.page,
+        isCalculated: biomarkerResults.isCalculated,
       })
       .from(biomarkerResults)
       .innerJoin(reports, eq(biomarkerResults.reportId, reports.id))
@@ -89,6 +90,7 @@ export async function getBiomarkerDetail(
     referenceRangeHigh:
       r.referenceRangeHigh !== null ? Number(r.referenceRangeHigh) : null,
     page: r.page,
+    isCalculated: r.isCalculated,
   }));
 
   return { history, referenceRange };

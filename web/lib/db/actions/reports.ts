@@ -50,6 +50,7 @@ function toBiomarker(r: typeof biomarkerResults.$inferSelect): Biomarker {
     page: r.page ?? 0,
     region: r.region,
     canonicalSlug: r.canonicalSlug,
+    isCalculated: r.isCalculated,
   };
 }
 
@@ -93,6 +94,7 @@ function biomarkerToRow(reportId: string, b: Biomarker) {
       b.referenceRangeHigh !== null ? String(b.referenceRangeHigh) : null,
     flag: b.flag,
     page: b.page,
+    isCalculated: b.isCalculated ?? false,
     region: b.region,
   };
 }

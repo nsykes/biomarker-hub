@@ -6,6 +6,7 @@ import {
   date,
   numeric,
   integer,
+  boolean,
   index,
   customType,
 } from "drizzle-orm/pg-core";
@@ -84,6 +85,7 @@ export const biomarkerResults = pgTable(
       enum: ["NORMAL", "LOW", "HIGH", "ABNORMAL", "CRITICAL_LOW", "CRITICAL_HIGH"],
     }).notNull(),
     page: integer("page"),
+    isCalculated: boolean("is_calculated").notNull().default(false),
     region: text("region"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

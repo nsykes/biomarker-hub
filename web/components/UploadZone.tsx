@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { validatePdfFile } from "@/lib/pdf-validation";
 
 interface UploadZoneProps {
   onFileSelect: (file: File) => void;
   currentFile: File | null;
+  onError?: (message: string) => void;
 }
 
-export function UploadZone({ onFileSelect, currentFile }: UploadZoneProps) {
+export function UploadZone({ onFileSelect, currentFile, onError }: UploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -16,11 +18,19 @@ export function UploadZone({ onFileSelect, currentFile }: UploadZoneProps) {
       e.preventDefault();
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
-      if (file && file.type === "application/pdf") {
-        onFileSelect(file);
+      if (!file) return;
+      if (file.type !== "application/pdf") {
+        onError?.("Please upload a PDF file.");
+        return;
       }
+      const err = validatePdfFile(file);
+      if (err) {
+        onError?.(err.message);
+        return;
+      }
+      onFileSelect(file);
     },
-    [onFileSelect]
+    [onFileSelect, onError]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -35,11 +45,15 @@ export function UploadZone({ onFileSelect, currentFile }: UploadZoneProps) {
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) {
-        onFileSelect(file);
+      if (!file) return;
+      const err = validatePdfFile(file);
+      if (err) {
+        onError?.(err.message);
+        return;
       }
+      onFileSelect(file);
     },
-    [onFileSelect]
+    [onFileSelect, onError]
   );
 
   if (currentFile) {

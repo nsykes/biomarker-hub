@@ -20,6 +20,7 @@ import { saveFile, reextractReport, getSettingsSafe, updateFileBiomarkers, updat
 import { RangeConflictModal } from "@/components/RangeConflictModal";
 import { UndoToast } from "@/components/UndoToast";
 import { DEFAULT_MODEL, UNDO_TOAST_DURATION_MS } from "@/lib/constants";
+import { validatePdfFile } from "@/lib/pdf-validation";
 
 const PdfViewer = dynamic(
   () =>
@@ -97,6 +98,11 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
   }, [mode]);
 
   const handleFileSelect = useCallback((f: File) => {
+    const pdfErr = validatePdfFile(f);
+    if (pdfErr) {
+      setError(pdfErr.message);
+      return;
+    }
     setFile(f);
     setExtraction(null);
     setMeta(null);
@@ -365,7 +371,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         <p className="text-sm text-center">
           PDF not stored. Re-upload the file to see the split-pane view.
         </p>
-        <UploadZone onFileSelect={handleReUploadPdf} currentFile={null} />
+        <UploadZone onFileSelect={handleReUploadPdf} currentFile={null} onError={setError} />
       </div>
     ) : file ? (
       <PdfViewer
@@ -375,7 +381,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         onPageChange={setCurrentPage}
       />
     ) : (
-      <UploadZone onFileSelect={handleFileSelect} currentFile={null} />
+      <UploadZone onFileSelect={handleFileSelect} currentFile={null} onError={setError} />
     );
 
   const rightPane = (
@@ -429,7 +435,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
           </span>
         )}
         {file && mode.type === "new" && (
-          <UploadZone onFileSelect={handleFileSelect} currentFile={file} />
+          <UploadZone onFileSelect={handleFileSelect} currentFile={file} onError={setError} />
         )}
       </header>
 
@@ -451,7 +457,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         {mode.type === "new" && !file ? (
           <div className="flex flex-col items-center justify-center h-full px-4 bg-[var(--color-surface-secondary)]">
             <div className="w-full max-w-lg">
-              <UploadZone onFileSelect={handleFileSelect} currentFile={null} />
+              <UploadZone onFileSelect={handleFileSelect} currentFile={null} onError={setError} />
               {!apiKey && (
                 <div className="mt-4 card px-4 py-3 text-sm text-center" style={{ background: '#FFF3E0', borderColor: '#FFE0B2' }}>
                   <span className="text-[#B36B00]">No API key set. Add one in Settings before extracting.</span>

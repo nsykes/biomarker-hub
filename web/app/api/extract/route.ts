@@ -14,6 +14,7 @@ import {
   CHUNK_SIZE,
   FETCH_TIMEOUT_MS,
 } from "@/lib/constants";
+import { validatePdfBytes, classifyPdfLoadError } from "@/lib/pdf-validation";
 
 export const maxDuration = 300;
 
@@ -145,6 +146,12 @@ export async function POST(request: NextRequest) {
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
     const filename = file.name || "lab-report.pdf";
 
+    // Validate PDF bytes (size + magic header) before streaming starts
+    const pdfError = validatePdfBytes(pdfBuffer);
+    if (pdfError) {
+      return NextResponse.json({ error: pdfError.message }, { status: 400 });
+    }
+
     // Stream response with keep-alive to prevent browser timeout
     // (ERR_NETWORK_IO_SUSPENDED) during long extractions
     const stream = new ReadableStream({
@@ -156,7 +163,13 @@ export async function POST(request: NextRequest) {
 
         try {
           // Determine if we need to chunk
-          const pdfDoc = await PDFDocument.load(pdfBuffer);
+          let pdfDoc;
+          try {
+            pdfDoc = await PDFDocument.load(pdfBuffer);
+          } catch (loadErr) {
+            const classified = classifyPdfLoadError(loadErr);
+            throw new Error(classified.message);
+          }
           const pageCount = pdfDoc.getPageCount();
 
           let extraction: ExtractionResult;

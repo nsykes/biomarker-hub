@@ -36,5 +36,10 @@ export const FLAG_OPTIONS = [
   "CRITICAL_HIGH",
 ] as const;
 
+// PDF validation
+export const PDF_MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+export const PDF_MAX_SIZE_LABEL = "50 MB";
+export const PDF_MAGIC_BYTES = [0x25, 0x50, 0x44, 0x46]; // %PDF
+
 // Undo toast
 export const UNDO_TOAST_DURATION_MS = 5000;

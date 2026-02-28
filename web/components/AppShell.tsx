@@ -47,7 +47,9 @@ export function AppShell() {
     <>
       {/* Header — frosted glass */}
       <header className="flex items-center gap-3 px-6 py-3 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
-        <Logo className="h-10" />
+        <button onClick={() => nav.switchTab("files")} className="cursor-pointer" aria-label="Go to Files">
+          <Logo className="h-10" />
+        </button>
         <nav className="flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5">
           {TABS.map((tab) => (
             <button

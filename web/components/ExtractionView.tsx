@@ -39,19 +39,20 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
   const [file, setFile] = useState<File | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [extraction, setExtraction] = useState<ExtractionResult | null>(
-    mode.type === "view"
-      ? {
-          reportInfo: {
-            source: mode.file.source ?? "",
-            labName: mode.file.labName ?? null,
-            collectionDate: mode.file.collectionDate ?? "",
-            reportType: (mode.file.reportType as "blood_panel" | "dexa_scan" | "other") ?? "other",
-          },
-          biomarkers: mode.file.biomarkers,
-        }
-      : null
-  );
+  const initialExtraction = mode.type === "view"
+    ? {
+        reportInfo: {
+          source: mode.file.source ?? "",
+          labName: mode.file.labName ?? null,
+          collectionDate: mode.file.collectionDate ?? "",
+          reportType: (mode.file.reportType as "blood_panel" | "dexa_scan" | "other") ?? "other",
+        },
+        biomarkers: mode.file.biomarkers,
+      }
+    : null;
+  const [extraction, setExtraction] = useState<ExtractionResult | null>(initialExtraction);
+  const extractionRef = useRef(initialExtraction);
+  useEffect(() => { extractionRef.current = extraction; }, [extraction]);
   const [meta, setMeta] = useState<ExtractionMeta | null>(
     mode.type === "view" ? mode.file.meta : null
   );
@@ -254,17 +255,14 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
     [savedFileId]
   );
 
-  const flushPendingDelete = useCallback(() => {
+  const flushPendingDelete = useCallback(async () => {
     const pending = pendingDeleteRef.current;
     if (!pending) return;
     clearTimeout(pending.timeoutId);
     pendingDeleteRef.current = null;
     setToastItem(null);
-    if (savedFileId) {
-      setExtraction((prev) => {
-        if (prev) updateFileBiomarkers(savedFileId, prev.biomarkers).catch(console.error);
-        return prev;
-      });
+    if (savedFileId && extractionRef.current) {
+      await updateFileBiomarkers(savedFileId, extractionRef.current.biomarkers);
     }
   }, [savedFileId]);
 
@@ -282,11 +280,8 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
         const timeoutId = setTimeout(() => {
           pendingDeleteRef.current = null;
           setToastItem(null);
-          if (savedFileId) {
-            setExtraction((cur) => {
-              if (cur) updateFileBiomarkers(savedFileId, cur.biomarkers).catch(console.error);
-              return cur;
-            });
+          if (savedFileId && extractionRef.current) {
+            updateFileBiomarkers(savedFileId, extractionRef.current.biomarkers).catch(console.error);
           }
         }, UNDO_TOAST_DURATION_MS);
 
@@ -413,7 +408,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       {/* Header — frosted glass */}
       <header className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-light)] bg-white/80 backdrop-blur-lg flex-shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <button
-          onClick={() => { flushPendingDelete(); onBack(); }}
+          onClick={async () => { await flushPendingDelete(); onBack(); }}
           className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

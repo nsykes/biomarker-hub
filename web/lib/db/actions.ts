@@ -30,6 +30,12 @@ export {
 export { deleteAccount } from "./actions/account";
 
 export {
+  createApiKey,
+  listApiKeys,
+  revokeApiKey,
+} from "./actions/api-keys";
+
+export {
   getDashboards,
   getDashboard,
   createDashboard,

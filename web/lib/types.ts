@@ -161,3 +161,11 @@ export interface BiomarkerDetailData {
   history: BiomarkerHistoryPoint[];
   referenceRange: ReferenceRange | null;
 }
+
+export interface ApiKeyInfo {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  lastUsedAt: string | null;
+  createdAt: string;
+}

@@ -183,9 +183,7 @@ The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:
 - **Privacy audit** — Full data flow review of all third-party sub-processors (OpenRouter, Neon, Vercel) before sharing with friends/family. Goal: plain-language privacy summary for non-technical users.
 - **Dashboard enhancements** — Shareable/exportable dashboards, chart export (PNG/PDF).
 - **Tab switching performance** — Navigating between tabs (Files, Biomarkers, Dashboards, Settings) feels slow; investigate lazy loading, skeleton states, or caching to make transitions snappier.
-- **DEXA PDF highlighting** — Highlighting doesn't work correctly on BodySpec DEXA scan PDFs. The row-based matching algorithm may need adjustments for DEXA's different layout/formatting compared to standard blood panel PDFs.
 - **Back button navigation** — Browser back button sometimes goes back too far (e.g., leaving the app entirely instead of returning to the previous in-app view). Likely needs proper history state management for inline views (biomarker detail, dashboard detail) so back navigates within the app correctly.
-- ~~**Light / dark mode button** — Theme toggle was implemented but the button needs fixing.~~ Fixed: simplified to light/dark toggle, removed system preference option.
 - **User initials avatar** — The initials display in the top-right corner needs fixing.
 - **Dashboards broken** — Dashboards tab is broken and needs debugging.
 - **Other** — Batch PDF upload, PII stripping before LLM, model comparison diff view, custom per-lab prompt overrides, general code cleanup pass.

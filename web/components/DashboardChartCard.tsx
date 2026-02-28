@@ -14,6 +14,9 @@ interface DashboardChartCardProps {
   data: BiomarkerDetailData;
   onRemove: () => void;
   onNavigate: (slug: string) => void;
+  mergeMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 export function DashboardChartCard({
@@ -21,6 +24,9 @@ export function DashboardChartCard({
   data,
   onRemove,
   onNavigate,
+  mergeMode,
+  selected,
+  onToggleSelect,
 }: DashboardChartCardProps) {
   const trend = useMemo(
     () => computeTrend(data.slug, data.history, data.referenceRange),
@@ -46,26 +52,44 @@ export function DashboardChartCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="card overflow-hidden"
+      className={`card overflow-hidden ${mergeMode ? "cursor-pointer" : ""}`}
+      onClick={mergeMode ? onToggleSelect : undefined}
     >
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-border-light)]">
-        {/* Drag handle */}
-        <button
-          {...attributes}
-          {...listeners}
-          className="p-1 rounded hover:bg-[var(--color-surface-tertiary)] cursor-grab active:cursor-grabbing text-[var(--color-text-tertiary)] flex-shrink-0 touch-none"
-          title="Drag to reorder"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-            <circle cx="5" cy="3" r="1.5" />
-            <circle cx="11" cy="3" r="1.5" />
-            <circle cx="5" cy="8" r="1.5" />
-            <circle cx="11" cy="8" r="1.5" />
-            <circle cx="5" cy="13" r="1.5" />
-            <circle cx="11" cy="13" r="1.5" />
-          </svg>
-        </button>
+        {mergeMode ? (
+          /* Merge-mode checkbox (replaces drag handle) */
+          <div
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+              selected
+                ? "bg-[var(--color-primary)] border-[var(--color-primary)]"
+                : "bg-white border-[var(--color-border)]"
+            }`}
+          >
+            {selected && (
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+        ) : (
+          /* Drag handle */
+          <button
+            {...attributes}
+            {...listeners}
+            className="p-1 rounded hover:bg-[var(--color-surface-tertiary)] cursor-grab active:cursor-grabbing text-[var(--color-text-tertiary)] flex-shrink-0 touch-none"
+            title="Drag to reorder"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="5" cy="3" r="1.5" />
+              <circle cx="11" cy="3" r="1.5" />
+              <circle cx="5" cy="8" r="1.5" />
+              <circle cx="11" cy="8" r="1.5" />
+              <circle cx="5" cy="13" r="1.5" />
+              <circle cx="11" cy="13" r="1.5" />
+            </svg>
+          </button>
+        )}
 
         {/* Title — clickable */}
         <button
@@ -86,7 +110,7 @@ export function DashboardChartCard({
             <svg className="w-3.5 h-3.5 text-[var(--color-text-quaternary)] cursor-help" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
             </svg>
-            <div className="invisible group-hover/info:visible absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-64 bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-xl shadow-lg px-3 py-2.5 z-30">
+            <div className="invisible group-hover/info:visible absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-64 max-h-48 overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border-light)] rounded-xl shadow-lg px-3 py-2.5 z-30">
               <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">{data.summary}</p>
             </div>
           </div>

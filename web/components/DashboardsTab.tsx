@@ -1,19 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DashboardSummary } from "@/lib/types";
 import { getDashboards, createDashboard } from "@/lib/db/actions";
 import { CreateDashboardModal } from "./CreateDashboardModal";
 import { DashboardView } from "./DashboardView";
 import { PageSpinner } from "./Spinner";
 
-export function DashboardsTab() {
+interface DashboardsTabProps {
+  activeDashboardId: string | null;
+  onOpenDashboard: (id: string) => void;
+  onBack: () => void;
+  onNavigateToBiomarker: (slug: string) => void;
+}
+
+export function DashboardsTab({
+  activeDashboardId,
+  onOpenDashboard,
+  onBack,
+  onNavigateToBiomarker,
+}: DashboardsTabProps) {
   const [dashboards, setDashboards] = useState<DashboardSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [activeDashboardId, setActiveDashboardId] = useState<string | null>(
-    null
-  );
 
   const loadDashboards = useCallback(async () => {
     try {
@@ -30,21 +39,29 @@ export function DashboardsTab() {
     loadDashboards();
   }, [loadDashboards]);
 
+  // Refresh dashboard list when returning from detail view
+  const prevDashboardId = useRef(activeDashboardId);
+  useEffect(() => {
+    if (prevDashboardId.current && !activeDashboardId) {
+      loadDashboards();
+    }
+    prevDashboardId.current = activeDashboardId;
+  }, [activeDashboardId, loadDashboards]);
+
   const handleCreate = async (name: string, slugs: string[], groups?: string[][]) => {
     const id = await createDashboard(name, slugs, groups);
     setShowCreate(false);
     await loadDashboards();
-    setActiveDashboardId(id);
+    onOpenDashboard(id);
   };
-
-  const handleBack = useCallback(() => {
-    setActiveDashboardId(null);
-    loadDashboards();
-  }, [loadDashboards]);
 
   if (activeDashboardId) {
     return (
-      <DashboardView dashboardId={activeDashboardId} onBack={handleBack} />
+      <DashboardView
+        dashboardId={activeDashboardId}
+        onBack={onBack}
+        onNavigateToBiomarker={onNavigateToBiomarker}
+      />
     );
   }
 
@@ -104,7 +121,7 @@ export function DashboardsTab() {
           {dashboards.map((d) => (
             <button
               key={d.id}
-              onClick={() => setActiveDashboardId(d.id)}
+              onClick={() => onOpenDashboard(d.id)}
               className="card px-5 py-4 text-left hover:shadow-md transition-all duration-200 hover:border-[var(--color-primary)] group"
             >
               <div className="flex items-start justify-between">

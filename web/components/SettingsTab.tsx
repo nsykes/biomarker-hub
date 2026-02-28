@@ -189,7 +189,8 @@ export function SettingsTab() {
             <p className="text-xs text-[var(--color-text-tertiary)]">Saving...</p>
           )}
           <p className="text-xs text-[var(--color-text-tertiary)]">
-            The model used for new extractions.
+            The model used for new extractions. We strongly recommend Gemini
+            2.5 Pro for the most accurate results.
           </p>
         </div>
       </section>

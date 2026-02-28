@@ -169,10 +169,13 @@ The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:
 ## Future Plans
 
 - **MCP Server** — Expose biomarker data so Claude/ChatGPT can answer health trend questions, compare values against ranges, and summarize changes between reports.
-- **Bad PDF handling** — Graceful errors for image-only PDFs (no text layer), non-lab-report PDFs (zero biomarkers), corrupted files, and password-protected PDFs.
+- **Bad PDF handling** — Corrupted files and timeouts are caught but show generic errors. Still missing: detect image-only PDFs (no text layer) and warn that highlighting won't work, warn when zero biomarkers are extracted (likely not a lab report), detect and guide on password-protected PDFs, and improve error messages for corrupted files.
 - **Mobile responsiveness** — The split-pane extraction view needs a stacked/tabbed layout for small screens. Detail pages and settings are more straightforward.
 - **Trend alerts** — Surface concerning trends across reports: values trending toward out-of-range, recent normal→abnormal crossings, significant jumps between readings.
 - **Privacy audit** — Full data flow review of all third-party sub-processors (OpenRouter, Neon, Vercel) before sharing with friends/family. Goal: plain-language privacy summary for non-technical users.
 - **Dashboard enhancements** — Preset templates by category (Heart, Metabolic, Thyroid), shareable/exportable dashboards, summary stats (latest values, trend indicators).
 - **Tab switching performance** — Navigating between tabs (Files, Biomarkers, Dashboards, Settings) feels slow; investigate lazy loading, skeleton states, or caching to make transitions snappier.
+- **DEXA PDF highlighting** — Highlighting doesn't work correctly on BodySpec DEXA scan PDFs. The row-based matching algorithm may need adjustments for DEXA's different layout/formatting compared to standard blood panel PDFs.
+- **Back button navigation** — Browser back button sometimes goes back too far (e.g., leaving the app entirely instead of returning to the previous in-app view). Likely needs proper history state management for inline views (biomarker detail, dashboard detail) so back navigates within the app correctly.
+- **Light / dark mode** — Support system preference and manual toggle for light and dark themes. Current design is light-only with CSS custom properties, so the groundwork for theming is partially there.
 - **Other** — Batch PDF upload, PII stripping before LLM, model comparison diff view, custom per-lab prompt overrides, general code cleanup pass.

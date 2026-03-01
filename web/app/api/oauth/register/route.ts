@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { neon } from "@neondatabase/serverless";
 import { db } from "@/lib/db";
 import { oauthClients } from "@/lib/db/schema";
 
@@ -27,17 +28,16 @@ export async function POST(request: Request) {
     .digest("hex");
 
   try {
-    await db.insert(oauthClients).values({
-      clientId,
-      clientSecretHash,
-      clientName: client_name,
-      // Neon HTTP driver can't serialize JS objects for jsonb params —
-      // pre-stringify so the driver sends a plain text parameter that
-      // PostgreSQL can cast to jsonb.
-      redirectUris: JSON.stringify(redirect_uris) as unknown as string[],
-    });
-  } catch (err) {
-    console.error("DCR insert failed:", err);
+    const sql = neon(process.env.DATABASE_URL!);
+    await sql`
+      INSERT INTO oauth_clients (client_id, client_secret_hash, client_name, redirect_uris)
+      VALUES (${clientId}, ${clientSecretHash}, ${client_name}, ${JSON.stringify(redirect_uris)}::jsonb)
+    `;
+  } catch (err: unknown) {
+    const e = err as Record<string, unknown>;
+    console.error("DCR insert failed:", JSON.stringify({
+      message: e.message, code: e.code, detail: e.detail, hint: e.hint,
+    }));
     return Response.json(
       { error: "server_error", error_description: String(err) },
       { status: 500, headers: corsHeaders }

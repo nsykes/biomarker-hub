@@ -1,13 +1,19 @@
 import { NextRequest } from "next/server";
 import { authenticateApiKey, unauthorized } from "@/lib/api-auth";
-import { getUserBiomarkerSlugs } from "@/lib/db/queries/biomarkers";
+import {
+  getUserBiomarkerSlugs,
+  getBiomarkerSlugsByReport,
+} from "@/lib/db/queries/biomarkers";
 import { REGISTRY } from "@/lib/biomarker-registry";
 
 export async function GET(request: NextRequest) {
   const userId = await authenticateApiKey(request);
   if (!userId) return unauthorized();
 
-  const slugs = await getUserBiomarkerSlugs(userId);
+  const reportId = request.nextUrl.searchParams.get("report_id");
+  const slugs = reportId
+    ? await getBiomarkerSlugsByReport(userId, reportId)
+    : await getUserBiomarkerSlugs(userId);
 
   const category = request.nextUrl.searchParams.get("category");
 

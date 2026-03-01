@@ -171,3 +171,23 @@ export async function getUserBiomarkerSlugs(
     .map((r) => r.canonicalSlug)
     .filter((s): s is string => s !== null);
 }
+
+export async function getBiomarkerSlugsByReport(
+  userId: string,
+  reportId: string
+): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ canonicalSlug: biomarkerResults.canonicalSlug })
+    .from(biomarkerResults)
+    .innerJoin(reports, eq(biomarkerResults.reportId, reports.id))
+    .where(
+      and(
+        eq(biomarkerResults.reportId, reportId),
+        eq(reports.userId, userId)
+      )
+    );
+
+  return rows
+    .map((r) => r.canonicalSlug)
+    .filter((s): s is string => s !== null);
+}

@@ -106,10 +106,12 @@ export class BiomarkerHubClient {
   }
 
   async listBiomarkers(
-    category?: string
+    category?: string,
+    reportId?: string
   ): Promise<{ biomarkers: BiomarkerSummary[] }> {
     const params = new URLSearchParams();
     if (category) params.set("category", category);
+    if (reportId) params.set("report_id", reportId);
     const qs = params.toString();
     return this.fetch(`/api/v1/biomarkers${qs ? `?${qs}` : ""}`);
   }

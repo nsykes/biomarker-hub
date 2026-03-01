@@ -110,22 +110,37 @@ biomarker-hub/
 │   │   └── biomarkers/[slug]/    # Biomarker detail pages
 │   ├── components/
 │   │   ├── biomarker-detail/     # Chart, table, range subcomponents
+│   │   ├── dashboard/            # Dashboard subcomponents (header, grid, empty state)
+│   │   ├── settings/             # Settings section components (7 sections)
 │   │   ├── AppShell.tsx          # App layout with tabs
 │   │   ├── ExtractionView.tsx    # Main extraction UI
 │   │   ├── PdfViewer.tsx         # PDF renderer with highlighting
-│   │   └── DashboardView.tsx     # Dashboard detail with chart grid
+│   │   ├── DashboardView.tsx     # Dashboard detail (composes dashboard/)
+│   │   └── SettingsTab.tsx       # Settings layout (composes settings/)
 │   ├── hooks/
 │   │   ├── useNavigationState.ts # Browser history + navigation state
+│   │   ├── useExtractionState.ts # Extraction state + callbacks
+│   │   ├── useDashboardData.ts   # Dashboard data + operations
+│   │   ├── useSettingsData.ts    # Settings loading/saving
+│   │   ├── usePasswordChange.ts  # Password change state
+│   │   ├── useApiKeysManager.ts  # API key management
+│   │   ├── useUndoDelete.ts      # Undo-delete pattern with toast
 │   │   ├── useChartColors.ts     # CSS color vars for Recharts
 │   │   └── useCategoryCollapse.ts # Collapsible category sections
 │   └── lib/
 │       ├── db/
 │       │   ├── schema.ts         # Drizzle schema (8 tables)
 │       │   ├── queries/          # Shared query functions
-│       │   └── actions/          # Server action modules
+│       │   ├── actions/          # Server action modules
+│       │   ├── result.ts         # SafeResult/ActionResult types
+│       │   └── helpers.ts        # firstOrNull/firstOrThrow helpers
+│       ├── biomarker-registry/   # Canonical biomarker registry
+│       │   ├── types.ts          # Registry type definitions
+│       │   ├── data.ts           # 181 biomarker entries + generators
+│       │   ├── match.ts          # Name matching + alias lookup
+│       │   └── index.ts          # Barrel re-export
 │       ├── prompt.ts             # LLM extraction prompt
 │       ├── highlight.ts          # PDF row-based highlighting
-│       ├── biomarker-registry.ts # Canonical biomarker registry
 │       ├── unit-conversions.ts   # Cross-lab unit normalization
 │       ├── derivative-calc.ts    # Auto-calculated biomarkers
 │       ├── trend.ts              # Trend computation for dashboards

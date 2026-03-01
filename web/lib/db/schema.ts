@@ -8,6 +8,7 @@ import {
   integer,
   boolean,
   index,
+  jsonb,
   customType,
 } from "drizzle-orm/pg-core";
 import { DEFAULT_MODEL } from "@/lib/constants";
@@ -17,19 +18,6 @@ const bytea = customType<{ data: Buffer }>({
     return "bytea";
   },
 });
-
-// Neon HTTP driver doesn't auto-serialize JS objects for jsonb params.
-// This custom type calls JSON.stringify on write so the driver sends a
-// valid JSON string that PostgreSQL can cast to jsonb.
-const neonJsonb = <T>() =>
-  customType<{ data: T }>({
-    dataType() {
-      return "jsonb";
-    },
-    toDriver(val: T) {
-      return JSON.stringify(val);
-    },
-  });
 
 // 1. Profiles — extends neon_auth.user with app-specific health fields (1:1)
 export const profiles = pgTable("profiles", {
@@ -189,7 +177,7 @@ export const oauthClients = pgTable(
     clientId: text("client_id").notNull().unique(),
     clientSecretHash: text("client_secret_hash").notNull(),
     clientName: text("client_name").notNull(),
-    redirectUris: neonJsonb<string[]>()("redirect_uris").notNull(),
+    redirectUris: jsonb("redirect_uris").notNull().$type<string[]>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

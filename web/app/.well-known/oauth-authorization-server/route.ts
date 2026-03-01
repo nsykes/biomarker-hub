@@ -1,15 +1,17 @@
+import { NextResponse } from "next/server";
 import { getAppUrl } from "@/lib/mcp/url";
+
+export const dynamic = "force-dynamic";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
   "Access-Control-Allow-Headers": "*",
-  "Cache-Control": "public, max-age=3600",
 };
 
 export async function GET() {
   const issuer = getAppUrl();
-  return Response.json(
+  return NextResponse.json(
     {
       issuer,
       authorization_endpoint: `${issuer}/oauth/authorize`,

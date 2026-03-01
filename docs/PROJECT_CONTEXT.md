@@ -16,7 +16,7 @@ Currently supports: Quest Diagnostics blood panels, Function Health reports, Bod
   - **Domain:** `biomarker-hub.vercel.app`
 - **Database:** Neon Postgres — project **"biomarker-hub"** (ID: `jolly-sky-75880073`) under the **"Vercel: Nyle Sykes' projects"** org (ID: `org-tiny-hat-28280839`). Not the `hello@nylesykes.com` org. Connected to Vercel via integration. Neon Auth is provisioned (lives in `neon_auth` schema, separate from app tables in `public`).
 - **LLM API:** OpenRouter (each user provides their own API key via Settings)
-- **Repo:** Monorepo — `web/` is the Next.js 15 app
+- **Repo:** Monorepo — `web/` is the Next.js 16 app
 - **MCP servers configured:** Vercel (`https://mcp.vercel.com`), Neon (`https://mcp.neon.tech`), PitchBook, Granola
 
 **Env vars:** `DATABASE_URL` (Neon connection string), `NEON_AUTH_BASE_URL` (from Neon Auth tab), `NEON_AUTH_COOKIE_SECRET` (32+ chars, `openssl rand -base64 32`). All state is fully DB-backed via Drizzle ORM (`drizzle.config.ts`, `lib/db/`).
@@ -219,5 +219,4 @@ The extraction prompt lives in `web/lib/prompt.ts`. Key rules it enforces:
 - **DEXA PDF highlighting** — Highlighting doesn't work correctly on BodySpec DEXA scan PDFs. The row-based matching algorithm may need adjustments for DEXA's different layout/formatting compared to standard blood panel PDFs.
 - ~~**Light / dark mode**~~ — **Done.** Supports system preference and manual toggle (light→dark→system cycle). Uses CSS custom properties with `ThemeToggle` component.
 - ~~**User initials avatar**~~ — **Done.** Replaced Neon Auth `UserButton` (showed initials) with a static person icon SVG. Auth actions (sign out) are handled independently in Settings.
-- **Dashboards broken** — Dashboards tab is broken and needs debugging.
 - **Other** — Batch PDF upload, PII stripping before LLM, model comparison diff view, custom per-lab prompt overrides, general code cleanup pass.

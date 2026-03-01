@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const data = await getBatchChartDataByUser(userId, slugs);
+  const reportId = request.nextUrl.searchParams.get("report_id") ?? undefined;
+  const data = await getBatchChartDataByUser(userId, slugs, reportId);
 
   const biomarkers = data.map((d) => ({
     ...d,

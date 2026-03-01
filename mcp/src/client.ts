@@ -28,6 +28,7 @@ export interface HistoryPoint {
   valueText: string | null;
   unit: string | null;
   flag: string;
+  reportId: string;
   source: string | null;
   labName: string | null;
   isCalculated: boolean;

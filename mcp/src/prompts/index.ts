@@ -4,14 +4,14 @@ import { z } from "zod";
 export function registerPrompts(server: McpServer) {
   server.prompt(
     "summarize-bloodwork",
-    "Generate a comprehensive summary of the user's most recent lab results, highlighting out-of-range values, trends, and areas of concern.",
+    "Generate a summary of the user's most recent lab results, organized by category with out-of-range values highlighted.",
     () => ({
       messages: [
         {
           role: "user" as const,
           content: {
             type: "text" as const,
-            text: "Please summarize my recent bloodwork results. Start by calling get-health-summary to see all my biomarker data. Then organize the summary by category, highlight any out-of-range values (HIGH, LOW, ABNORMAL), note any concerning trends (values moving in unfavorable directions), and provide a brief plain-language explanation of what each flagged result means. End with an overall assessment and any suggested follow-ups.",
+            text: "Summarize my recent bloodwork. Call get-biomarkers to see all biomarker data with values, flags, directions, and history. Organize by category. Present each flagged result (HIGH, LOW, ABNORMAL, CRITICAL_HIGH, CRITICAL_LOW) with its value, reference range, and direction of change.",
           },
         },
       ],
@@ -20,14 +20,14 @@ export function registerPrompts(server: McpServer) {
 
   server.prompt(
     "biomarkers-needing-attention",
-    "Identify biomarkers that are out of range or trending in an unfavorable direction.",
+    "Identify biomarkers that are currently out of range.",
     () => ({
       messages: [
         {
           role: "user" as const,
           content: {
             type: "text" as const,
-            text: "Which of my biomarkers need attention? Use get-health-summary to fetch all my data, then identify: 1) Any biomarkers currently flagged as HIGH, LOW, ABNORMAL, CRITICAL_HIGH, or CRITICAL_LOW. 2) Any biomarkers with a 'bad' trend sentiment (moving away from the optimal range). 3) Any biomarkers that were previously normal but are now out of range. For each flagged biomarker, explain what the value means, what the reference range is, and what the trend direction suggests. Prioritize by severity.",
+            text: "Which of my biomarkers are out of range? Use get-biomarkers to fetch all data. Identify any flagged as HIGH, LOW, ABNORMAL, CRITICAL_HIGH, or CRITICAL_LOW. Note the direction of change for each. Show the value, reference range, and flag for each one.",
           },
         },
       ],
@@ -43,7 +43,7 @@ export function registerPrompts(server: McpServer) {
           role: "user" as const,
           content: {
             type: "text" as const,
-            text: "Compare my lab reports over time. First, call list-reports to see all my reports and their dates. Then use get-health-summary to see all biomarker histories. For each biomarker that appears in multiple reports, show how the value has changed between the earliest and most recent reading. Highlight significant changes (>10% shift or flag status change). Present as a table if possible.",
+            text: "Compare my lab reports over time. Call list-reports to see all reports and dates. Then call get-biomarkers to see all biomarker histories. For each biomarker in multiple reports, show how the value changed. Highlight significant changes (>10% shift or flag change). Present as a table.",
           },
         },
       ],
@@ -92,8 +92,14 @@ export function registerPrompts(server: McpServer) {
 
   server.prompt(
     "analyze-panel",
-    "Deep-dive analysis of a specific biomarker panel (lipid, metabolic, thyroid, cbc, iron, inflammation).",
-    { panel: z.string().describe("The panel to analyze: 'lipid', 'metabolic', 'thyroid', 'cbc', 'iron', 'inflammation'") },
+    "Detailed analysis of a specific biomarker panel (lipid, metabolic, thyroid, cbc, iron, inflammation).",
+    {
+      panel: z
+        .string()
+        .describe(
+          "The panel to analyze: 'lipid', 'metabolic', 'thyroid', 'cbc', 'iron', 'inflammation'"
+        ),
+    },
     ({ panel }) => {
       const slugs = panelSlugs[panel.toLowerCase()] ?? [];
       const slugList =
@@ -105,7 +111,7 @@ export function registerPrompts(server: McpServer) {
             role: "user" as const,
             content: {
               type: "text" as const,
-              text: `Please provide a deep-dive analysis of my ${panel} panel. Use get-biomarker-batch with slugs ['${slugList}'] to fetch all the relevant data. For each biomarker in the panel: 1) Show the latest value with its reference range and flag status. 2) Describe the trend over time. 3) Explain what this biomarker measures and why it matters. 4) Note any interactions between markers in this panel. Conclude with an overall panel assessment.`,
+              text: `Analyze my ${panel} panel. Use get-biomarkers with slugs ['${slugList}']. For each biomarker: show the latest value, reference range, flag, and direction. Note relationships between markers in this panel.`,
             },
           },
         ],

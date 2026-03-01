@@ -5,7 +5,7 @@ Monorepo for biomarker extraction and health data tools.
 ## Structure
 
 - `web/` — Next.js 16 app (App Router) for biomarker extraction and health data tracking
-- `mcp/` — MCP server (stdio) for exposing biomarker data to AI assistants (Claude Desktop, Claude Code)
+- `mcp/` — MCP server (stdio) for exposing biomarker data to LLMs (Claude Desktop, ChatGPT, etc.). Design philosophy: return raw factual data (values, flags, directions, reference ranges) — no subjective interpretation (no sentiment/good/bad). Let the consuming LLM decide what matters.
 - `docs/` — Product context, design decisions, and future plans
 
 ## Key Files
@@ -59,6 +59,12 @@ Monorepo for biomarker extraction and health data tools.
 - `web/hooks/usePasswordChange.ts` — Password change state (extracted from SettingsTab)
 - `web/hooks/useApiKeysManager.ts` — API key management state (extracted from SettingsTab)
 - `web/hooks/useDashboardData.ts` — Dashboard data/operations state (extracted from DashboardView)
+- `mcp/src/index.ts` — MCP server bootstrap (registers tools + prompts, stdio transport)
+- `mcp/src/client.ts` — HTTP client for web app API (Bearer token auth, all data types)
+- `mcp/src/tools/biomarkers.ts` — Unified `get-biomarkers` tool (supports slugs, category, include_history params)
+- `mcp/src/tools/reports.ts` — `list-reports` tool (report metadata)
+- `mcp/src/tools/registry.ts` — `search-registry` tool (biomarker definitions/clinical context)
+- `mcp/src/prompts/index.ts` — 4 MCP prompts (structural workflow guidance, no interpretation)
 
 ## Dev Commands
 
@@ -78,6 +84,7 @@ npm start        # run MCP server (stdio)
 - Neon Postgres via Drizzle ORM (`DATABASE_URL` env var). All state is fully DB-backed.
 - `rawName` = exact text from PDF, `metricName` = normalized clinical name.
 - PDF highlighting uses row-based spatial matching, not substring search.
+- MCP server returns raw factual data only — no sentiment/good/bad judgments. Flags (HIGH/LOW/NORMAL), direction (up/down/flat), goalDirection, and reference ranges are factual and stay. The consuming LLM interprets meaning.
 
 ## Keeping Docs Current
 

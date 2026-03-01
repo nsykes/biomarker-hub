@@ -8,7 +8,7 @@ export function registerRegistryTools(
 ) {
   server.tool(
     "search-registry",
-    "Search the canonical biomarker registry by name, category, or keyword. Returns biomarker definitions with slugs, display names, categories, units, and clinical summaries. Use this to find the correct slug for a biomarker, or to get clinical context about what a biomarker measures.",
+    "Search the reference database of all 198 recognized biomarkers by name, abbreviation, or category. Returns clinical definitions with slugs, display names, categories, units, and summaries. This is NOT the user's data — it's a reference lookup. Use this to find the correct slug when the user refers to a biomarker by name (e.g., 'vitamin D' → slug 'vitamin-d-25-hydroxy'), or to get clinical context about what a biomarker measures. Then use get-biomarkers with the slug to fetch the user's actual data.",
     {
       query: z
         .string()

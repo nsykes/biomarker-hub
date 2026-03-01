@@ -26,12 +26,20 @@ export async function POST(request: Request) {
     .update(clientSecret)
     .digest("hex");
 
-  await db.insert(oauthClients).values({
-    clientId,
-    clientSecretHash,
-    clientName: client_name,
-    redirectUris: redirect_uris,
-  });
+  try {
+    await db.insert(oauthClients).values({
+      clientId,
+      clientSecretHash,
+      clientName: client_name,
+      redirectUris: redirect_uris,
+    });
+  } catch (err) {
+    console.error("DCR insert failed:", err);
+    return Response.json(
+      { error: "server_error", error_description: String(err) },
+      { status: 500, headers: corsHeaders }
+    );
+  }
 
   return Response.json(
     {

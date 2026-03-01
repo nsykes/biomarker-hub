@@ -5,22 +5,14 @@ import dynamic from "next/dynamic";
 import { SplitPane } from "@/components/SplitPane";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { UploadZone } from "@/components/UploadZone";
-import {
-  Biomarker,
-  ExtractionResult,
-  ExtractionMeta,
-  ExtractionResponse,
-  HighlightTarget,
-  StoredFile,
-  ReferenceRangeConflict,
-} from "@/lib/types";
+import { Biomarker, HighlightTarget, StoredFile } from "@/lib/types";
 import { buildHighlightTarget } from "@/lib/highlight";
 import { formatDate } from "@/lib/utils";
-import { saveFile, reextractReport, getSettingsSafe, updateFileBiomarkers, updateReportInfo, reconcileReferenceRanges } from "@/lib/db/actions";
 import { RangeConflictModal } from "@/components/RangeConflictModal";
 import { UndoToast } from "@/components/UndoToast";
-import { DEFAULT_MODEL, UNDO_TOAST_DURATION_MS } from "@/lib/constants";
 import { validatePdfFile } from "@/lib/pdf-validation";
+import { useExtractionState } from "@/hooks/useExtractionState";
+import { useUndoDelete } from "@/hooks/useUndoDelete";
 
 const PdfViewer = dynamic(
   () =>
@@ -38,52 +30,31 @@ interface ExtractionViewProps {
 export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
   const [file, setFile] = useState<File | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-
-  const initialExtraction = mode.type === "view"
-    ? {
-        reportInfo: {
-          source: mode.file.source ?? "",
-          labName: mode.file.labName ?? null,
-          collectionDate: mode.file.collectionDate ?? "",
-          reportType: (mode.file.reportType as "blood_panel" | "dexa_scan" | "other") ?? "other",
-        },
-        biomarkers: mode.file.biomarkers,
-      }
-    : null;
-  const [extraction, setExtraction] = useState<ExtractionResult | null>(initialExtraction);
-  const extractionRef = useRef(initialExtraction);
-  useEffect(() => { extractionRef.current = extraction; }, [extraction]);
-  const [meta, setMeta] = useState<ExtractionMeta | null>(
-    mode.type === "view" ? mode.file.meta : null
-  );
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [savedFileId, setSavedFileId] = useState<string | null>(
-    mode.type === "view" ? mode.file.id : null
-  );
-
   const [selectedBiomarker, setSelectedBiomarker] = useState<Biomarker | null>(null);
   const [highlightTarget, setHighlightTarget] = useState<HighlightTarget | null>(null);
-  const [rangeConflicts, setRangeConflicts] = useState<ReferenceRangeConflict[] | null>(null);
 
-  const [toastItem, setToastItem] = useState<{ id: string; name: string } | null>(null);
-  const pendingDeleteRef = useRef<{
-    biomarker: Biomarker;
-    index: number;
-    timeoutId: ReturnType<typeof setTimeout>;
-  } | null>(null);
+  const {
+    extraction,
+    setExtraction,
+    extractionRef,
+    meta,
+    setMeta,
+    isExtracting,
+    error,
+    setError,
+    savedFileId,
+    setSavedFileId,
+    apiKey,
+    rangeConflicts,
+    setRangeConflicts,
+    handleExtract,
+    handleUpdateReportInfo,
+    handleUpdateBiomarker,
+    handleAddBiomarker,
+  } = useExtractionState(mode);
 
-  const [defaultModel, setDefaultModel] = useState<string>(DEFAULT_MODEL);
-  const [apiKey, setApiKey] = useState<string | null>(null);
-
-  useEffect(() => {
-    getSettingsSafe().then((result) => {
-      if (result.data) {
-        setDefaultModel(result.data.defaultModel);
-        setApiKey(result.data.openRouterApiKey);
-      }
-    });
-  }, []);
+  const { toastItem, flushPendingDelete, handleDeleteBiomarker, handleUndo } =
+    useUndoDelete(savedFileId, extractionRef, setExtraction);
 
   // Fetch stored PDF when viewing a report that has one
   const pdfFetched = useRef(false);
@@ -112,7 +83,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
     setCurrentPage(1);
     setError(null);
     setSavedFileId(null);
-  }, []);
+  }, [setExtraction, setMeta, setError, setSavedFileId]);
 
   // Re-attach PDF to existing report (view mode with missing PDF)
   const handleReUploadPdf = useCallback(
@@ -135,225 +106,17 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
     [savedFileId]
   );
 
-  const handleExtract = useCallback(
-    async () => {
-      if (!file) return;
-      setIsExtracting(true);
-      setError(null);
-      setExtraction(null);
-      setMeta(null);
-      setSelectedBiomarker(null);
-      setHighlightTarget(null);
-
-      try {
-        const formData = new FormData();
-        formData.append("pdf", file);
-        formData.append("model", defaultModel);
-        if (apiKey) {
-          formData.append("apiKey", apiKey);
-        }
-
-        const response = await fetch("/api/extract", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(
-            errData.error || `Extraction failed: ${response.status}`
-          );
-        }
-
-        // Response is streamed with keep-alive spaces; read full body and parse
-        const text = await response.text();
-        const parsed = JSON.parse(text.trim());
-        if (parsed.error) {
-          throw new Error(parsed.error);
-        }
-        const data: ExtractionResponse = parsed;
-        setExtraction(data.extraction);
-        setMeta(data.meta);
-
-        // Auto-save to database
-        try {
-          const extractionData = {
-            source: data.extraction.reportInfo.source || null,
-            labName: data.extraction.reportInfo.labName || null,
-            collectionDate: data.extraction.reportInfo.collectionDate || null,
-            reportType: data.extraction.reportInfo.reportType || null,
-            biomarkers: data.extraction.biomarkers,
-            meta: data.meta,
-          };
-
-          let id: string;
-          if (savedFileId) {
-            // Re-extraction: update existing report in-place
-            await reextractReport(savedFileId, extractionData);
-            id = savedFileId;
-          } else {
-            // New extraction: create a new report
-            id = await saveFile({ filename: file.name, ...extractionData });
-            setSavedFileId(id);
-          }
-
-          // Upload PDF to database
-          const uploadRes = await fetch(`/api/reports/${id}/pdf`, { method: "PUT", body: file });
-          if (!uploadRes.ok) {
-            const retry = await fetch(`/api/reports/${id}/pdf`, { method: "PUT", body: file });
-            if (!retry.ok) {
-              console.error("PDF upload failed after retry:", retry.status);
-            }
-          }
-        } catch (saveErr) {
-          console.error("Failed to auto-save:", saveErr);
-        }
-
-        // Reconcile reference ranges from PDF
-        try {
-          const reconcileInput = data.extraction.biomarkers
-            .filter((b) => b.canonicalSlug && (b.referenceRangeLow !== null || b.referenceRangeHigh !== null))
-            .map((b) => ({
-              canonicalSlug: b.canonicalSlug!,
-              referenceRangeLow: b.referenceRangeLow,
-              referenceRangeHigh: b.referenceRangeHigh,
-              unit: b.unit,
-              metricName: b.metricName,
-            }));
-          if (reconcileInput.length > 0) {
-            const conflicts = await reconcileReferenceRanges(reconcileInput);
-            if (conflicts.length > 0) {
-              setRangeConflicts(conflicts);
-            }
-          }
-        } catch (reconcileErr) {
-          console.error("Failed to reconcile reference ranges:", reconcileErr);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Extraction failed");
-      } finally {
-        setIsExtracting(false);
-      }
-    },
-    [file, apiKey, defaultModel, savedFileId]
-  );
-
-  const handleUpdateReportInfo = useCallback(
-    (field: string, value: string) => {
-      setExtraction((prev) => {
-        if (!prev) return prev;
-        const updated = {
-          ...prev,
-          reportInfo: { ...prev.reportInfo, [field]: value },
-        };
-        if (savedFileId) {
-          updateReportInfo(savedFileId, { [field]: value }).catch(console.error);
-        }
-        return updated;
-      });
-    },
-    [savedFileId]
-  );
-
-  const flushPendingDelete = useCallback(async () => {
-    const pending = pendingDeleteRef.current;
-    if (!pending) return;
-    clearTimeout(pending.timeoutId);
-    pendingDeleteRef.current = null;
-    setToastItem(null);
-    if (savedFileId && extractionRef.current) {
-      await updateFileBiomarkers(savedFileId, extractionRef.current.biomarkers);
-    }
-  }, [savedFileId]);
-
-  const handleDeleteBiomarker = useCallback(
-    (id: string) => {
-      // Finalize any existing pending deletion first
-      flushPendingDelete();
-
-      setExtraction((prev) => {
-        if (!prev) return prev;
-        const index = prev.biomarkers.findIndex((b) => b.id === id);
-        if (index === -1) return prev;
-        const deleted = prev.biomarkers[index];
-
-        const timeoutId = setTimeout(() => {
-          pendingDeleteRef.current = null;
-          setToastItem(null);
-          if (savedFileId && extractionRef.current) {
-            updateFileBiomarkers(savedFileId, extractionRef.current.biomarkers).catch(console.error);
-          }
-        }, UNDO_TOAST_DURATION_MS);
-
-        pendingDeleteRef.current = { biomarker: deleted, index, timeoutId };
-        setToastItem({ id: deleted.id, name: deleted.metricName || deleted.rawName });
-
-        return {
-          ...prev,
-          biomarkers: prev.biomarkers.filter((b) => b.id !== id),
-        };
-      });
-    },
-    [savedFileId, flushPendingDelete]
-  );
-
-  const handleUndo = useCallback(() => {
-    const pending = pendingDeleteRef.current;
-    if (!pending) return;
-    clearTimeout(pending.timeoutId);
-    pendingDeleteRef.current = null;
-    setToastItem(null);
-    setExtraction((prev) => {
-      if (!prev) return prev;
-      const restored = [...prev.biomarkers];
-      restored.splice(Math.min(pending.index, restored.length), 0, pending.biomarker);
-      return { ...prev, biomarkers: restored };
-    });
-  }, []);
-
-  const handleAddBiomarker = useCallback(
-    (biomarker: Biomarker) => {
-      setExtraction((prev) => {
-        if (!prev) return prev;
-        const updated = {
-          ...prev,
-          biomarkers: [...prev.biomarkers, biomarker],
-        };
-        if (savedFileId) {
-          updateFileBiomarkers(savedFileId, updated.biomarkers).catch(console.error);
-        }
-        return updated;
-      });
-    },
-    [savedFileId]
-  );
+  const onExtract = useCallback(async () => {
+    if (!file) return;
+    setSelectedBiomarker(null);
+    setHighlightTarget(null);
+    await handleExtract(file);
+  }, [file, handleExtract]);
 
   const handleSelectBiomarker = useCallback((biomarker: Biomarker) => {
     setSelectedBiomarker(biomarker);
     setHighlightTarget(buildHighlightTarget(biomarker));
   }, []);
-
-  const handleUpdateBiomarker = useCallback(
-    (id: string, field: keyof Biomarker, value: unknown) => {
-      setExtraction((prev) => {
-        if (!prev) return prev;
-        const updated = {
-          ...prev,
-          biomarkers: prev.biomarkers.map((b) =>
-            b.id === id ? { ...b, [field]: value } : b
-          ),
-        };
-        // Auto-save edits if we have a saved file
-        if (savedFileId) {
-          updateFileBiomarkers(savedFileId, updated.biomarkers).catch(
-            console.error
-          );
-        }
-        return updated;
-      });
-    },
-    [savedFileId]
-  );
 
   const isViewMode = mode.type === "view" && !file;
 
@@ -387,7 +150,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       isExtracting={isExtracting}
       noApiKey={!apiKey}
       selectedBiomarker={selectedBiomarker}
-      onExtract={handleExtract}
+      onExtract={onExtract}
       onSelectBiomarker={handleSelectBiomarker}
       onUpdateBiomarker={handleUpdateBiomarker}
       onUpdateReportInfo={handleUpdateReportInfo}

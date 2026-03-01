@@ -5,6 +5,8 @@ import { settings } from "../schema";
 import { eq, and } from "drizzle-orm";
 import { AppSettings } from "@/lib/types";
 import { requireUser } from "./auth";
+import { SafeResult } from "../result";
+import { firstOrThrow } from "../helpers";
 
 export async function getSettings(): Promise<AppSettings> {
   const userId = await requireUser();
@@ -25,7 +27,7 @@ export async function getSettings(): Promise<AppSettings> {
       defaultModel: row.defaultModel,
     };
   }
-  const r = rows[0];
+  const r = firstOrThrow(rows);
   return {
     id: r.id,
     openRouterApiKey: r.openRouterApiKey,
@@ -44,11 +46,7 @@ export async function updateSettings(
     .where(and(eq(settings.id, current.id), eq(settings.userId, userId)))
     .returning();
 
-  if (rows.length === 0) {
-    throw new Error("Failed to update settings");
-  }
-
-  const r = rows[0];
+  const r = firstOrThrow(rows, "Failed to update settings");
   return {
     id: r.id,
     openRouterApiKey: r.openRouterApiKey,
@@ -59,8 +57,6 @@ export async function updateSettings(
 // Safe wrappers that return errors as data instead of throwing.
 // Next.js sanitizes thrown errors in server actions, so the client never sees
 // the real message. These wrappers catch and return the error string.
-
-type SafeResult<T> = { data: T; error: null } | { data: null; error: string };
 
 export async function getSettingsSafe(): Promise<SafeResult<AppSettings>> {
   try {

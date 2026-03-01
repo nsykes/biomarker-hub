@@ -4,10 +4,9 @@ import { db } from "../index";
 import { reports, settings, profiles, dashboards, apiKeys } from "../schema";
 import { eq } from "drizzle-orm";
 import { requireUser } from "./auth";
+import { ActionResult } from "../result";
 
-type SafeResult = { success: true; error: null } | { success: false; error: string };
-
-export async function deleteAccount(): Promise<SafeResult> {
+export async function deleteAccount(): Promise<ActionResult> {
   try {
     const userId = await requireUser();
 

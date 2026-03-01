@@ -1,4 +1,4 @@
-import { BiomarkerHistoryPoint, ReferenceRange } from "@/lib/types";
+import { BiomarkerFlag, BiomarkerHistoryPoint, ReferenceRange } from "@/lib/types";
 import { convertToCanonical } from "@/lib/unit-conversions";
 
 export type TrendDirection = "up" | "down" | "flat";
@@ -7,7 +7,7 @@ export type TrendSentiment = "good" | "bad" | "neutral";
 export interface TrendInfo {
   latestValue: number;
   latestUnit: string | null;
-  latestFlag: string;
+  latestFlag: BiomarkerFlag;
   latestDate: string;
   direction: TrendDirection | null;
   sentiment: TrendSentiment;

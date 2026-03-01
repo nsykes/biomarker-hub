@@ -8,6 +8,7 @@ import {
   integer,
   boolean,
   index,
+  jsonb,
   customType,
 } from "drizzle-orm/pg-core";
 import { DEFAULT_MODEL } from "@/lib/constants";
@@ -176,7 +177,7 @@ export const oauthClients = pgTable(
     clientId: text("client_id").notNull().unique(),
     clientSecretHash: text("client_secret_hash").notNull(),
     clientName: text("client_name").notNull(),
-    redirectUris: text("redirect_uris").array().notNull(),
+    redirectUris: jsonb("redirect_uris").notNull().$type<string[]>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

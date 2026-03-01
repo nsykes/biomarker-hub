@@ -18,16 +18,12 @@ function json(body: unknown, status: number): Response {
 }
 
 export async function POST(request: Request) {
-  const ct = request.headers.get("content-type") ?? "(none)";
-  const ua = (request.headers.get("user-agent") ?? "(none)").slice(0, 80);
-  console.log(`[register] POST ct=${ct} ua=${ua}`);
-
   try {
-    // Parse body — always read as text first, then parse
+    const contentType = request.headers.get("content-type") ?? "";
     const rawBody = await request.text();
     let body: Record<string, unknown>;
 
-    if (ct.includes("application/x-www-form-urlencoded")) {
+    if (contentType.includes("application/x-www-form-urlencoded")) {
       const params = new URLSearchParams(rawBody);
       body = Object.fromEntries(params);
       if (typeof body.redirect_uris === "string") {
@@ -41,7 +37,6 @@ export async function POST(request: Request) {
       try {
         body = JSON.parse(rawBody);
       } catch {
-        console.error(`[register] bad JSON body: ${rawBody.slice(0, 200)}`);
         return json({ error: "invalid_request", error_description: "Invalid JSON body" }, 400);
       }
     }
@@ -70,7 +65,6 @@ export async function POST(request: Request) {
       VALUES (${clientId}, ${clientSecretHash}, ${client_name as string}, ${JSON.stringify(redirect_uris)}::jsonb)
     `;
 
-    console.log(`[register] OK client_id=${clientId}`);
     return json(
       { client_id: clientId, client_secret: clientSecret, client_name, redirect_uris },
       201

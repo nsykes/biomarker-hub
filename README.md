@@ -43,7 +43,7 @@ Currently supports blood panels (Quest Diagnostics, Function Health, and similar
 - **Dark mode** — Full light/dark/system theme support with CSS custom properties
 - **Google OAuth** — Authentication via Neon Auth with per-user data isolation
 - **BYOK model** — Each user provides their own OpenRouter API key — no server-side key, no shared costs
-- **MCP server** — Stdio-based Model Context Protocol server for exposing biomarker data to AI assistants (Claude Desktop, Claude Code)
+- **Remote MCP server** — Streamable HTTP Model Context Protocol server with OAuth 2.1, for connecting AI assistants (Claude.ai, Claude Desktop, any MCP client)
 - **API keys** — Generate and manage API keys for external integrations (MCP server, custom tools)
 
 ## Tech Stack
@@ -105,7 +105,9 @@ biomarker-hub/
 │   │   │   ├── extract/          # LLM extraction endpoint
 │   │   │   ├── reports/[id]/pdf/ # PDF upload & retrieval
 │   │   │   ├── account/export/   # CSV export endpoint
-│   │   │   └── v1/               # External API (Bearer token auth)
+│   │   │   ├── v1/               # External API (Bearer token auth)
+│   │   │   ├── mcp/[transport]/ # Remote MCP server (Streamable HTTP)
+│   │   │   └── oauth/            # OAuth 2.1 (register, authorize, token)
 │   │   ├── auth/                 # Sign-in / sign-up pages
 │   │   └── biomarkers/[slug]/    # Biomarker detail pages
 │   ├── components/
@@ -143,11 +145,10 @@ biomarker-hub/
 │       ├── highlight.ts          # PDF row-based highlighting
 │       ├── unit-conversions.ts   # Cross-lab unit normalization
 │       ├── derivative-calc.ts    # Auto-calculated biomarkers
+│       ├── mcp/                  # MCP helpers (auth, format, prompts, url)
 │       ├── trend.ts              # Trend computation for dashboards
 │       ├── types.ts              # Shared TypeScript interfaces
 │       └── constants.ts          # Shared magic values
-├── mcp/                          # MCP server (stdio)
-│   └── src/                      # TypeScript source
 └── docs/
     └── PROJECT_CONTEXT.md        # Architecture & design decisions
 ```
@@ -182,7 +183,7 @@ biomarker-hub/
 The app is designed for Vercel:
 
 1. Connect your GitHub repo to a Vercel project
-2. Set **Root Directory** to `web` (this is a monorepo)
+2. Set **Root Directory** to `web`
 3. Framework preset will auto-detect as Next.js
 4. Add the environment variables from the table above to your Vercel project settings
 5. Deploy

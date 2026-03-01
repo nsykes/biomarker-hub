@@ -7,6 +7,7 @@ interface CompactBiomarker {
   name: string;
   category: string;
   value: number | null;
+  valueText: string | null;
   unit: string | null;
   date: string | null;
   flag: string | null;
@@ -35,14 +36,16 @@ interface FullBiomarker extends CompactBiomarker {
 }
 
 function toCompact(b: BiomarkerDetail): CompactBiomarker {
+  const latest = b.history.length > 0 ? b.history[b.history.length - 1] : null;
   return {
     slug: b.slug,
     name: b.displayName,
     category: b.category,
     value: b.trend?.latestValue ?? null,
+    valueText: latest?.valueText ?? null,
     unit: b.trend?.latestUnit ?? b.defaultUnit,
-    date: b.trend?.latestDate ?? null,
-    flag: b.trend?.latestFlag ?? null,
+    date: b.trend?.latestDate ?? latest?.collectionDate ?? null,
+    flag: b.trend?.latestFlag ?? latest?.flag ?? null,
     direction: b.trend?.direction ?? null,
     referenceRange: b.referenceRange
       ? {
@@ -85,16 +88,17 @@ export function registerBiomarkerTools(
 - slugs: specific biomarkers by slug (use search-registry to find slugs by name)
 - category: all biomarkers in a category (e.g., "Heart", "Metabolic")
 - flag: only out-of-range results (e.g., ["HIGH", "LOW", "CRITICAL_HIGH", "CRITICAL_LOW"])
+- report_id: all biomarkers from a specific lab report (get IDs from list-reports)
 
-When called without filters, returns a compact overview of ALL biomarkers (latest values only, no history) to avoid large responses. When filtered by slugs, category, or flag, returns full history by default. Use include_history to override either way.
+When called without filters, returns a compact overview of ALL biomarkers (latest values only, no history) to avoid large responses. When filtered, returns full history by default. Use include_history to override.
 
 Response fields:
+- value: numeric result. valueText: non-numeric result (blood type, urine color, "<10"). Both may be present.
 - flag: NORMAL, HIGH, LOW, ABNORMAL, CRITICAL_HIGH, or CRITICAL_LOW
-- direction: "up", "down", or "flat" (latest vs previous value). Null if only one data point.
+- direction: "up", "down", or "flat" (latest vs previous). Null if only one data point.
 - referenceRange.goalDirection: "above" (higher is better), "below" (lower is better), or "within" (stay in range).
-- isCalculated: true if auto-computed from other biomarkers (e.g., ratios), not directly measured.
 - reportId: UUID of the source report (history only). Cross-reference with list-reports.
-- valueText: non-numeric results like blood type, urine color, "<10" (history only, when present).`,
+- isCalculated: true if auto-computed from other biomarkers (e.g., ratios).`,
     {
       slugs: z
         .array(z.string())
@@ -129,14 +133,20 @@ Response fields:
         .describe(
           "Filter by flag(s). Only return biomarkers whose latest result matches one of the given flags. Example: ['HIGH', 'LOW'] returns only out-of-range biomarkers."
         ),
+      report_id: z
+        .string()
+        .optional()
+        .describe(
+          "Filter to biomarkers from a specific lab report. Get report IDs from list-reports."
+        ),
     },
-    async ({ slugs, category, include_history, flag }) => {
+    async ({ slugs, category, include_history, flag, report_id }) => {
       let targetSlugs: string[];
 
       if (slugs && slugs.length > 0) {
         targetSlugs = slugs;
       } else {
-        const { biomarkers } = await client.listBiomarkers(category);
+        const { biomarkers } = await client.listBiomarkers(category, report_id);
         targetSlugs = biomarkers.map((b) => b.slug);
       }
 
@@ -179,7 +189,7 @@ Response fields:
         };
       }
 
-      const isUnfiltered = !slugs?.length && !category && (!flag || !flag.length);
+      const isUnfiltered = !slugs?.length && !category && (!flag || !flag.length) && !report_id;
       const shouldIncludeHistory = include_history ?? !isUnfiltered;
 
       const result = shouldIncludeHistory

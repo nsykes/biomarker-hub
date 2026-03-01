@@ -5,7 +5,28 @@ export async function GET(request: NextRequest) {
   const search = request.nextUrl.searchParams.get("search");
   const category = request.nextUrl.searchParams.get("category");
 
-  let entries = REGISTRY.map((e) => ({
+  let filtered = [...REGISTRY];
+
+  if (category) {
+    filtered = filtered.filter(
+      (e) => e.category.toLowerCase() === category.toLowerCase()
+    );
+  }
+
+  if (search) {
+    const q = search.toLowerCase();
+    filtered = filtered.filter(
+      (e) =>
+        e.slug.includes(q) ||
+        e.displayName.toLowerCase().includes(q) ||
+        e.fullName.toLowerCase().includes(q) ||
+        e.category.toLowerCase().includes(q) ||
+        e.aliases.some((a) => a.toLowerCase().includes(q)) ||
+        (e.summary?.toLowerCase().includes(q) ?? false)
+    );
+  }
+
+  const entries = filtered.map((e) => ({
     slug: e.slug,
     displayName: e.displayName,
     fullName: e.fullName,
@@ -14,23 +35,6 @@ export async function GET(request: NextRequest) {
     summary: e.summary ?? null,
     specimenType: e.specimenType,
   }));
-
-  if (category) {
-    entries = entries.filter(
-      (e) => e.category.toLowerCase() === category.toLowerCase()
-    );
-  }
-
-  if (search) {
-    const q = search.toLowerCase();
-    entries = entries.filter(
-      (e) =>
-        e.slug.includes(q) ||
-        e.displayName.toLowerCase().includes(q) ||
-        e.fullName.toLowerCase().includes(q) ||
-        e.category.toLowerCase().includes(q)
-    );
-  }
 
   return Response.json({ registry: entries });
 }

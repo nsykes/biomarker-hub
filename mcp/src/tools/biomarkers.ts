@@ -81,15 +81,20 @@ export function registerBiomarkerTools(
 ) {
   server.tool(
     "get-biomarkers",
-    `Fetch biomarker data for the user. Returns latest values, flags, trend direction, reference ranges, and full history by default. Can filter by category or specific slugs. If you don't know the slug for a biomarker, use search-registry first to find it.
+    `Fetch the user's biomarker data. Supports filtering by:
+- slugs: specific biomarkers by slug (use search-registry to find slugs by name)
+- category: all biomarkers in a category (e.g., "Heart", "Metabolic")
+- flag: only out-of-range results (e.g., ["HIGH", "LOW", "CRITICAL_HIGH", "CRITICAL_LOW"])
+
+When called without filters, returns a compact overview of ALL biomarkers (latest values only, no history) to avoid large responses. When filtered by slugs, category, or flag, returns full history by default. Use include_history to override either way.
 
 Response fields:
-- flag: NORMAL, HIGH, LOW, ABNORMAL, CRITICAL_HIGH, or CRITICAL_LOW (based on reference range)
-- direction: "up", "down", or "flat" (latest value vs previous value). Null if only one data point.
-- referenceRange.goalDirection: clinical goal — "above" means higher is better (e.g., HDL), "below" means lower is better (e.g., glucose), "within" means stay inside the range. Null if no stored range.
-- isCalculated: true if auto-computed from other biomarkers (e.g., ratios, sums), not directly measured on a lab report.
-- reportId: UUID of the source lab report for each history entry. Cross-reference with list-reports for report metadata.
-- valueText: present on history entries with non-numeric results (e.g., blood type, urine color, "<10").`,
+- flag: NORMAL, HIGH, LOW, ABNORMAL, CRITICAL_HIGH, or CRITICAL_LOW
+- direction: "up", "down", or "flat" (latest vs previous value). Null if only one data point.
+- referenceRange.goalDirection: "above" (higher is better), "below" (lower is better), or "within" (stay in range).
+- isCalculated: true if auto-computed from other biomarkers (e.g., ratios), not directly measured.
+- reportId: UUID of the source report (history only). Cross-reference with list-reports.
+- valueText: non-numeric results like blood type, urine color, "<10" (history only, when present).`,
     {
       slugs: z
         .array(z.string())
@@ -107,7 +112,7 @@ Response fields:
         .boolean()
         .optional()
         .describe(
-          "Include full history with dates, values, and lab sources. Default: true. Set to false for a compact summary (latest values only, no history)."
+          "Include full history with dates, values, and lab sources. Default: true when filters are applied (slugs, category, or flag). Default: false for unfiltered calls (returns compact overview). Set explicitly to override."
         ),
       flag: z
         .array(
@@ -174,9 +179,12 @@ Response fields:
         };
       }
 
-      const result = include_history === false
-        ? filtered.map(toCompact)
-        : filtered.map(toFull);
+      const isUnfiltered = !slugs?.length && !category && (!flag || !flag.length);
+      const shouldIncludeHistory = include_history ?? !isUnfiltered;
+
+      const result = shouldIncludeHistory
+        ? filtered.map(toFull)
+        : filtered.map(toCompact);
 
       return {
         content: [

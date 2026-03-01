@@ -22,6 +22,19 @@ function inferGoalDirection(
   return "within"; // fallback (shouldn't be reached if caller filters nulls)
 }
 
+/** Returns true if the reference range bounds are clinically meaningful. */
+function isValidReferenceRange(
+  low: number | null,
+  high: number | null
+): boolean {
+  if (low === null && high === null) return false;
+  if (low === 0 && high === 0) return false;
+  if (low === null && high === 0) return false;
+  if (low === 0 && high === null) return false;
+  if (low !== null && high !== null && high < low) return false;
+  return true;
+}
+
 export async function getReferenceRange(
   slug: string
 ): Promise<ReferenceRange | null> {
@@ -58,7 +71,7 @@ export async function reconcileReferenceRanges(
 
   for (const item of items) {
     if (!item.canonicalSlug) continue;
-    if (item.referenceRangeLow === null && item.referenceRangeHigh === null) continue;
+    if (!isValidReferenceRange(item.referenceRangeLow, item.referenceRangeHigh)) continue;
 
     const rows = await db
       .select()
@@ -84,7 +97,10 @@ export async function reconcileReferenceRanges(
         storedHigh === item.referenceRangeHigh &&
         stored.unit === item.unit;
 
-      if (!rangesMatch) {
+      if (
+        !rangesMatch &&
+        isValidReferenceRange(item.referenceRangeLow, item.referenceRangeHigh)
+      ) {
         conflicts.push({
           slug: item.canonicalSlug,
           metricName: item.metricName,
@@ -172,6 +188,7 @@ export async function backfillReferenceRange(
   if (!r) return null;
   const low = r.referenceRangeLow !== null ? Number(r.referenceRangeLow) : null;
   const high = r.referenceRangeHigh !== null ? Number(r.referenceRangeHigh) : null;
+  if (!isValidReferenceRange(low, high)) return null;
 
   await db.insert(referenceRanges).values({
     canonicalSlug: slug,

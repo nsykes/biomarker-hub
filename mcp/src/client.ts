@@ -121,9 +121,11 @@ export class BiomarkerHubClient {
   }
 
   async getBiomarkerBatch(
-    slugs: string[]
+    slugs: string[],
+    reportId?: string
   ): Promise<{ biomarkers: BiomarkerDetail[] }> {
     const params = new URLSearchParams({ slugs: slugs.join(",") });
+    if (reportId) params.set("report_id", reportId);
     return this.fetch(`/api/v1/biomarkers/batch?${params}`);
   }
 

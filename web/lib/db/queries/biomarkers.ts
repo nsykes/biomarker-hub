@@ -101,9 +101,18 @@ export async function getBiomarkerHistoryByUser(
 
 export async function getBatchChartDataByUser(
   userId: string,
-  slugs: string[]
+  slugs: string[],
+  reportId?: string
 ): Promise<BiomarkerDetailData[]> {
   if (slugs.length === 0) return [];
+
+  const conditions = [
+    inArray(biomarkerResults.canonicalSlug, slugs),
+    eq(reports.userId, userId),
+  ];
+  if (reportId) {
+    conditions.push(eq(biomarkerResults.reportId, reportId));
+  }
 
   const [historyRows, refRows] = await Promise.all([
     db
@@ -113,12 +122,7 @@ export async function getBatchChartDataByUser(
       })
       .from(biomarkerResults)
       .innerJoin(reports, eq(biomarkerResults.reportId, reports.id))
-      .where(
-        and(
-          inArray(biomarkerResults.canonicalSlug, slugs),
-          eq(reports.userId, userId)
-        )
-      )
+      .where(and(...conditions))
       .orderBy(asc(reports.collectionDate)),
     db
       .select()

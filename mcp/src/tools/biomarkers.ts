@@ -164,7 +164,7 @@ Response fields:
       const allData: BiomarkerDetail[] = [];
       for (let i = 0; i < targetSlugs.length; i += BATCH_SIZE) {
         const chunk = targetSlugs.slice(i, i + BATCH_SIZE);
-        const { biomarkers } = await client.getBiomarkerBatch(chunk);
+        const { biomarkers } = await client.getBiomarkerBatch(chunk, report_id);
         allData.push(...biomarkers);
       }
 

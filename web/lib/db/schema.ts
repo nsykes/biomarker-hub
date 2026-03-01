@@ -168,7 +168,58 @@ export const dashboardItems = pgTable(
   (table) => [index("idx_dashboard_items_dashboard").on(table.dashboardId)]
 );
 
-// 8. API keys — per-user keys for external API access (MCP server, etc.)
+// 8. OAuth clients — dynamically registered MCP clients (e.g., Claude.ai)
+export const oauthClients = pgTable(
+  "oauth_clients",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clientId: text("client_id").notNull().unique(),
+    clientSecretHash: text("client_secret_hash").notNull(),
+    clientName: text("client_name").notNull(),
+    redirectUris: text("redirect_uris").array().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("idx_oauth_clients_client_id").on(table.clientId)]
+);
+
+// 9. OAuth authorization codes — short-lived, single-use
+export const oauthCodes = pgTable(
+  "oauth_codes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: text("code").notNull().unique(),
+    clientId: text("client_id").notNull(),
+    userId: text("user_id").notNull(),
+    redirectUri: text("redirect_uri").notNull(),
+    codeChallenge: text("code_challenge"),
+    codeChallengeMethod: text("code_challenge_method"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("idx_oauth_codes_code").on(table.code)]
+);
+
+// 10. OAuth access tokens — issued after code exchange
+export const oauthTokens = pgTable(
+  "oauth_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tokenHash: text("token_hash").notNull().unique(),
+    userId: text("user_id").notNull(),
+    clientId: text("client_id").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("idx_oauth_tokens_hash").on(table.tokenHash)]
+);
+
+// 11. API keys — per-user keys for external API access (MCP server, etc.)
 export const apiKeys = pgTable(
   "api_keys",
   {

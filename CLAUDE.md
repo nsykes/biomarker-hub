@@ -5,8 +5,16 @@ Monorepo for biomarker extraction and health data tools.
 ## Structure
 
 - `web/` — Next.js 16 app (App Router) for biomarker extraction and health data tracking
-- `mcp/` — MCP server (stdio) for exposing biomarker data to LLMs (Claude Desktop, ChatGPT, etc.). Design philosophy: return raw factual data (values, flags, directions, reference ranges) — no subjective interpretation (no sentiment/good/bad). Let the consuming LLM decide what matters.
+- `mcp/` — MCP server (stdio) for exposing biomarker data to LLMs (Claude Desktop local use). Design philosophy: return raw factual data (values, flags, directions, reference ranges) — no subjective interpretation (no sentiment/good/bad). Let the consuming LLM decide what matters.
 - `docs/` — Product context, design decisions, and future plans
+
+### Remote MCP (embedded in web app)
+- `web/app/api/mcp/[transport]/route.ts` — Streamable HTTP MCP endpoint (same 3 tools + 4 prompts as stdio server, but calls DB directly instead of HTTP). Uses `mcp-handler` package.
+- `web/lib/mcp/` — MCP helpers: `auth.ts` (OAuth token validation), `format.ts` (toCompact/toFull formatters), `prompts.ts` (prompt registration), `url.ts` (base URL helper)
+- `web/app/api/oauth/` — OAuth 2.1 endpoints: `register/` (DCR), `authorize/` (code generation), `token/` (token exchange)
+- `web/app/oauth/authorize/page.tsx` — User consent page for OAuth flow
+- `web/app/.well-known/` — OAuth metadata: `oauth-protected-resource/`, `oauth-authorization-server/`
+- Auth: dual-mode — accepts OAuth tokens (from Claude.ai flow) or existing `bh_` API keys as Bearer tokens
 
 ## Key Files
 
@@ -26,6 +34,10 @@ Monorepo for biomarker extraction and health data tools.
 - `web/lib/db/helpers.ts` — `firstOrNull`/`firstOrThrow` DB query helpers
 - `web/lib/api-auth.ts` — API key authentication helper for v1 API routes
 - `web/app/api/v1/` — External API routes (Bearer token auth via API keys) for MCP server and integrations
+- `web/lib/mcp/auth.ts` — OAuth access token validation (SHA-256 hash lookup in oauthTokens table)
+- `web/lib/mcp/format.ts` — MCP response formatters (toCompact/toFull, works with web app types)
+- `web/lib/mcp/prompts.ts` — MCP prompt registration (shared by remote MCP route)
+- `web/lib/mcp/url.ts` — App base URL helper (NEXT_PUBLIC_APP_URL → VERCEL_PROJECT_PRODUCTION_URL → localhost)
 - `web/components/BiomarkerDetailPage.tsx` — BiomarkerDetailView (inline, self-fetching) + BiomarkerDetailPage (standalone wrapper)
 - `web/components/biomarker-detail/` — Detail subcomponents (HistoryChart, HistoryTable, ReferenceRangeSection, helpers)
 - `web/components/BiomarkerCombobox.tsx` — Registry-backed biomarker search/select for adding biomarkers after extraction
@@ -85,6 +97,8 @@ npm start        # run MCP server (stdio)
 - `rawName` = exact text from PDF, `metricName` = normalized clinical name.
 - PDF highlighting uses row-based spatial matching, not substring search.
 - MCP server returns raw factual data only — no sentiment/good/bad judgments. Flags (HIGH/LOW/NORMAL), direction (up/down/flat), goalDirection, and reference ranges are factual and stay. The consuming LLM interprets meaning.
+- Two MCP transports: stdio (`mcp/`) for Claude Desktop local use, Streamable HTTP (`web/app/api/mcp/`) for remote access (Claude.ai web/mobile, any MCP client). Same tools/prompts, different data path (HTTP client vs direct DB).
+- Remote MCP auth: OAuth 2.1 with DCR for Claude.ai, plus `bh_` API key fallback. OAuth tables: `oauthClients`, `oauthCodes`, `oauthTokens` (all in main DB).
 
 ## Keeping Docs Current
 

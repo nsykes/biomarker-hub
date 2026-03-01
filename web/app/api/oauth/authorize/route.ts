@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { oauthClients, oauthCodes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 /** GET: Validate the authorization request and return client info. */
 export async function GET(request: NextRequest) {
   const session = await auth.getSession();

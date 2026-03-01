@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { oauthCodes, oauthTokens, oauthClients } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",

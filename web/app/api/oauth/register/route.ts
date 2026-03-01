@@ -1,6 +1,8 @@
 import crypto from "crypto";
 import { neon } from "@neondatabase/serverless";
 
+export const dynamic = "force-dynamic";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",

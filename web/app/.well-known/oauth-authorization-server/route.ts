@@ -1,18 +1,12 @@
-import { NextResponse } from "next/server";
 import { getAppUrl } from "@/lib/mcp/url";
+import { metadataCorsOptionsRequestHandler } from "mcp-handler";
 
 export const dynamic = "force-dynamic";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "*",
-};
-
-export async function GET() {
+function handler(_req: Request): Response {
   const issuer = getAppUrl();
-  return NextResponse.json(
-    {
+  return new Response(
+    JSON.stringify({
       issuer,
       authorization_endpoint: `${issuer}/oauth/authorize`,
       token_endpoint: `${issuer}/api/oauth/token`,
@@ -21,11 +15,18 @@ export async function GET() {
       grant_types_supported: ["authorization_code"],
       code_challenge_methods_supported: ["S256"],
       token_endpoint_auth_methods_supported: ["client_secret_post", "none"],
-    },
-    { headers: corsHeaders }
+    }),
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      },
+    }
   );
 }
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
-}
+const corsHandler = metadataCorsOptionsRequestHandler();
+
+export { handler as GET, corsHandler as OPTIONS };

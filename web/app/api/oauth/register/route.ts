@@ -31,7 +31,10 @@ export async function POST(request: Request) {
       clientId,
       clientSecretHash,
       clientName: client_name,
-      redirectUris: redirect_uris,
+      // Neon HTTP driver can't serialize JS objects for jsonb params —
+      // pre-stringify so the driver sends a plain text parameter that
+      // PostgreSQL can cast to jsonb.
+      redirectUris: JSON.stringify(redirect_uris) as unknown as string[],
     });
   } catch (err) {
     console.error("DCR insert failed:", err);

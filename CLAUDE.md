@@ -13,29 +13,34 @@ Monorepo for biomarker extraction and health data tools.
 - `web/lib/prompt.ts` — LLM extraction prompt (critical — changes affect all extractions)
 - `web/lib/highlight.ts` — PDF text highlighting (row-based matching algorithm)
 - `web/lib/types.ts` — Shared TypeScript interfaces
-- `web/lib/constants.ts` — Shared magic values (API URLs, model defaults, highlight params, flag colors/options)
+- `web/lib/constants.ts` — Shared magic values (API URLs, model defaults, highlight params, flag colors/options). `FLAG_COLORS` and `FLAG_OPTIONS` are strictly typed to `BiomarkerFlag`.
 - `web/lib/unit-conversions.ts` — Display-time unit normalization (converts alternate units to registry canonical units)
 - `web/lib/derivative-calc.ts` — Auto-calculation of derivative biomarkers (ratios, sums) from extracted components
 - `web/lib/utils.ts` — Shared utilities (formatDate)
+- `web/lib/biomarker-registry/` — Biomarker registry directory (types, data, matching logic). Barrel re-exports from `index.ts`.
 - `web/app/api/extract/route.ts` — OpenRouter API route
 - `web/lib/db/actions.ts` — Barrel re-export for all server actions (do not add code here — add to sub-modules)
 - `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers, account, dashboards, api-keys)
 - `web/lib/db/queries/biomarkers.ts` — Shared query functions (accept userId param, used by both server actions and API routes)
+- `web/lib/db/result.ts` — `SafeResult<T>` and `ActionResult` types for error-as-data server actions
+- `web/lib/db/helpers.ts` — `firstOrNull`/`firstOrThrow` DB query helpers
 - `web/lib/api-auth.ts` — API key authentication helper for v1 API routes
 - `web/app/api/v1/` — External API routes (Bearer token auth via API keys) for MCP server and integrations
 - `web/components/BiomarkerDetailPage.tsx` — BiomarkerDetailView (inline, self-fetching) + BiomarkerDetailPage (standalone wrapper)
 - `web/components/biomarker-detail/` — Detail subcomponents (HistoryChart, HistoryTable, ReferenceRangeSection, helpers)
 - `web/components/BiomarkerCombobox.tsx` — Registry-backed biomarker search/select for adding biomarkers after extraction
+- `web/components/ReportInfoField.tsx` — Inline-editable field for report info (date, source, lab)
 - `web/components/DatePickerInput.tsx` — Custom calendar popover date picker (no external deps), used in FilesTab filters
 - `web/components/PdfPreviewModal.tsx` — Modal for previewing source PDF from history table rows
 - `web/components/RangeConflictModal.tsx` — Modal for resolving reference range conflicts between PDF and stored ranges
 - `web/components/DeleteAccountModal.tsx` — Confirmation modal for account deletion (type "DELETE" to confirm)
 - `web/components/ThemeToggle.tsx` — Light/dark/system theme toggle (cycles light→dark→system)
 - `web/components/UserMenu.tsx` — Header user dropdown (name, email, sign-out) using authClient.useSession()
-- `web/hooks/useNavigationState.ts` — Centralized browser history + navigation state hook (tabs, detail views, extraction)
-- `web/hooks/useChartColors.ts` — Reads computed CSS color vars for Recharts (re-runs on theme change)
+- `web/components/SettingsTab.tsx` — Settings page layout, composes section components from `settings/`
+- `web/components/settings/` — Settings section components (ApiKeySection, ModelSection, PrivacySection, ExportSection, ApiKeysSection, PasswordSection, DeleteAccountSection)
 - `web/components/DashboardsTab.tsx` — Dashboard list view with create FAB
-- `web/components/DashboardView.tsx` — Single dashboard detail with chart grid, drag-to-reorder, and merge mode
+- `web/components/DashboardView.tsx` — Single dashboard detail, composes subcomponents from `dashboard/`
+- `web/components/dashboard/` — Dashboard subcomponents (DashboardHeader, DashboardGrid, DashboardEmptyState)
 - `web/components/DashboardChartCard.tsx` — Sortable chart card wrapping HistoryChart, with trend indicator
 - `web/components/MultiMetricChart.tsx` — Multi-line Recharts chart for overlaid biomarker comparison
 - `web/components/MultiMetricChartCard.tsx` — Sortable card wrapper for MultiMetricChart with split/ungroup
@@ -45,7 +50,15 @@ Monorepo for biomarker extraction and health data tools.
 - `web/components/Spinner.tsx` — Shared loading spinner (Spinner, PageSpinner)
 - `web/app/api/account/export/route.ts` — CSV export endpoint (all biomarker data)
 - `web/lib/db/actions/account.ts` — Account deletion server action
+- `web/hooks/useNavigationState.ts` — Centralized browser history + navigation state hook (tabs, detail views, extraction)
+- `web/hooks/useChartColors.ts` — Reads computed CSS color vars for Recharts (re-runs on theme change)
 - `web/hooks/useCategoryCollapse.ts` — Shared hook for collapsible category sections
+- `web/hooks/useExtractionState.ts` — Extraction state + callbacks (extracted from ExtractionView)
+- `web/hooks/useUndoDelete.ts` — Undo-delete pattern with toast (extracted from ExtractionView)
+- `web/hooks/useSettingsData.ts` — Settings loading/saving state (extracted from SettingsTab)
+- `web/hooks/usePasswordChange.ts` — Password change state (extracted from SettingsTab)
+- `web/hooks/useApiKeysManager.ts` — API key management state (extracted from SettingsTab)
+- `web/hooks/useDashboardData.ts` — Dashboard data/operations state (extracted from DashboardView)
 
 ## Dev Commands
 

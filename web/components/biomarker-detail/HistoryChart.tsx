@@ -1,6 +1,6 @@
 "use client";
 
-import { BiomarkerDetailData, BiomarkerHistoryPoint } from "@/lib/types";
+import { BiomarkerDetailData, BiomarkerFlag, BiomarkerHistoryPoint } from "@/lib/types";
 import { FLAG_COLORS } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { formatValue } from "./helpers";
@@ -22,7 +22,7 @@ interface ChartPoint {
   date: string;
   timestamp: number;
   value: number | null;
-  flag: string;
+  flag: BiomarkerFlag;
   label: string;
   isCalculated?: boolean;
 }
@@ -108,7 +108,7 @@ function buildRangeZones(
 function computeFlag(
   value: number,
   ref: { goalDirection: string; rangeLow: number | null; rangeHigh: number | null } | null
-): string {
+): BiomarkerFlag {
   if (!ref) return "NORMAL";
   const { goalDirection, rangeLow, rangeHigh } = ref;
   if (goalDirection === "below" && rangeHigh !== null) {

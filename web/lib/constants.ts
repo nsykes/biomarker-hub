@@ -1,5 +1,7 @@
 // Shared magic values — single source of truth across the codebase.
 
+import type { BiomarkerFlag } from "./types";
+
 // OpenRouter
 export const OPENROUTER_API_URL =
   "https://openrouter.ai/api/v1/chat/completions";
@@ -18,7 +20,7 @@ export const HIGHLIGHT_MIN_SCORE = 5;
 export const HIGHLIGHT_COLOR = "rgba(250, 204, 21, 0.4)";
 
 // Biomarker flags (Apple system colors)
-export const FLAG_COLORS: Record<string, string> = {
+export const FLAG_COLORS: Record<BiomarkerFlag, string> = {
   NORMAL: "#34C759",
   LOW: "#5856D6",
   HIGH: "#FF3B30",
@@ -27,7 +29,7 @@ export const FLAG_COLORS: Record<string, string> = {
   CRITICAL_HIGH: "#C5221F",
 };
 
-export const FLAG_OPTIONS = [
+export const FLAG_OPTIONS: readonly BiomarkerFlag[] = [
   "NORMAL",
   "LOW",
   "HIGH",

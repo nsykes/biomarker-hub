@@ -9,6 +9,7 @@ import {
 } from "@/lib/types";
 import { requireUser } from "./auth";
 import { getBiomarkerHistoryByUser } from "../queries/biomarkers";
+import { firstOrNull } from "../helpers";
 
 /** Infer goal direction from one-sided or two-sided bounds. */
 function inferGoalDirection(
@@ -29,8 +30,8 @@ export async function getReferenceRange(
     .from(referenceRanges)
     .where(eq(referenceRanges.canonicalSlug, slug));
 
-  if (rows.length === 0) return null;
-  const r = rows[0];
+  const r = firstOrNull(rows);
+  if (!r) return null;
   return {
     rangeLow: r.rangeLow !== null ? Number(r.rangeLow) : null,
     rangeHigh: r.rangeHigh !== null ? Number(r.rangeHigh) : null,
@@ -167,9 +168,8 @@ export async function backfillReferenceRange(
     .orderBy(desc(reports.collectionDate), desc(reports.addedAt))
     .limit(1);
 
-  if (rows.length === 0) return null;
-
-  const r = rows[0];
+  const r = firstOrNull(rows);
+  if (!r) return null;
   const low = r.referenceRangeLow !== null ? Number(r.referenceRangeLow) : null;
   const high = r.referenceRangeHigh !== null ? Number(r.referenceRangeHigh) : null;
 

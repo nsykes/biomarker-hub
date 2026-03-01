@@ -1,7 +1,11 @@
 import crypto from "crypto";
+import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+console.log("[register] module loaded, version=v3, time=" + Date.now());
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +14,12 @@ const corsHeaders = {
 };
 
 export async function POST(request: Request) {
+  console.log("[register] POST called", {
+    contentType: request.headers.get("content-type"),
+    userAgent: request.headers.get("user-agent"),
+    method: request.method,
+  });
+
   try {
     // Parse body — handle both JSON and form-encoded
     let body: Record<string, unknown>;
@@ -36,7 +46,7 @@ export async function POST(request: Request) {
       !Array.isArray(redirect_uris) ||
       redirect_uris.length === 0
     ) {
-      return Response.json(
+      return NextResponse.json(
         { error: "client_name and redirect_uris are required" },
         { status: 400, headers: corsHeaders }
       );
@@ -56,7 +66,7 @@ export async function POST(request: Request) {
       VALUES (${clientId}, ${clientSecretHash}, ${client_name as string}, ${JSON.stringify(redirect_uris)}::jsonb)
     `;
 
-    return Response.json(
+    return NextResponse.json(
       {
         client_id: clientId,
         client_secret: clientSecret,
@@ -66,8 +76,8 @@ export async function POST(request: Request) {
       { status: 201, headers: corsHeaders }
     );
   } catch (err) {
-    console.error("DCR register error:", err);
-    return Response.json(
+    console.error("[register] DCR error:", err);
+    return NextResponse.json(
       { error: "server_error", error_description: String(err) },
       { status: 500, headers: corsHeaders }
     );

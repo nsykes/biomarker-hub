@@ -77,6 +77,10 @@ export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: 
     const q = searchQuery.toLowerCase();
     const filtered = new Map<BiomarkerCategory, CanonicalBiomarker[]>();
     for (const [cat, entries] of groupedRegistry) {
+      if (cat.toLowerCase().includes(q)) {
+        filtered.set(cat, entries);
+        continue;
+      }
       const matching = entries.filter(
         (e) =>
           e.displayName.toLowerCase().includes(q) ||

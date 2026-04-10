@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
-import { AppSettings, ApiKeyInfo } from "@/lib/types";
-import { getSettingsSafe, updateSettingsSafe, listApiKeys } from "@/lib/db/actions";
+import { AppSettings, ApiKeyInfo, DoctorShareInfo } from "@/lib/types";
+import { getSettingsSafe, updateSettingsSafe, listApiKeys, listDoctorShares } from "@/lib/db/actions";
 import { DEFAULT_MODEL } from "@/lib/constants";
+import { authClient } from "@/lib/auth/client";
 
 export function useSettingsData() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -18,14 +19,17 @@ export function useSettingsData() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const [apiKeysList, setApiKeysList] = useState<ApiKeyInfo[]>([]);
+  const [doctorSharesList, setDoctorSharesList] = useState<DoctorShareInfo[]>([]);
+  const [userName, setUserName] = useState("");
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const [result, keys] = await Promise.all([
+      const [result, keys, shares] = await Promise.all([
         getSettingsSafe(),
         listApiKeys(),
+        listDoctorShares(),
       ]);
       if (result.error) {
         setLoadError(result.error);
@@ -36,6 +40,7 @@ export function useSettingsData() {
         setKeyStored(!!s.openRouterApiKey);
       }
       setApiKeysList(keys);
+      setDoctorSharesList(shares);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load settings");
     } finally {
@@ -45,6 +50,9 @@ export function useSettingsData() {
 
   useEffect(() => {
     loadSettings();
+    authClient.getSession().then(({ data }) => {
+      if (data?.user?.name) setUserName(data.user.name);
+    });
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
@@ -136,5 +144,8 @@ export function useSettingsData() {
     handleExport,
     apiKeysList,
     setApiKeysList: setApiKeysList as Dispatch<SetStateAction<ApiKeyInfo[]>>,
+    doctorSharesList,
+    setDoctorSharesList: setDoctorSharesList as Dispatch<SetStateAction<DoctorShareInfo[]>>,
+    userName,
   };
 }

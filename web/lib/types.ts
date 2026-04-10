@@ -169,6 +169,15 @@ export interface BiomarkerDetailData {
   referenceRange: ReferenceRange | null;
 }
 
+export interface DoctorShareInfo {
+  id: string;
+  label: string;
+  token: string;
+  expiresAt: string | null;
+  lastAccessedAt: string | null;
+  createdAt: string;
+}
+
 export interface ApiKeyInfo {
   id: string;
   name: string;

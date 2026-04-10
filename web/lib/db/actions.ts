@@ -36,6 +36,16 @@ export {
 } from "./actions/api-keys";
 
 export {
+  createDoctorShare,
+  listDoctorShares,
+  revokeDoctorShare,
+  validateShareAccess,
+  getShareByToken,
+  getSharedBiomarkerList,
+  getSharedBiomarkerDetail,
+} from "./actions/doctor-shares";
+
+export {
   getDashboards,
   getDashboard,
   createDashboard,

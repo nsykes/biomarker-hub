@@ -7,6 +7,7 @@ import { ModelSection } from "./settings/ModelSection";
 import { PrivacySection } from "./settings/PrivacySection";
 import { ExportSection } from "./settings/ExportSection";
 import { ApiKeysSection } from "./settings/ApiKeysSection";
+import { DoctorSharesSection } from "./settings/DoctorSharesSection";
 import { PasswordSection } from "./settings/PasswordSection";
 import { DeleteAccountSection } from "./settings/DeleteAccountSection";
 
@@ -34,6 +35,9 @@ export function SettingsTab() {
     handleExport,
     apiKeysList,
     setApiKeysList,
+    doctorSharesList,
+    setDoctorSharesList,
+    userName,
   } = useSettingsData();
 
   if (loading) {
@@ -79,6 +83,12 @@ export function SettingsTab() {
       <PrivacySection />
 
       <ExportSection exporting={exporting} onExport={handleExport} />
+
+      <DoctorSharesSection
+        sharesList={doctorSharesList}
+        setSharesList={setDoctorSharesList}
+        userName={userName}
+      />
 
       <ApiKeysSection apiKeysList={apiKeysList} setApiKeysList={setApiKeysList} />
 

@@ -220,7 +220,30 @@ export const oauthTokens = pgTable(
   (table) => [index("idx_oauth_tokens_hash").on(table.tokenHash)]
 );
 
-// 11. API keys — per-user keys for external API access (MCP server, etc.)
+// 11. Doctor shares — password-protected read-only access for doctors
+export const doctorShares = pgTable(
+  "doctor_shares",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    label: text("label").notNull(),
+    userName: text("user_name").notNull(),
+    token: text("token").notNull().unique(),
+    passwordHash: text("password_hash").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastAccessedAt: timestamp("last_accessed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("idx_doctor_shares_user").on(table.userId),
+    index("idx_doctor_shares_token").on(table.token),
+  ]
+);
+
+// 12. API keys — per-user keys for external API access (MCP server, etc.)
 export const apiKeys = pgTable(
   "api_keys",
   {

@@ -28,8 +28,8 @@ export function useSettingsData() {
     try {
       const [result, keys, shares] = await Promise.all([
         getSettingsSafe(),
-        listApiKeys(),
-        listDoctorShares(),
+        listApiKeys().catch(() => [] as ApiKeyInfo[]),
+        listDoctorShares().catch(() => [] as DoctorShareInfo[]),
       ]);
       if (result.error) {
         setLoadError(result.error);
@@ -50,9 +50,11 @@ export function useSettingsData() {
 
   useEffect(() => {
     loadSettings();
-    authClient.getSession().then(({ data }) => {
-      if (data?.user?.name) setUserName(data.user.name);
-    });
+    authClient.getSession()
+      .then(({ data }) => {
+        if (data?.user?.name) setUserName(data.user.name);
+      })
+      .catch(() => {});
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };

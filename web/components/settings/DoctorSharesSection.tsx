@@ -131,46 +131,72 @@ export function DoctorSharesSection({
 
       {sharesList.length > 0 ? (
         <div className="space-y-2">
-          {sharesList.map((s) => (
-            <div
-              key={s.id}
-              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)]"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
-                  {s.label}
-                </p>
-                <p className="text-xs text-[var(--color-text-tertiary)]">
-                  Created {new Date(s.createdAt).toLocaleDateString()}
-                  {s.expiresAt && (
-                    <>
-                      {" \u00b7 "}
-                      {new Date(s.expiresAt) < new Date()
-                        ? "Expired"
-                        : `Expires ${new Date(s.expiresAt).toLocaleDateString()}`}
-                    </>
-                  )}
-                  {s.lastAccessedAt && (
-                    <>
-                      {" \u00b7 "}
-                      Last accessed{" "}
-                      {new Date(s.lastAccessedAt).toLocaleDateString()}
-                    </>
-                  )}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  if (!confirm(`Revoke access for "${s.label}"?`)) return;
-                  handleRevoke(s.id);
-                }}
-                disabled={revokingId === s.id}
-                className="text-xs font-medium text-[var(--color-error)] hover:text-[var(--color-error)]/80 flex-shrink-0"
+          {sharesList.map((s) => {
+            const shareLink = `${typeof window !== "undefined" ? window.location.origin : ""}/share/${s.token}`;
+            return (
+              <div
+                key={s.id}
+                className="rounded-lg px-3 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] space-y-2"
               >
-                {revokingId === s.id ? "Revoking..." : "Revoke"}
-              </button>
-            </div>
-          ))}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                      {s.label}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-tertiary)]">
+                      Created {new Date(s.createdAt).toLocaleDateString()}
+                      {s.expiresAt && (
+                        <>
+                          {" \u00b7 "}
+                          {new Date(s.expiresAt) < new Date()
+                            ? "Expired"
+                            : `Expires ${new Date(s.expiresAt).toLocaleDateString()}`}
+                        </>
+                      )}
+                      {s.lastAccessedAt && (
+                        <>
+                          {" \u00b7 "}
+                          Last accessed{" "}
+                          {new Date(s.lastAccessedAt).toLocaleDateString()}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (!confirm(`Revoke access for "${s.label}"?`)) return;
+                      handleRevoke(s.id);
+                    }}
+                    disabled={revokingId === s.id}
+                    className="text-xs font-medium text-[var(--color-error)] hover:text-[var(--color-error)]/80 flex-shrink-0"
+                  >
+                    {revokingId === s.id ? "Revoking..." : "Revoke"}
+                  </button>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <code className="flex-1 px-2 py-1 rounded text-xs font-mono bg-[var(--color-surface-secondary)] text-[var(--color-text-tertiary)] truncate">
+                    {shareLink}
+                  </code>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(shareLink)}
+                    className="text-xs text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium flex-shrink-0"
+                  >
+                    Copy link
+                  </button>
+                  <span className="text-[var(--color-border)]">|</span>
+                  <code className="px-2 py-1 rounded text-xs font-mono bg-[var(--color-surface-secondary)] text-[var(--color-text-tertiary)]">
+                    {s.password}
+                  </code>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(s.password)}
+                    className="text-xs text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium flex-shrink-0"
+                  >
+                    Copy pw
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <p className="text-sm text-[var(--color-text-tertiary)]">

@@ -41,6 +41,7 @@ export async function createDoctorShare(
       label,
       userName,
       token,
+      password,
       passwordHash: hash,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
     })
@@ -53,6 +54,7 @@ export async function createDoctorShare(
       id: row.id,
       label: row.label,
       token: row.token,
+      password: row.password,
       expiresAt: row.expiresAt?.toISOString() ?? null,
       lastAccessedAt: null,
       createdAt: row.createdAt.toISOString(),
@@ -72,6 +74,7 @@ export async function listDoctorShares(): Promise<DoctorShareInfo[]> {
     id: r.id,
     label: r.label,
     token: r.token,
+    password: r.password,
     expiresAt: r.expiresAt?.toISOString() ?? null,
     lastAccessedAt: r.lastAccessedAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),

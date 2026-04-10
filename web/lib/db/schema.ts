@@ -229,6 +229,7 @@ export const doctorShares = pgTable(
     label: text("label").notNull(),
     userName: text("user_name").notNull(),
     token: text("token").notNull().unique(),
+    password: text("password").notNull(),
     passwordHash: text("password_hash").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     lastAccessedAt: timestamp("last_accessed_at", { withTimezone: true }),

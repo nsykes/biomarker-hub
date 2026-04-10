@@ -173,6 +173,7 @@ export interface DoctorShareInfo {
   id: string;
   label: string;
   token: string;
+  password: string;
   expiresAt: string | null;
   lastAccessedAt: string | null;
   createdAt: string;

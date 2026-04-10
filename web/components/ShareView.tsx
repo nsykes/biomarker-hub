@@ -18,6 +18,7 @@ import { PageSpinner } from "./Spinner";
 import { useCategoryCollapse } from "@/hooks/useCategoryCollapse";
 import { HistoryChart } from "./biomarker-detail/HistoryChart";
 import { HistoryTable } from "./biomarker-detail/HistoryTable";
+import { SharedPdfPreviewModal } from "./SharedPdfPreviewModal";
 
 interface ShareViewProps {
   token: string;
@@ -340,6 +341,7 @@ interface SharedDetailViewProps {
 function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewProps) {
   const [data, setData] = useState<BiomarkerDetailData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pdfPreview, setPdfPreview] = useState<{ reportId: string; page: number | null } | null>(null);
 
   const loadData = useCallback(async () => {
     const result = await getSharedBiomarkerDetail(token, password, slug);
@@ -436,7 +438,7 @@ function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewPro
               history={data.history}
               slug={data.slug}
               defaultUnit={data.defaultUnit}
-              onViewPdf={() => {}}
+              onViewPdf={(reportId, page) => setPdfPreview({ reportId, page })}
             />
           ) : (
             <p className="text-sm text-[var(--color-text-tertiary)]">
@@ -468,6 +470,16 @@ function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewPro
           </section>
         )}
       </div>
+
+      {pdfPreview && (
+        <SharedPdfPreviewModal
+          token={token}
+          password={password}
+          reportId={pdfPreview.reportId}
+          page={pdfPreview.page}
+          onClose={() => setPdfPreview(null)}
+        />
+      )}
     </div>
   );
 }

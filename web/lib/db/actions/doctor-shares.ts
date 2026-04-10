@@ -1,7 +1,6 @@
 "use server";
 
 import crypto from "crypto";
-import { neon } from "@neondatabase/serverless";
 import { db } from "../index";
 import { doctorShares } from "../schema";
 import { eq, and, isNull } from "drizzle-orm";
@@ -24,76 +23,50 @@ function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
-/** Create a new doctor share. Returns the token, password (shown once), + metadata.
- *  Returns { error } on DB failure so the real error reaches the client unsanitized. */
+/** Create a new doctor share. Returns the token, password (shown once), + metadata. */
 export async function createDoctorShare(
   label: string,
   userName: string,
   expiresAt: string | null
-): Promise<
-  { token: string; password: string; info: DoctorShareInfo } | { error: string }
-> {
-  try {
-    const userId = await requireUser();
+): Promise<{ token: string; password: string; info: DoctorShareInfo }> {
+  const userId = await requireUser();
+  const token = generateToken();
+  const password = generatePassword();
+  const hash = hashPassword(password);
 
-    // Diagnostic: check if table exists via raw SQL
-    const rawSql = neon(process.env.DATABASE_URL!);
-    try {
-      await rawSql`SELECT 1 FROM doctor_shares LIMIT 0`;
-    } catch (tableErr) {
-      return {
-        error: `TABLE_CHECK_FAILED: ${JSON.stringify(tableErr, Object.getOwnPropertyNames(tableErr as object))}`,
-      };
-    }
-
-    const token = generateToken();
-    const password = generatePassword();
-    const hash = hashPassword(password);
-
-    const [row] = await db
-      .insert(doctorShares)
-      .values({
-        userId,
-        label,
-        userName,
-        token,
-        passwordHash: hash,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-      })
-      .returning();
-
-    return {
+  const [row] = await db
+    .insert(doctorShares)
+    .values({
+      userId,
+      label,
+      userName,
       token,
-      password,
-      info: {
-        id: row.id,
-        label: row.label,
-        token: row.token,
-        expiresAt: row.expiresAt?.toISOString() ?? null,
-        lastAccessedAt: null,
-        createdAt: row.createdAt.toISOString(),
-      },
-    };
-  } catch (err) {
-    return {
-      error: `INSERT_FAILED: ${JSON.stringify(err, Object.getOwnPropertyNames(err as object))}`,
-    };
-  }
+      passwordHash: hash,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    })
+    .returning();
+
+  return {
+    token,
+    password,
+    info: {
+      id: row.id,
+      label: row.label,
+      token: row.token,
+      expiresAt: row.expiresAt?.toISOString() ?? null,
+      lastAccessedAt: null,
+      createdAt: row.createdAt.toISOString(),
+    },
+  };
 }
 
 /** List all active (non-revoked) doctor shares for the current user. */
 export async function listDoctorShares(): Promise<DoctorShareInfo[]> {
   const userId = await requireUser();
-  let rows;
-  try {
-    rows = await db
-      .select()
-      .from(doctorShares)
-      .where(and(eq(doctorShares.userId, userId), isNull(doctorShares.revokedAt)));
-  } catch (err) {
-    console.error("DS_LIST_ERR:", String(err));
-    throw err;
-  }
+  const rows = await db
+    .select()
+    .from(doctorShares)
+    .where(and(eq(doctorShares.userId, userId), isNull(doctorShares.revokedAt)));
 
   return rows.map((r) => ({
     id: r.id,

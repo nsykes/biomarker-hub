@@ -23,20 +23,22 @@ function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
-/** Create a new doctor share. Returns the token, password (shown once), + metadata. */
+/** Create a new doctor share. Returns the token, password (shown once), + metadata.
+ *  Returns { error } on DB failure so the real error reaches the client unsanitized. */
 export async function createDoctorShare(
   label: string,
   userName: string,
   expiresAt: string | null
-): Promise<{ token: string; password: string; info: DoctorShareInfo }> {
-  const userId = await requireUser();
-  const token = generateToken();
-  const password = generatePassword();
-  const hash = hashPassword(password);
-
-  let row;
+): Promise<
+  { token: string; password: string; info: DoctorShareInfo } | { error: string }
+> {
   try {
-    [row] = await db
+    const userId = await requireUser();
+    const token = generateToken();
+    const password = generatePassword();
+    const hash = hashPassword(password);
+
+    const [row] = await db
       .insert(doctorShares)
       .values({
         userId,
@@ -47,23 +49,22 @@ export async function createDoctorShare(
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       })
       .returning();
-  } catch (err) {
-    console.error("DS_CREATE_ERR:", String(err));
-    throw err;
-  }
 
-  return {
-    token,
-    password,
-    info: {
-      id: row.id,
-      label: row.label,
-      token: row.token,
-      expiresAt: row.expiresAt?.toISOString() ?? null,
-      lastAccessedAt: null,
-      createdAt: row.createdAt.toISOString(),
-    },
-  };
+    return {
+      token,
+      password,
+      info: {
+        id: row.id,
+        label: row.label,
+        token: row.token,
+        expiresAt: row.expiresAt?.toISOString() ?? null,
+        lastAccessedAt: null,
+        createdAt: row.createdAt.toISOString(),
+      },
+    };
+  } catch (err) {
+    return { error: String(err) };
+  }
 }
 
 /** List all active (non-revoked) doctor shares for the current user. */

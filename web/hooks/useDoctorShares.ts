@@ -23,11 +23,16 @@ export function useDoctorShares(
       setCreating(true);
       try {
         const expiresAt = getExpirationDate(expiration);
-        const { token, password, info } = await createDoctorShare(
+        const result = await createDoctorShare(
           newLabel.trim(),
           userName,
           expiresAt
         );
+        if ("error" in result) {
+          console.error("Doctor share DB error:", result.error);
+          return;
+        }
+        const { token, password, info } = result;
         const link = `${window.location.origin}/share/${token}`;
         setNewShare({ link, password });
         setSharesList((prev) => [info, ...prev]);

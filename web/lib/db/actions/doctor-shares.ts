@@ -1,6 +1,7 @@
 "use server";
 
 import crypto from "crypto";
+import { neon } from "@neondatabase/serverless";
 import { db } from "../index";
 import { doctorShares } from "../schema";
 import { eq, and, isNull } from "drizzle-orm";
@@ -34,6 +35,17 @@ export async function createDoctorShare(
 > {
   try {
     const userId = await requireUser();
+
+    // Diagnostic: check if table exists via raw SQL
+    const rawSql = neon(process.env.DATABASE_URL!);
+    try {
+      await rawSql`SELECT 1 FROM doctor_shares LIMIT 0`;
+    } catch (tableErr) {
+      return {
+        error: `TABLE_CHECK_FAILED: ${JSON.stringify(tableErr, Object.getOwnPropertyNames(tableErr as object))}`,
+      };
+    }
+
     const token = generateToken();
     const password = generatePassword();
     const hash = hashPassword(password);
@@ -63,7 +75,9 @@ export async function createDoctorShare(
       },
     };
   } catch (err) {
-    return { error: String(err) };
+    return {
+      error: `INSERT_FAILED: ${JSON.stringify(err, Object.getOwnPropertyNames(err as object))}`,
+    };
   }
 }
 

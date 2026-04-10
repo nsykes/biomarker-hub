@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { EXTRACTION_PROMPT } from "@/lib/prompt";
 import { ExtractionResult, ExtractionResponse } from "@/lib/types";
+import { extractionResultSchema } from "@/lib/extraction-schema";
 import { matchBiomarker } from "@/lib/biomarker-registry";
 import { computeDerivatives } from "@/lib/derivative-calc";
 import { PDFDocument } from "pdf-lib";
@@ -97,14 +98,17 @@ async function extractChunk(
 
   let extraction: ExtractionResult;
   try {
-    extraction = JSON.parse(data.choices[0].message.content);
-  } catch {
+    const raw = JSON.parse(data.choices[0].message.content);
+    extraction = extractionResultSchema.parse(raw) as ExtractionResult;
+  } catch (e) {
     const contentLength = data.choices[0].message.content?.length ?? 0;
     console.error(
-      "JSON parse failed — finish_reason:",
+      "JSON parse/validation failed — finish_reason:",
       finishReason,
       "content length:",
-      contentLength
+      contentLength,
+      "error:",
+      e instanceof Error ? e.message : e
     );
     throw new Error("Failed to parse LLM response as JSON");
   }

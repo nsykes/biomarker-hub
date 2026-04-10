@@ -124,19 +124,23 @@ export function useExtractionState(mode: Mode) {
             setSavedFileId(id);
           }
 
-          const uploadRes = await fetch(`/api/reports/${id}/pdf`, {
-            method: "PUT",
-            body: file,
-          });
-          if (!uploadRes.ok) {
-            const retry = await fetch(`/api/reports/${id}/pdf`, {
+          const doUpload = async () => {
+            const uploadRes = await fetch(`/api/reports/${id}/pdf`, {
               method: "PUT",
               body: file,
             });
-            if (!retry.ok) {
-              console.error("PDF upload failed after retry:", retry.status);
+            if (!uploadRes.ok) {
+              await new Promise((r) => setTimeout(r, 1000));
+              const retry = await fetch(`/api/reports/${id}/pdf`, {
+                method: "PUT",
+                body: file,
+              });
+              if (!retry.ok) {
+                console.error("PDF upload failed after retry:", retry.status);
+              }
             }
-          }
+          };
+          await doUpload();
         } catch (saveErr) {
           console.error("Failed to auto-save:", saveErr);
         }

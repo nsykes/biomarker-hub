@@ -35,7 +35,7 @@ function getBodyCompDerivative(groupSlug: string, regionSuffix: string): Derivat
   if (groupSlug === "fat-pct") {
     return {
       components: [`fat-tissue-mass-${r}`, `total-mass-${r}`],
-      compute: ([fat, total]: number[]) => (fat / total) * 100,
+      compute: ([fat, total]: number[]) => total === 0 ? null : (fat / total) * 100,
       precision: 1,
       formulaDisplay: "(Fat Tissue Mass ÷ Total Mass) × 100",
     };
@@ -43,7 +43,7 @@ function getBodyCompDerivative(groupSlug: string, regionSuffix: string): Derivat
   if (groupSlug === "lean-pct") {
     return {
       components: [`lean-tissue-mass-${r}`, `total-mass-${r}`],
-      compute: ([lean, total]: number[]) => (lean / total) * 100,
+      compute: ([lean, total]: number[]) => total === 0 ? null : (lean / total) * 100,
       precision: 1,
       formulaDisplay: "(Lean Tissue Mass ÷ Total Mass) × 100",
     };
@@ -282,7 +282,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: null,
     derivative: {
       components: ["total-cholesterol", "hdl-cholesterol"],
-      compute: ([tc, hdl]) => tc / hdl,
+      compute: ([tc, hdl]) => hdl === 0 ? null : tc / hdl,
       formulaDisplay: "Total Cholesterol ÷ HDL Cholesterol",
     },
   },
@@ -294,7 +294,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: null,
     derivative: {
       components: ["triglycerides", "hdl-cholesterol"],
-      compute: ([tg, hdl]) => tg / hdl,
+      compute: ([tg, hdl]) => hdl === 0 ? null : tg / hdl,
       formulaDisplay: "Triglycerides ÷ HDL Cholesterol",
     },
   },
@@ -399,7 +399,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: null,
     derivative: {
       components: ["blood-urea-nitrogen", "creatinine"],
-      compute: ([bun, cr]) => bun / cr,
+      compute: ([bun, cr]) => cr === 0 ? null : bun / cr,
       formulaDisplay: "BUN ÷ Creatinine",
     },
   },
@@ -484,7 +484,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: "blood",
     derivative: {
       components: ["albumin", "globulin"],
-      compute: ([alb, glob]) => alb / glob,
+      compute: ([alb, glob]) => glob === 0 ? null : alb / glob,
       formulaDisplay: "Albumin ÷ Globulin",
     },
   },
@@ -549,7 +549,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: null,
     derivative: {
       components: ["iron-total", "tibc"],
-      compute: ([fe, tibc]) => (fe / tibc) * 100,
+      compute: ([fe, tibc]) => tibc === 0 ? null : (fe / tibc) * 100,
       precision: 0,
       formulaDisplay: "(Iron ÷ TIBC) × 100",
     },
@@ -892,7 +892,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: null,
     derivative: {
       components: ["arachidonic-acid", "epa"],
-      compute: ([aa, epa]) => aa / epa,
+      compute: ([aa, epa]) => epa === 0 ? null : aa / epa,
       formulaDisplay: "Arachidonic Acid ÷ EPA",
     },
   },
@@ -904,7 +904,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: null,
     derivative: {
       components: ["omega-6-total", "omega-3-total"],
-      compute: ([o6, o3]) => o6 / o3,
+      compute: ([o6, o3]) => o3 === 0 ? null : o6 / o3,
       formulaDisplay: "Omega-6 Total ÷ Omega-3 Total",
     },
   },
@@ -932,7 +932,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: null,
     derivative: {
       components: ["psa-free", "psa-total"],
-      compute: ([free, total]) => (free / total) * 100,
+      compute: ([free, total]) => total === 0 ? null : (free / total) * 100,
       precision: 0,
       formulaDisplay: "(PSA Free ÷ PSA Total) × 100",
     },
@@ -1199,7 +1199,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: "body_composition",
     derivative: {
       components: ["fat-pct-android", "fat-pct-gynoid"],
-      compute: ([android, gynoid]) => android / gynoid,
+      compute: ([android, gynoid]) => gynoid === 0 ? null : android / gynoid,
       formulaDisplay: "Android Fat % ÷ Gynoid Fat %",
     },
   },
@@ -1244,7 +1244,7 @@ export const REGISTRY: CanonicalBiomarker[] = [
     region: null, regionGroupSlug: null, specimenType: null,
     derivative: {
       components: ["neutrophils-absolute", "lymphocytes-absolute"],
-      compute: ([neut, lymph]) => neut / lymph,
+      compute: ([neut, lymph]) => lymph === 0 ? null : neut / lymph,
       formulaDisplay: "Neutrophils ÷ Lymphocytes",
     },
   },

@@ -45,6 +45,9 @@ export function useSettingsData() {
 
   useEffect(() => {
     loadSettings();
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [loadSettings]);
 
   const saveApiKey = useCallback(async () => {

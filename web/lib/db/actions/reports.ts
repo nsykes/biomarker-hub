@@ -2,7 +2,7 @@
 
 import { db } from "../index";
 import { reports, biomarkerResults } from "../schema";
-import { eq, desc, inArray, isNull, and } from "drizzle-orm";
+import { eq, desc, inArray, and } from "drizzle-orm";
 import {
   Biomarker,
   ExtractionMeta,
@@ -103,12 +103,6 @@ function biomarkerToRow(reportId: string, b: Biomarker) {
 
 export async function getFiles(): Promise<StoredFile[]> {
   const userId = await requireUser();
-
-  // Auto-claim orphaned reports (user_id IS NULL) for the current user
-  await db
-    .update(reports)
-    .set({ userId })
-    .where(isNull(reports.userId));
 
   const reportRows = await db
     .select(reportColumns)

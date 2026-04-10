@@ -1,6 +1,6 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { DoctorShareInfo } from "@/lib/types";
 import { useDoctorShares } from "@/hooks/useDoctorShares";
 
@@ -39,6 +39,13 @@ export function DoctorSharesSection({
     copyLink,
     copyPassword,
   } = useDoctorShares(sharesList, setSharesList);
+
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const copyToClipboard = (text: string, fieldId: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldId);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   return (
     <section className="card p-5">
@@ -178,20 +185,20 @@ export function DoctorSharesSection({
                     {shareLink}
                   </code>
                   <button
-                    onClick={() => navigator.clipboard.writeText(shareLink)}
+                    onClick={() => copyToClipboard(shareLink, `link-${s.id}`)}
                     className="text-xs text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium flex-shrink-0"
                   >
-                    Copy link
+                    {copiedField === `link-${s.id}` ? "Copied!" : "Copy link"}
                   </button>
                   <span className="text-[var(--color-border)]">|</span>
                   <code className="px-2 py-1 rounded text-xs font-mono bg-[var(--color-surface-secondary)] text-[var(--color-text-tertiary)]">
                     {s.password}
                   </code>
                   <button
-                    onClick={() => navigator.clipboard.writeText(s.password)}
+                    onClick={() => copyToClipboard(s.password, `pw-${s.id}`)}
                     className="text-xs text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium flex-shrink-0"
                   >
-                    Copy pw
+                    {copiedField === `pw-${s.id}` ? "Copied!" : "Copy pw"}
                   </button>
                 </div>
               </div>

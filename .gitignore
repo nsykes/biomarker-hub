@@ -27,11 +27,17 @@ example-pdfs/
 # Audit artifacts
 docs/audit/
 
+# Private infrastructure context (contains project IDs, endpoints)
+docs/PROJECT_CONTEXT.md
+
 # Local Claude settings
 .claude/settings.local.json
 
 # One-off scripts
 web/scripts/
+
+# Sample PDFs (demo/screenshots only)
+sample-report.pdf
 
 # Misc
 *.pem

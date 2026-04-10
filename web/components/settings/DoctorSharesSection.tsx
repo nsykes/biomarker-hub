@@ -98,32 +98,34 @@ export function DoctorSharesSection({
           </button>
         </div>
       ) : (
-        <div className="flex gap-2 mb-4">
+        <div className="space-y-2 mb-4">
           <input
             type="text"
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
             placeholder="Doctor or clinic name"
-            className="input-base flex-1"
+            className="input-base w-full"
           />
-          <select
-            value={expiration}
-            onChange={(e) => setExpiration(e.target.value)}
-            className="input-base w-32"
-          >
-            {EXPIRATION_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => handleCreate(userName)}
-            disabled={creating || !newLabel.trim()}
-            className="btn-primary"
-          >
-            {creating ? "Creating..." : "Share"}
-          </button>
+          <div className="flex gap-2">
+            <select
+              value={expiration}
+              onChange={(e) => setExpiration(e.target.value)}
+              className="input-base flex-1"
+            >
+              {EXPIRATION_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => handleCreate(userName)}
+              disabled={creating || !newLabel.trim()}
+              className="btn-primary"
+            >
+              {creating ? "Creating..." : "Share"}
+            </button>
+          </div>
         </div>
       )}
 

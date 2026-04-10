@@ -48,7 +48,7 @@ export async function createDoctorShare(
       })
       .returning();
   } catch (err) {
-    console.error("createDoctorShare insert failed:", err);
+    console.error("DS_CREATE_ERR:", String(err));
     throw err;
   }
 
@@ -76,7 +76,7 @@ export async function listDoctorShares(): Promise<DoctorShareInfo[]> {
       .from(doctorShares)
       .where(and(eq(doctorShares.userId, userId), isNull(doctorShares.revokedAt)));
   } catch (err) {
-    console.error("listDoctorShares query failed:", err);
+    console.error("DS_LIST_ERR:", String(err));
     throw err;
   }
 

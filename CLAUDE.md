@@ -84,6 +84,7 @@ npx tsc --noEmit # type-check
 
 - OpenRouter for all LLM calls (ZDR enabled). Default model: Gemini 2.5 Pro.
 - Neon Postgres via Drizzle ORM (`DATABASE_URL` env var). All state is fully DB-backed.
+- **CRITICAL — Neon has TWO orgs.** The production database is in the **Vercel-managed org** (`org-tiny-hat-28280839`, project `jolly-sky-75880073` / `biomarker-hub`). Do NOT use `buki-project` (`org-bold-butterfly-00471472`) — it is not connected to the app. When running `drizzle-kit push` or any schema changes, use the connection string from the Vercel-managed project. See `docs/PROJECT_CONTEXT.md` for full details.
 - `rawName` = exact text from PDF, `metricName` = normalized clinical name.
 - PDF highlighting uses row-based spatial matching, not substring search.
 - MCP server returns raw factual data only — no sentiment/good/bad judgments. Flags (HIGH/LOW/NORMAL), direction (up/down/flat), goalDirection, and reference ranges are factual and stay. The consuming LLM interprets meaning.

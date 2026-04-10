@@ -34,17 +34,23 @@ export async function createDoctorShare(
   const password = generatePassword();
   const hash = hashPassword(password);
 
-  const [row] = await db
-    .insert(doctorShares)
-    .values({
-      userId,
-      label,
-      userName,
-      token,
-      passwordHash: hash,
-      expiresAt: expiresAt ? new Date(expiresAt) : null,
-    })
-    .returning();
+  let row;
+  try {
+    [row] = await db
+      .insert(doctorShares)
+      .values({
+        userId,
+        label,
+        userName,
+        token,
+        passwordHash: hash,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      })
+      .returning();
+  } catch (err) {
+    console.error("createDoctorShare insert failed:", err);
+    throw err;
+  }
 
   return {
     token,
@@ -63,10 +69,16 @@ export async function createDoctorShare(
 /** List all active (non-revoked) doctor shares for the current user. */
 export async function listDoctorShares(): Promise<DoctorShareInfo[]> {
   const userId = await requireUser();
-  const rows = await db
-    .select()
-    .from(doctorShares)
-    .where(and(eq(doctorShares.userId, userId), isNull(doctorShares.revokedAt)));
+  let rows;
+  try {
+    rows = await db
+      .select()
+      .from(doctorShares)
+      .where(and(eq(doctorShares.userId, userId), isNull(doctorShares.revokedAt)));
+  } catch (err) {
+    console.error("listDoctorShares query failed:", err);
+    throw err;
+  }
 
   return rows.map((r) => ({
     id: r.id,

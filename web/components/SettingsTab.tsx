@@ -80,10 +80,6 @@ export function SettingsTab() {
         onModelChange={handleModelChange}
       />
 
-      <PrivacySection />
-
-      <ExportSection exporting={exporting} onExport={handleExport} />
-
       <DoctorSharesSection
         sharesList={doctorSharesList}
         setSharesList={setDoctorSharesList}
@@ -93,6 +89,10 @@ export function SettingsTab() {
       <ApiKeysSection apiKeysList={apiKeysList} setApiKeysList={setApiKeysList} />
 
       <PasswordSection />
+
+      <ExportSection exporting={exporting} onExport={handleExport} />
+
+      <PrivacySection />
 
       <DeleteAccountSection />
     </div>

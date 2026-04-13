@@ -27,8 +27,6 @@ example-pdfs/
 # Audit artifacts
 docs/audit/
 
-# Private infrastructure context (contains project IDs, endpoints)
-docs/PROJECT_CONTEXT.md
 
 # Local Claude settings
 .claude/settings.local.json

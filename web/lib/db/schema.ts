@@ -8,6 +8,7 @@ import {
   integer,
   boolean,
   index,
+  uniqueIndex,
   jsonb,
   customType,
 } from "drizzle-orm/pg-core";
@@ -262,5 +263,27 @@ export const apiKeys = pgTable(
   (table) => [
     index("idx_api_keys_user").on(table.userId),
     index("idx_api_keys_hash").on(table.keyHash),
+  ]
+);
+
+// 13. Goals — per-user biomarker targets (flat, no parent entity)
+export const goals = pgTable(
+  "goals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    canonicalSlug: text("canonical_slug").notNull(),
+    targetValue: numeric("target_value").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_goals_user").on(table.userId),
+    uniqueIndex("idx_goals_user_slug").on(table.userId, table.canonicalSlug),
   ]
 );

@@ -127,19 +127,47 @@ function computeFlag(
 
 export function HistoryChart({
   data,
+  goalValue,
 }: {
   data: BiomarkerDetailData;
+  goalValue?: number;
 }) {
   const numericPoints = data.history.filter((h) => h.value !== null);
   const chartColors = useChartColors();
 
-  if (numericPoints.length === 0) {
+  if (numericPoints.length === 0 && goalValue === undefined) {
     return (
       <div className="flex items-center justify-center h-48 bg-[var(--color-surface-tertiary)] rounded-xl border border-dashed border-[var(--color-border)]">
         <p className="text-sm text-[var(--color-text-tertiary)]">
           No numeric values to chart
         </p>
       </div>
+    );
+  }
+
+  // Show minimal chart with just the goal line when no data points exist
+  if (numericPoints.length === 0 && goalValue !== undefined) {
+    const gPad = Math.max(Math.abs(goalValue) * 0.2, 1);
+    return (
+      <ResponsiveContainer width="100%" height={280}>
+        <LineChart data={[]} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
+          <YAxis
+            domain={[goalValue - gPad, goalValue + gPad]}
+            tick={{ fontSize: 12, fill: chartColors.tick }}
+            tickLine={false}
+            axisLine={{ stroke: chartColors.axis }}
+            width={60}
+          />
+          <ReferenceLine
+            y={goalValue}
+            stroke="#FF9500"
+            strokeDasharray="8 4"
+            strokeWidth={2}
+            label={{ value: `Goal: ${goalValue}`, position: "insideTopRight", fill: "#FF9500", fontSize: 11, fontWeight: 600 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
     );
   }
 
@@ -193,6 +221,12 @@ export function HistoryChart({
     }
   }
 
+  // Extend Y-axis to include goal value
+  if (goalValue !== undefined) {
+    yMin = Math.min(yMin, goalValue - padding);
+    yMax = Math.max(yMax, goalValue + padding);
+  }
+
   // Extend Y-axis to include lab-reported reference ranges (normalized)
   for (const { point } of convertedPoints) {
     if (point.referenceRangeLow !== null) {
@@ -243,6 +277,15 @@ export function HistoryChart({
         />
         <Tooltip content={<CustomTooltip />} />
         {data.referenceRange && buildRangeZones(data.referenceRange, yMin, yMax)}
+        {goalValue !== undefined && (
+          <ReferenceLine
+            y={goalValue}
+            stroke="#FF9500"
+            strokeDasharray="8 4"
+            strokeWidth={2}
+            label={{ value: `Goal: ${goalValue}`, position: "insideTopRight", fill: "#FF9500", fontSize: 11, fontWeight: 600 }}
+          />
+        )}
         <Line
           type="monotone"
           dataKey="value"

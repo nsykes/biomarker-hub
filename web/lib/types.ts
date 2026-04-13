@@ -82,7 +82,7 @@ export interface AppSettings {
   defaultModel: string;
 }
 
-export type TabId = "files" | "biomarkers" | "dashboards" | "settings";
+export type TabId = "files" | "biomarkers" | "dashboards" | "goals" | "settings";
 
 export interface ViewState {
   tab: TabId;
@@ -125,6 +125,18 @@ export interface DashboardDetail {
   id: string;
   name: string;
   items: DashboardItem[];
+}
+
+export interface GoalRow {
+  id: string;
+  canonicalSlug: string;
+  targetValue: number;
+  sortOrder: number;
+}
+
+export interface GoalCardEntry {
+  goal: GoalRow;
+  data: BiomarkerDetailData;
 }
 
 export interface BiomarkerHistoryPoint {

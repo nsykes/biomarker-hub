@@ -27,12 +27,14 @@ Next.js 16 app for biomarker extraction and health data tracking, with a remote 
 - `web/lib/biomarker-registry/` — Biomarker registry directory (types, data, matching logic). Barrel re-exports from `index.ts`.
 - `web/app/api/extract/route.ts` — OpenRouter API route
 - `web/lib/db/actions.ts` — Barrel re-export for all server actions (do not add code here — add to sub-modules)
-- `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers, account, dashboards, api-keys)
+- `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers, account, dashboards, goals, api-keys, doctor-shares)
 - `web/lib/db/queries/biomarkers.ts` — Shared query functions (accept userId param, used by both server actions and API routes)
 - `web/lib/db/result.ts` — `SafeResult<T>` and `ActionResult` types for error-as-data server actions
 - `web/lib/db/helpers.ts` — `firstOrNull`/`firstOrThrow` DB query helpers
 - `web/lib/api-auth.ts` — API key authentication helper for v1 API routes
 - `web/app/api/v1/` — External API routes (Bearer token auth via API keys) for MCP server and integrations
+- `web/app/share/[token]/page.tsx` — Public doctor share page (password-protected)
+- `web/app/api/share/[token]/pdf/[reportId]/route.ts` — PDF retrieval for authenticated share requests
 - `web/lib/mcp/auth.ts` — OAuth access token validation (SHA-256 hash lookup in oauthTokens table)
 - `web/lib/mcp/format.ts` — MCP response formatters (toCompact/toFull, works with web app types)
 - `web/lib/mcp/prompts.ts` — MCP prompt registration (shared by remote MCP route)
@@ -45,11 +47,17 @@ Next.js 16 app for biomarker extraction and health data tracking, with a remote 
 - `web/components/DatePickerInput.tsx` — Custom calendar popover date picker (no external deps), used in FilesTab filters
 - `web/components/PdfPreviewModal.tsx` — Modal for previewing source PDF from history table rows
 - `web/components/RangeConflictModal.tsx` — Modal for resolving reference range conflicts between PDF and stored ranges
+- `web/components/ShareView.tsx` — Password auth + shared biomarker browser for doctor share pages
+- `web/components/SharedPdfPreviewModal.tsx` — PDF preview modal for share pages
 - `web/components/DeleteAccountModal.tsx` — Confirmation modal for account deletion (type "DELETE" to confirm)
 - `web/components/ThemeToggle.tsx` — Light/dark/system theme toggle (cycles light→dark→system)
 - `web/components/UserMenu.tsx` — Header user dropdown (name, email, sign-out) using authClient.useSession()
 - `web/components/SettingsTab.tsx` — Settings page layout, composes section components from `settings/`
-- `web/components/settings/` — Settings section components (ApiKeySection, ModelSection, PrivacySection, ExportSection, ApiKeysSection, PasswordSection, DeleteAccountSection)
+- `web/components/settings/` — Settings section components (ApiKeySection, ModelSection, PrivacySection, ExportSection, ApiKeysSection, PasswordSection, DeleteAccountSection, DoctorSharesSection)
+- `web/components/GoalsTab.tsx` — Goals tab (flat grid of goal cards with create/edit)
+- `web/components/GoalChartCard.tsx` — Goal card with history chart + goal line + target delta
+- `web/components/goals/GoalGrid.tsx` — Drag-to-reorder grid for goal cards
+- `web/components/CreateGoalModal.tsx` — Modal for creating/editing goals (biomarker + target value)
 - `web/components/DashboardsTab.tsx` — Dashboard list view with create FAB
 - `web/components/DashboardView.tsx` — Single dashboard detail, composes subcomponents from `dashboard/`
 - `web/components/dashboard/` — Dashboard subcomponents (DashboardHeader, DashboardGrid, DashboardEmptyState)
@@ -61,6 +69,8 @@ Next.js 16 app for biomarker extraction and health data tracking, with a remote 
 - `web/lib/trend.ts` — Trend computation (latest value, direction, sentiment) for dashboard cards
 - `web/components/Spinner.tsx` — Shared loading spinner (Spinner, PageSpinner)
 - `web/app/api/account/export/route.ts` — CSV export endpoint (all biomarker data)
+- `web/lib/db/actions/goals.ts` — Goal CRUD + reorder + chart data server actions
+- `web/lib/db/actions/doctor-shares.ts` — Doctor share CRUD server actions
 - `web/lib/db/actions/account.ts` — Account deletion server action
 - `web/hooks/useNavigationState.ts` — Centralized browser history + navigation state hook (tabs, detail views, extraction)
 - `web/hooks/useChartColors.ts` — Reads computed CSS color vars for Recharts (re-runs on theme change)
@@ -71,6 +81,8 @@ Next.js 16 app for biomarker extraction and health data tracking, with a remote 
 - `web/hooks/usePasswordChange.ts` — Password change state (extracted from SettingsTab)
 - `web/hooks/useApiKeysManager.ts` — API key management state (extracted from SettingsTab)
 - `web/hooks/useDashboardData.ts` — Dashboard data/operations state (extracted from DashboardView)
+- `web/hooks/useGoalData.ts` — Goal data/operations state (load, create, update, delete, reorder)
+- `web/hooks/useDoctorShares.ts` — Doctor share management state (extracted from SettingsTab)
 
 ## Dev Commands
 
@@ -84,7 +96,7 @@ npx tsc --noEmit # type-check
 
 - OpenRouter for all LLM calls (ZDR enabled). Default model: Gemini 2.5 Pro.
 - Neon Postgres via Drizzle ORM (`DATABASE_URL` env var). All state is fully DB-backed.
-- **CRITICAL — Neon has TWO orgs.** The production database is in the **Vercel-managed org** (project name: `biomarker-hub`). Do NOT use `buki-project` — it is not connected to the app. When running `drizzle-kit push` or any schema changes, use the connection string from the Vercel-managed project. See `docs/PROJECT_CONTEXT.md` (gitignored) for org IDs, project IDs, and endpoints.
+- **CRITICAL — Neon has TWO orgs.** The production database is in the **Vercel-managed org** (project name: `biomarker-hub`). Do NOT use `buki-project` — it is not connected to the app. When running `drizzle-kit push` or any schema changes, use the connection string from the Vercel-managed project. Infrastructure IDs are stored in Claude memory.
 - `rawName` = exact text from PDF, `metricName` = normalized clinical name.
 - PDF highlighting uses row-based spatial matching, not substring search.
 - MCP server returns raw factual data only — no sentiment/good/bad judgments. Flags (HIGH/LOW/NORMAL), direction (up/down/flat), goalDirection, and reference ranges are factual and stay. The consuming LLM interprets meaning.
@@ -94,20 +106,7 @@ npx tsc --noEmit # type-check
 
 ## Keeping Docs Current
 
-**You must proactively update these files as the project evolves. This is not optional — treat it as part of every task.**
+- **`CLAUDE.md` (this file)** — Update when project structure changes (new dirs, key files added/removed), conventions change, or dev commands change. Never ask whether to update — just do it.
+- **Infrastructure IDs and project context** — Stored in Claude memory (not in repo). Update memory when infrastructure changes or new decisions are made.
 
-- **`docs/PROJECT_CONTEXT.md`** — Update whenever architecture changes, new design decisions are made, features are added/removed, infrastructure changes, or future plans shift. This file should always reflect the current state of the project. Assume this needs updating on nearly every session.
-- **`CLAUDE.md` (this file)** — Update when project structure changes (new dirs, key files added/removed), conventions change, or dev commands change.
-
-**NEVER store personal health information (PHI), real biomarker values, patient names, dates of birth, or any real health data in any file in this repo.** This includes `docs/PROJECT_CONTEXT.md`, `CLAUDE.md`, comments in code, test fixtures, etc. The repo is public on GitHub. Use fake/placeholder data for examples.
-
-**Rules:**
-- **NEVER ask whether to update — just do it.** No "Want me to capture this?" or "Should I update the docs?" — the answer is always yes.
-- If a conversation reveals new context, decisions, direction, or any factual discovery about infrastructure/services/config, capture it immediately in the relevant file before finishing.
-- This includes things like: project IDs, org IDs, service names, account details, API configurations, database locations, deployment URLs, env var names — anything that was hard to find or that you'd need to know again in a future session.
-- The goal is to never make the user repeat themselves. If they told you something or you discovered something, write it down.
-- When making design decisions or architectural changes, record the decision AND the reasoning in `docs/PROJECT_CONTEXT.md` as part of the same action — not as a follow-up.
-
-## Context
-
-See `docs/PROJECT_CONTEXT.md` for product vision, design decisions, and future plans.
+**NEVER store personal health information (PHI), real biomarker values, patient names, dates of birth, or any real health data in any file in this repo.** This includes `CLAUDE.md`, comments in code, test fixtures, etc. The repo is public on GitHub. Use fake/placeholder data for examples.

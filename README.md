@@ -44,6 +44,8 @@ Currently supports blood panels (Quest Diagnostics, Function Health, and similar
 - **Google OAuth** — Authentication via Neon Auth with per-user data isolation
 - **BYOK model** — Each user provides their own OpenRouter API key — no server-side key, no shared costs
 - **Remote MCP server** — Streamable HTTP Model Context Protocol server with OAuth 2.1, for connecting AI assistants (Claude.ai, Claude Desktop, any MCP client)
+- **Goals** — Set numeric targets for biomarkers, visualized as orange goal lines on history charts with progress tracking and drag-to-reorder
+- **Doctor sharing** — Password-protected read-only links for sharing biomarker data with healthcare providers, with expiration and revocation
 - **API keys** — Generate and manage API keys for external integrations (MCP server, custom tools)
 
 ## Tech Stack
@@ -66,7 +68,7 @@ Currently supports blood panels (Quest Diagnostics, Function Health, and similar
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - A [Neon](https://neon.tech/) Postgres database with [Neon Auth](https://neon.tech/docs/guides/neon-auth) enabled (Google OAuth provider configured)
 - An [OpenRouter](https://openrouter.ai/) API key (each user enters their own in the app's Settings)
 
@@ -107,17 +109,22 @@ biomarker-hub/
 │   │   │   ├── account/export/   # CSV export endpoint
 │   │   │   ├── v1/               # External API (Bearer token auth)
 │   │   │   ├── mcp/[transport]/ # Remote MCP server (Streamable HTTP)
-│   │   │   └── oauth/            # OAuth 2.1 (register, authorize, token)
+│   │   │   ├── oauth/            # OAuth 2.1 (register, authorize, token)
+│   │   │   └── share/[token]/pdf/ # PDF retrieval for share links
 │   │   ├── auth/                 # Sign-in / sign-up pages
-│   │   └── biomarkers/[slug]/    # Biomarker detail pages
+│   │   ├── biomarkers/[slug]/    # Biomarker detail pages
+│   │   └── share/[token]/        # Doctor share public page
 │   ├── components/
 │   │   ├── biomarker-detail/     # Chart, table, range subcomponents
 │   │   ├── dashboard/            # Dashboard subcomponents (header, grid, empty state)
-│   │   ├── settings/             # Settings section components (7 sections)
+│   │   ├── goals/                # Goal subcomponents (GoalGrid)
+│   │   ├── settings/             # Settings section components (8 sections)
 │   │   ├── AppShell.tsx          # App layout with tabs
 │   │   ├── ExtractionView.tsx    # Main extraction UI
 │   │   ├── PdfViewer.tsx         # PDF renderer with highlighting
 │   │   ├── DashboardView.tsx     # Dashboard detail (composes dashboard/)
+│   │   ├── ShareView.tsx         # Password auth + shared biomarker browser
+│   │   ├── SharedPdfPreviewModal.tsx # PDF preview for share pages
 │   │   └── SettingsTab.tsx       # Settings layout (composes settings/)
 │   ├── hooks/
 │   │   ├── useNavigationState.ts # Browser history + navigation state
@@ -128,10 +135,12 @@ biomarker-hub/
 │   │   ├── useApiKeysManager.ts  # API key management
 │   │   ├── useUndoDelete.ts      # Undo-delete pattern with toast
 │   │   ├── useChartColors.ts     # CSS color vars for Recharts
+│   │   ├── useGoalData.ts        # Goal data + operations
+│   │   ├── useDoctorShares.ts    # Doctor share management state
 │   │   └── useCategoryCollapse.ts # Collapsible category sections
 │   └── lib/
 │       ├── db/
-│       │   ├── schema.ts         # Drizzle schema (8 tables)
+│       │   ├── schema.ts         # Drizzle schema (13 tables)
 │       │   ├── queries/          # Shared query functions
 │       │   ├── actions/          # Server action modules
 │       │   ├── result.ts         # SafeResult/ActionResult types
@@ -149,8 +158,7 @@ biomarker-hub/
 │       ├── trend.ts              # Trend computation for dashboards
 │       ├── types.ts              # Shared TypeScript interfaces
 │       └── constants.ts          # Shared magic values
-└── docs/
-    └── PROJECT_CONTEXT.md        # Architecture & design decisions
+└── CLAUDE.md                     # Dev reference (conventions, key files)
 ```
 
 ## How It Works
@@ -176,6 +184,11 @@ biomarker-hub/
 | `settings` | Per-user settings (OpenRouter API key, default model) |
 | `dashboards` | User-created named collections of biomarker charts |
 | `dashboard_items` | Biomarker membership and ordering within dashboards |
+| `oauth_clients` | Dynamically registered MCP OAuth clients |
+| `oauth_codes` | Short-lived single-use authorization codes |
+| `oauth_tokens` | Access tokens issued after OAuth code exchange |
+| `goals` | Per-user biomarker targets with numeric values and sort order |
+| `doctor_shares` | Password-protected read-only share links for doctors |
 | `api_keys` | Per-user API keys for external access (MCP server, integrations) |
 
 ## Deployment

@@ -10,6 +10,7 @@ import { UserMenu } from "./UserMenu";
 import { FilesTab } from "./FilesTab";
 import { BiomarkersTab } from "./BiomarkersTab";
 import { DashboardsTab } from "./DashboardsTab";
+import { GoalsTab } from "./GoalsTab";
 import { SettingsTab } from "./SettingsTab";
 import { ExtractionView } from "./ExtractionView";
 
@@ -17,6 +18,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "files", label: "Files" },
   { id: "biomarkers", label: "Biomarkers" },
   { id: "dashboards", label: "Dashboards" },
+  { id: "goals", label: "Goals" },
   { id: "settings", label: "Settings" },
 ];
 
@@ -102,6 +104,11 @@ export function AppShell() {
               onBack={goBack}
               onNavigateToBiomarker={nav.openBiomarker}
             />
+          )}
+        </div>
+        <div className={state.activeTab === "goals" ? "h-full" : "hidden"}>
+          {state.mountedTabs.has("goals") && (
+            <GoalsTab onNavigateToBiomarker={nav.openBiomarker} />
           )}
         </div>
         <div className={state.activeTab === "settings" ? "h-full" : "hidden"}>

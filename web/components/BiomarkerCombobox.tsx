@@ -8,9 +8,11 @@ interface BiomarkerComboboxProps {
   onClose: () => void;
   /** Render dropdown inline (in-flow) instead of absolute-positioned overlay */
   inline?: boolean;
+  /** Optional filter to restrict which biomarkers appear */
+  filter?: (entry: CanonicalBiomarker) => boolean;
 }
 
-export function BiomarkerCombobox({ onSelect, onClose, inline }: BiomarkerComboboxProps) {
+export function BiomarkerCombobox({ onSelect, onClose, inline, filter }: BiomarkerComboboxProps) {
   const [query, setQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,15 +39,16 @@ export function BiomarkerCombobox({ onSelect, onClose, inline }: BiomarkerCombob
   }, [onClose]);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return REGISTRY.slice(0, 30);
+    const base = filter ? REGISTRY.filter(filter) : REGISTRY;
+    if (!query.trim()) return base.slice(0, 30);
     const q = query.toLowerCase();
-    return REGISTRY.filter((entry) => {
+    return base.filter((entry) => {
       if (entry.displayName.toLowerCase().includes(q)) return true;
       if (entry.fullName.toLowerCase().includes(q)) return true;
       if (entry.category.toLowerCase().includes(q)) return true;
       return entry.aliases.some((a) => a.toLowerCase().includes(q));
     }).slice(0, 30);
-  }, [query]);
+  }, [query, filter]);
 
   return (
     <div ref={containerRef} className={`${inline ? "" : "relative "}w-full max-w-md`}>

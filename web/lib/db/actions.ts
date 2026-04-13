@@ -46,6 +46,15 @@ export {
 } from "./actions/doctor-shares";
 
 export {
+  getGoals,
+  createGoal,
+  updateGoalTarget,
+  deleteGoal,
+  reorderGoals,
+  getGoalChartData,
+} from "./actions/goals";
+
+export {
   getDashboards,
   getDashboard,
   createDashboard,

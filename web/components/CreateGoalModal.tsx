@@ -5,6 +5,7 @@ import { BiomarkerCombobox } from "./BiomarkerCombobox";
 import { CanonicalBiomarker } from "@/lib/biomarker-registry";
 import { Spinner } from "./Spinner";
 import { GoalRow } from "@/lib/types";
+import { MobileSheet } from "./MobileSheet";
 
 interface CreateGoalModalProps {
   onSubmit: (canonicalSlug: string, targetValue: number) => Promise<void>;
@@ -69,11 +70,8 @@ export function CreateGoalModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onKeyDown={(e) => e.key === "Escape" && onClose()}
-    >
-      <div className="bg-[var(--color-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+    <MobileSheet onClose={onClose} desktopMaxWidth="max-w-md" closeOnOverlayClick={false}>
+      <div className="p-5 md:p-6 overflow-auto">
         <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">
           {isEdit ? "Edit Goal" : "New Goal"}
         </h2>
@@ -183,6 +181,6 @@ export function CreateGoalModal({
           </button>
         </div>
       </div>
-    </div>
+    </MobileSheet>
   );
 }

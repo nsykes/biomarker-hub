@@ -77,7 +77,7 @@ export function DashboardView({ dashboardId, onBack, onNavigateToBiomarker }: Da
 
       {/* Combobox overlay */}
       {showCombobox && (
-        <div className="px-5 py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
+        <div className="px-3 md:px-5 py-2 md:py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
           <BiomarkerCombobox
             onSelect={onAddBiomarker}
             onClose={() => setShowCombobox(false)}
@@ -96,7 +96,7 @@ export function DashboardView({ dashboardId, onBack, onNavigateToBiomarker }: Da
       )}
 
       {/* Chart grid */}
-      <div className="p-4">
+      <div className="p-3 md:p-4">
         {items.length === 0 ? (
           <DashboardEmptyState onAddClick={() => setShowCombobox(true)} />
         ) : (

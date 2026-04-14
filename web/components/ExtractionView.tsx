@@ -169,7 +169,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       )}
 
       {/* Header — frosted glass */}
-      <header className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
+      <header className="flex items-center gap-2 md:gap-3 flex-wrap px-3 md:px-4 py-2 md:py-2.5 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
         <button
           onClick={async () => { await flushPendingDelete(); onBack(); }}
           className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
@@ -180,7 +180,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
           Back
         </button>
         <div className="w-px h-5 bg-[var(--color-border)]" />
-        <h1 className="text-lg font-bold text-[var(--color-text-primary)]">
+        <h1 className="text-base md:text-lg font-bold text-[var(--color-text-primary)] truncate max-w-[50vw] md:max-w-none">
           {mode.type === "view"
             ? mode.file.collectionDate
               ? formatDate(mode.file.collectionDate)
@@ -188,7 +188,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
             : "New Extraction"}
         </h1>
         {mode.type === "view" && mode.file.collectionDate && (mode.file.labName || mode.file.source) && (
-          <span className="text-sm text-[var(--color-text-tertiary)]">
+          <span className="hidden sm:inline text-sm text-[var(--color-text-tertiary)]">
             {[mode.file.labName, mode.file.source].filter(Boolean).join(" · ")}
           </span>
         )}
@@ -224,7 +224,7 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
             </div>
           </div>
         ) : (
-          <SplitPane left={leftPane} right={rightPane} />
+          <SplitPane left={leftPane} right={rightPane} leftLabel="PDF" rightLabel="Results" />
         )}
       </main>
 

@@ -117,7 +117,7 @@ export function DashboardsTab({
   return (
     <div className="relative h-full">
       <div className="overflow-auto h-full">
-        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="p-3 md:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {dashboards.map((d) => (
             <button
               key={d.id}
@@ -156,7 +156,7 @@ export function DashboardsTab({
       {/* FAB button */}
       <button
         onClick={() => setShowCreate(true)}
-        className="absolute bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
+        className="absolute bottom-above-tab-bar right-4 md:right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
         style={{
           background: "linear-gradient(135deg, #0A84FF, #0070E0)",
         }}

@@ -224,6 +224,7 @@ export function MultiMetricChart({
             content={
               <MultiMetricTooltip dataList={dataList} unitMap={unitMap} />
             }
+            wrapperStyle={{ maxWidth: "calc(100vw - 32px)" }}
           />
           {dataList.map((d, i) => (
             <Line

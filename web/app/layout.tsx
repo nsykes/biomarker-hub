@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/AuthProvider";
@@ -20,6 +20,12 @@ export const metadata: Metadata = {
   icons: { icon: "/icon.svg" },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen overflow-hidden flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen h-[100dvh] overflow-hidden flex flex-col`}
       >
         <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
           <AuthProvider>{children}</AuthProvider>

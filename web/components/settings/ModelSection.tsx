@@ -9,7 +9,7 @@ interface ModelSectionProps {
 
 export function ModelSection({ defaultModel, saving, onModelChange }: ModelSectionProps) {
   return (
-    <section className="card p-5">
+    <section className="card p-4 md:p-5">
       <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
         Default Model
       </h2>

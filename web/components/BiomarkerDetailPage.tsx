@@ -21,11 +21,11 @@ function DetailContent({ data }: { data: BiomarkerDetailData }) {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-5 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-4 md:px-5 md:py-6 space-y-4 md:space-y-6">
         {/* Title section */}
         <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+          <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
               {data.displayName}
             </h1>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] font-medium">
@@ -53,7 +53,7 @@ function DetailContent({ data }: { data: BiomarkerDetailData }) {
         </div>
         {/* Summary */}
         {data.summary && (
-          <section className="card p-5">
+          <section className="card p-4 md:p-5">
             <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
               {data.summary}
             </p>
@@ -61,7 +61,7 @@ function DetailContent({ data }: { data: BiomarkerDetailData }) {
         )}
 
         {/* Chart section */}
-        <section className="card p-5">
+        <section className="card p-4 md:p-5">
           <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
             History
           </h2>
@@ -69,7 +69,7 @@ function DetailContent({ data }: { data: BiomarkerDetailData }) {
         </section>
 
         {/* History table */}
-        <section className="card p-5">
+        <section className="card p-4 md:p-5">
           <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
             All Results ({data.history.length})
           </h2>
@@ -88,7 +88,7 @@ function DetailContent({ data }: { data: BiomarkerDetailData }) {
         </section>
 
         {/* Reference range section */}
-        <section className="card p-5">
+        <section className="card p-4 md:p-5">
           <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
             Reference Range
           </h2>

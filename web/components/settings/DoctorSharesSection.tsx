@@ -48,7 +48,7 @@ export function DoctorSharesSection({
   };
 
   return (
-    <section className="card p-5">
+    <section className="card p-4 md:p-5">
       <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">
         Doctor Access
       </h2>

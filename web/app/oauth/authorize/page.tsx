@@ -84,7 +84,7 @@ function AuthorizeForm() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[var(--color-surface-secondary)]">
+      <div className="flex items-center justify-center min-h-screen min-h-[100dvh] safe-pt safe-pb bg-[var(--color-surface-secondary)]">
         <p className="text-[var(--color-text-secondary)]">Loading...</p>
       </div>
     );
@@ -92,7 +92,7 @@ function AuthorizeForm() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[var(--color-surface-secondary)]">
+      <div className="flex items-center justify-center min-h-screen min-h-[100dvh] safe-pt safe-pb bg-[var(--color-surface-secondary)]">
         <div className="bg-[var(--color-surface)] rounded-xl p-8 max-w-md shadow-sm border border-[var(--color-border)]">
           <h1 className="text-lg font-semibold mb-2">Authorization Error</h1>
           <p className="text-[var(--color-text-secondary)]">{error}</p>
@@ -102,7 +102,7 @@ function AuthorizeForm() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[var(--color-surface-secondary)]">
+    <div className="flex items-center justify-center min-h-screen min-h-[100dvh] safe-pt safe-pb bg-[var(--color-surface-secondary)]">
       <div className="bg-[var(--color-surface)] rounded-xl p-8 max-w-md w-full shadow-sm border border-[var(--color-border)]">
         <h1 className="text-lg font-semibold mb-4">Authorize Access</h1>
         <p className="text-[var(--color-text-secondary)] mb-6">
@@ -133,7 +133,7 @@ export default function AuthorizePage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-screen bg-[var(--color-surface-secondary)]">
+        <div className="flex items-center justify-center min-h-screen min-h-[100dvh] safe-pt safe-pb bg-[var(--color-surface-secondary)]">
           <p className="text-[var(--color-text-secondary)]">Loading...</p>
         </div>
       }

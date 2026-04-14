@@ -70,7 +70,7 @@ export function CreateGoalModal({
   };
 
   return (
-    <MobileSheet onClose={onClose} desktopMaxWidth="max-w-md">
+    <MobileSheet onClose={onClose} desktopMaxWidth="max-w-md" closeOnOverlayClick={false}>
       <div className="p-5 md:p-6 overflow-auto">
         <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">
           {isEdit ? "Edit Goal" : "New Goal"}

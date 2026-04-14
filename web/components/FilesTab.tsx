@@ -292,31 +292,19 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
             {filteredFiles.map((f) => {
               const badge = REPORT_TYPE_LABELS[f.reportType ?? "other"] ?? REPORT_TYPE_LABELS.other;
               return (
-                <li key={f.id}>
+                <li key={f.id} className="relative">
                   <button
                     type="button"
                     onClick={() => onViewFile(f)}
-                    className="w-full text-left card px-4 py-3 active:bg-[var(--color-primary-light)] transition-colors"
+                    className="w-full text-left card px-4 py-3 pr-12 active:bg-[var(--color-primary-light)] transition-colors"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
-                          {f.collectionDate ? formatDate(f.collectionDate) : "No date"}
-                        </span>
-                        <span className={`flex-shrink-0 inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
-                          {badge.label}
-                        </span>
-                      </div>
-                      <button
-                        onClick={(e) => handleDelete(e, f.id)}
-                        disabled={deletingId === f.id}
-                        className="p-1.5 -mr-1 text-[var(--color-text-tertiary)] rounded-lg transition-colors disabled:opacity-50"
-                        aria-label="Delete file"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                        </svg>
-                      </button>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
+                        {f.collectionDate ? formatDate(f.collectionDate) : "No date"}
+                      </span>
+                      <span className={`flex-shrink-0 inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
+                        {badge.label}
+                      </span>
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-2 text-xs text-[var(--color-text-secondary)]">
                       <span className="truncate">
@@ -326,6 +314,16 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
                         {f.biomarkers.length} biomarkers
                       </span>
                     </div>
+                  </button>
+                  <button
+                    onClick={(e) => handleDelete(e, f.id)}
+                    disabled={deletingId === f.id}
+                    className="absolute top-2 right-2 p-1.5 text-[var(--color-text-tertiary)] rounded-lg transition-colors disabled:opacity-50 active:bg-[var(--color-error-bg)] active:text-[var(--color-error)]"
+                    aria-label="Delete file"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
                   </button>
                 </li>
               );
@@ -337,7 +335,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
       {/* FAB button — sits above bottom tab bar on mobile */}
       <button
         onClick={onNewExtraction}
-        className="absolute bottom-20 md:bottom-6 right-4 md:right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
+        className="absolute bottom-above-tab-bar right-4 md:right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
         style={{ background: 'linear-gradient(135deg, #0A84FF, #0070E0)' }}
         title="New extraction"
       >

@@ -123,7 +123,7 @@ export function CreateDashboardModal({
   };
 
   return (
-    <MobileSheet onClose={onClose} desktopMaxWidth="max-w-lg">
+    <MobileSheet onClose={onClose} desktopMaxWidth="max-w-lg" closeOnOverlayClick={false}>
         {/* Header */}
         <div className="px-5 py-4 border-b border-[var(--color-border-light)] flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">

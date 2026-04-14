@@ -64,8 +64,7 @@ export function SharedPdfPreviewModal({
     <MobileSheet
       onClose={onClose}
       desktopMaxWidth="max-w-4xl"
-      desktopHeight="md:h-[85vh]"
-      className="h-full md:h-auto"
+      className="h-[95dvh] md:h-[85vh]"
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-light)] flex-shrink-0">
         <h2 className="text-sm font-medium text-[var(--color-text-secondary)]">

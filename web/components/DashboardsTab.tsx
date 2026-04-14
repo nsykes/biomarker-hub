@@ -156,7 +156,7 @@ export function DashboardsTab({
       {/* FAB button */}
       <button
         onClick={() => setShowCreate(true)}
-        className="absolute bottom-20 md:bottom-6 right-4 md:right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
+        className="absolute bottom-above-tab-bar right-4 md:right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
         style={{
           background: "linear-gradient(135deg, #0A84FF, #0070E0)",
         }}

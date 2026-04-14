@@ -6,12 +6,13 @@ interface MobileSheetProps {
   onClose: () => void;
   /** Desktop dialog sizing — e.g. "max-w-md", "max-w-lg", "max-w-4xl" */
   desktopMaxWidth?: string;
-  /** Desktop height override — e.g. "h-[85vh]" for full-height viewers */
-  desktopHeight?: string;
   /** Set false to disable the backdrop-click / Escape close behavior */
   closeOnOverlayClick?: boolean;
   children: React.ReactNode;
-  /** Extra class merged onto the mobile sheet shell (and desktop dialog). */
+  /**
+   * Extra class merged onto the mobile sheet shell. Use responsive prefixes
+   * (`h-[95dvh] md:h-[85vh]`) when you need different heights per breakpoint.
+   */
   className?: string;
 }
 
@@ -25,7 +26,6 @@ interface MobileSheetProps {
 export function MobileSheet({
   onClose,
   desktopMaxWidth = "max-w-md",
-  desktopHeight,
   closeOnOverlayClick = true,
   children,
   className = "",
@@ -54,7 +54,6 @@ export function MobileSheet({
           flex flex-col
           safe-pb md:pb-0
           ${desktopMaxWidth}
-          ${desktopHeight ?? ""}
           ${className}
         `}
       >

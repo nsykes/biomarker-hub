@@ -176,6 +176,25 @@ a[href] {
   padding-top: env(safe-area-inset-top);
 }
 
+/* Bottom-tab-bar reservation: content = ~56px + safe-area inset */
+.pb-tab-bar {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 3.5rem);
+}
+@media (min-width: 768px) {
+  .pb-tab-bar {
+    padding-bottom: 0;
+  }
+}
+/* FAB bottom offset: clears the tab bar + 16px gap on mobile */
+.bottom-above-tab-bar {
+  bottom: calc(env(safe-area-inset-bottom) + 5rem);
+}
+@media (min-width: 768px) {
+  .bottom-above-tab-bar {
+    bottom: 1.5rem;
+  }
+}
+
 /* ——— Base utility classes ——— */
 
 .card {

@@ -53,7 +53,7 @@ export function ShareView({ token, userName }: ShareViewProps) {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-surface-secondary)]">
+      <div className="min-h-screen min-h-[100dvh] flex items-center justify-center bg-[var(--color-surface-secondary)]">
         <div className="w-full max-w-sm mx-auto p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
@@ -185,7 +185,7 @@ function SharedBiomarkerBrowser({
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface-secondary)]">
+    <div className="min-h-screen min-h-[100dvh] bg-[var(--color-surface-secondary)]">
       {/* Header */}
       <div className="bg-[var(--color-surface)] border-b border-[var(--color-border-light)] px-4 md:px-5 py-3 md:py-4">
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">
@@ -363,7 +363,7 @@ function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewPro
   const derivativeInfo = getDerivativeInfo(data.slug);
 
   return (
-    <div className="min-h-screen bg-[var(--color-surface-secondary)]">
+    <div className="min-h-screen min-h-[100dvh] bg-[var(--color-surface-secondary)]">
       {/* Sub-header */}
       <div className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 md:py-4 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-10">
         <button

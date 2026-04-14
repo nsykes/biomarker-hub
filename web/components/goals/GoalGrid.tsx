@@ -49,7 +49,7 @@ export function GoalGrid({
         items={cardEntries.map((e) => e.goal.id)}
         strategy={rectSortingStrategy}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           {cardEntries.map((entry) => (
             <GoalChartCard
               key={entry.goal.id}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ReferenceRangeConflict } from "@/lib/types";
 import { updateReferenceRange } from "@/lib/db/actions";
+import { MobileSheet } from "./MobileSheet";
 
 interface RangeConflictModalProps {
   conflicts: ReferenceRangeConflict[];
@@ -39,8 +40,7 @@ export function RangeConflictModal({ conflicts, onClose }: RangeConflictModalPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="bg-[var(--color-surface)] rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col" style={{ boxShadow: 'var(--color-modal-shadow)' }}>
+    <MobileSheet onClose={onClose} desktopMaxWidth="max-w-lg">
         <div className="px-5 py-4 border-b border-[var(--color-border-light)] flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Reference Range Conflicts</h2>
@@ -106,7 +106,6 @@ export function RangeConflictModal({ conflicts, onClose }: RangeConflictModalPro
             {saving ? "Saving..." : "Confirm"}
           </button>
         </div>
-      </div>
-    </div>
+    </MobileSheet>
   );
 }

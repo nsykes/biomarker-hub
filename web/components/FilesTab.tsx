@@ -135,7 +135,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
     <div className="relative h-full">
       <div className="overflow-auto h-full">
         {/* Filter bar */}
-        <div className="flex flex-wrap gap-4 items-end px-5 py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-20">
+        <div className="flex flex-wrap gap-2 md:gap-4 items-end px-3 md:px-5 py-2 md:py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-20">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Type</label>
             <select
@@ -154,7 +154,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
             <select
               value={labFilter}
               onChange={(e) => setLabFilter(e.target.value)}
-              className="input-base !py-1.5 !px-2 !rounded-lg !w-auto"
+              className="input-base !py-1.5 !px-2 !rounded-lg !w-auto max-w-[9rem]"
             >
               <option value="all">All</option>
               {uniqueLabs.map((lab) => (
@@ -167,7 +167,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
             <select
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
-              className="input-base !py-1.5 !px-2 !rounded-lg !w-auto"
+              className="input-base !py-1.5 !px-2 !rounded-lg !w-auto max-w-[9rem]"
             >
               <option value="all">All</option>
               {uniqueSources.map((s) => (
@@ -175,9 +175,9 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
               ))}
             </select>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 w-full sm:w-auto">
             <label className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] font-medium">Collection Date</label>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <DatePickerInput
                 value={collectionDateFrom}
                 onChange={setCollectionDateFrom}
@@ -203,14 +203,15 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
           )}
         </div>
         {filtersActive && (
-          <div className="px-5 py-1.5 text-xs text-[var(--color-text-tertiary)] bg-[var(--color-surface)] border-b border-[var(--color-border-light)]">
+          <div className="px-4 md:px-5 py-1.5 text-xs text-[var(--color-text-tertiary)] bg-[var(--color-surface)] border-b border-[var(--color-border-light)]">
             Showing {filteredFiles.length} of {files.length} files
           </div>
         )}
 
-        {/* Table card */}
-        <div className="m-4">
-          <div className="card overflow-hidden">
+        {/* Desktop: table. Mobile: card list */}
+        <div className="m-3 md:m-4">
+          {/* Desktop table */}
+          <div className="hidden md:block card overflow-hidden">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-xs text-[var(--color-text-tertiary)] uppercase tracking-wider bg-[var(--color-surface-tertiary)]">
@@ -280,13 +281,63 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile card list */}
+          <ul className="md:hidden flex flex-col gap-2">
+            {filteredFiles.length === 0 && (
+              <li className="text-center text-sm text-[var(--color-text-tertiary)] py-10">
+                No files match filters
+              </li>
+            )}
+            {filteredFiles.map((f) => {
+              const badge = REPORT_TYPE_LABELS[f.reportType ?? "other"] ?? REPORT_TYPE_LABELS.other;
+              return (
+                <li key={f.id}>
+                  <button
+                    type="button"
+                    onClick={() => onViewFile(f)}
+                    className="w-full text-left card px-4 py-3 active:bg-[var(--color-primary-light)] transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
+                          {f.collectionDate ? formatDate(f.collectionDate) : "No date"}
+                        </span>
+                        <span className={`flex-shrink-0 inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
+                          {badge.label}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => handleDelete(e, f.id)}
+                        disabled={deletingId === f.id}
+                        className="p-1.5 -mr-1 text-[var(--color-text-tertiary)] rounded-lg transition-colors disabled:opacity-50"
+                        aria-label="Delete file"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2 text-xs text-[var(--color-text-secondary)]">
+                      <span className="truncate">
+                        {f.labName || "\u2014"}{f.source ? ` · ${f.source}` : ""}
+                      </span>
+                      <span className="flex-shrink-0 text-[var(--color-text-tertiary)]">
+                        {f.biomarkers.length} biomarkers
+                      </span>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </div>
 
-      {/* FAB button */}
+      {/* FAB button — sits above bottom tab bar on mobile */}
       <button
         onClick={onNewExtraction}
-        className="absolute bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
+        className="absolute bottom-20 md:bottom-6 right-4 md:right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
         style={{ background: 'linear-gradient(135deg, #0A84FF, #0070E0)' }}
         title="New extraction"
       >

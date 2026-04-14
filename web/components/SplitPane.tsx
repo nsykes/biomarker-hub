@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 interface SplitPaneProps {
   left: React.ReactNode;
   right: React.ReactNode;
   defaultSplit?: number;
   minPaneWidth?: number;
+  leftLabel?: string;
+  rightLabel?: string;
 }
 
 export function SplitPane({
@@ -14,10 +17,14 @@ export function SplitPane({
   right,
   defaultSplit = 0.5,
   minPaneWidth = 300,
+  leftLabel = "Left",
+  rightLabel = "Right",
 }: SplitPaneProps) {
   const [split, setSplit] = useState(defaultSplit);
   const [isDragging, setIsDragging] = useState(false);
+  const [mobilePane, setMobilePane] = useState<"left" | "right">("left");
   const containerRef = useRef<HTMLDivElement>(null);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -52,6 +59,40 @@ export function SplitPane({
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging, minPaneWidth]);
+
+  if (!isDesktop) {
+    return (
+      <div className="flex flex-col h-full w-full overflow-hidden">
+        <div className="flex-shrink-0 px-3 py-2 border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
+          <div className="flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5 w-full max-w-sm mx-auto">
+            {(["left", "right"] as const).map((side) => {
+              const active = mobilePane === side;
+              const label = side === "left" ? leftLabel : rightLabel;
+              return (
+                <button
+                  key={side}
+                  onClick={() => setMobilePane(side)}
+                  className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
+                    active
+                      ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] shadow-sm"
+                      : "text-[var(--color-text-secondary)]"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className={`flex-1 overflow-auto ${mobilePane === "left" ? "block" : "hidden"}`}>
+          {left}
+        </div>
+        <div className={`flex-1 overflow-auto ${mobilePane === "right" ? "block" : "hidden"}`}>
+          {right}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

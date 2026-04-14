@@ -117,7 +117,7 @@ export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: 
   return (
     <div className="flex flex-col h-full">
       {/* Search bar */}
-      <div className="px-5 py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] flex-shrink-0">
+      <div className="px-3 md:px-5 py-2 md:py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] flex-shrink-0">
         <div className="relative max-w-md">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]"
@@ -141,7 +141,7 @@ export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: 
             style={{ boxShadow: 'var(--shadow-sm)' }}
           />
         </div>
-        <div className="flex items-center gap-3 mt-1.5">
+        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
           <p className="text-xs text-[var(--color-text-tertiary)]">
             {REGISTRY.length} biomarkers across {groupedRegistry.size} categories
           </p>
@@ -167,7 +167,7 @@ export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: 
             {/* Category header */}
             <button
               onClick={() => toggleCategory(category)}
-              className="w-full flex items-center gap-2 px-5 py-2.5 bg-[var(--color-surface-tertiary)]/80 backdrop-blur-sm border-b border-[var(--color-border-light)] text-left hover:bg-[var(--color-surface-tertiary)] transition-colors sticky top-0 z-10"
+              className="w-full flex items-center gap-2 px-4 md:px-5 py-2.5 bg-[var(--color-surface-tertiary)]/80 backdrop-blur-sm border-b border-[var(--color-border-light)] text-left hover:bg-[var(--color-surface-tertiary)] transition-colors sticky top-0 z-10"
             >
               <svg
                 className={`w-3 h-3 text-[var(--color-text-tertiary)] transition-transform duration-200 ${isCollapsed(category) ? '' : 'rotate-90'}`}
@@ -195,12 +195,12 @@ export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: 
                     <button
                       key={entry.slug}
                       onClick={() => onOpenBiomarker(entry.slug)}
-                      className="w-full flex items-center gap-4 px-5 py-2.5 text-left hover:bg-[var(--color-primary-light)] transition-colors duration-150"
+                      className="w-full flex items-center gap-2 md:gap-4 px-4 md:px-5 py-2.5 text-left hover:bg-[var(--color-primary-light)] transition-colors duration-150"
                     >
-                      <span className="text-sm text-[var(--color-text-primary)] flex-1 min-w-0">
+                      <span className="text-sm text-[var(--color-text-primary)] flex-1 min-w-0 truncate">
                         {entry.displayName}
                         {entry.fullName !== entry.displayName && (
-                          <span className="text-xs text-[var(--color-text-tertiary)] ml-1.5">
+                          <span className="hidden md:inline text-xs text-[var(--color-text-tertiary)] ml-1.5">
                             {entry.fullName}
                           </span>
                         )}
@@ -210,7 +210,7 @@ export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: 
                           </span>
                         )}
                       </span>
-                      <span className="text-sm text-[var(--color-text-secondary)] w-24 text-right flex-shrink-0 tabular-nums">
+                      <span className="text-sm text-[var(--color-text-secondary)] w-16 md:w-24 text-right flex-shrink-0 tabular-nums truncate">
                         {latest
                           ? latest.valueText ??
                             (latest.value !== null
@@ -218,10 +218,10 @@ export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: 
                               : "\u2014")
                           : "\u2014"}
                       </span>
-                      <span className="text-xs text-[var(--color-text-tertiary)] w-16 text-right flex-shrink-0">
+                      <span className="hidden sm:inline text-xs text-[var(--color-text-tertiary)] w-16 text-right flex-shrink-0 truncate">
                         {entry.defaultUnit || ""}
                       </span>
-                      <span className="flex-shrink-0 w-24 text-right">
+                      <span className="flex-shrink-0 w-auto md:w-24 text-right">
                         {latest && <FlagBadge flag={latest.flag} />}
                       </span>
                       <svg className="w-4 h-4 text-[var(--color-text-tertiary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

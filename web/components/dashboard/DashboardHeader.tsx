@@ -32,7 +32,7 @@ export function DashboardHeader({
   };
 
   return (
-    <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-10">
+    <div className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 md:py-4 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-10 flex-wrap">
       <button
         onClick={onBack}
         className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] transition-colors text-[var(--color-text-tertiary)] flex-shrink-0"
@@ -93,8 +93,10 @@ export function DashboardHeader({
         <button
           onClick={onAddClick}
           className="btn-secondary text-sm"
+          aria-label="Add biomarker"
         >
-          + Add Biomarker
+          <span className="hidden sm:inline">+ Add Biomarker</span>
+          <span className="sm:hidden">+ Add</span>
         </button>
         <button
           onClick={onDelete}

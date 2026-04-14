@@ -13,6 +13,7 @@ import { DashboardsTab } from "./DashboardsTab";
 import { GoalsTab } from "./GoalsTab";
 import { SettingsTab } from "./SettingsTab";
 import { ExtractionView } from "./ExtractionView";
+import { BottomTabBar } from "./BottomTabBar";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "files", label: "Files" },
@@ -49,11 +50,11 @@ export function AppShell() {
   return (
     <>
       {/* Header — frosted glass */}
-      <header className="relative z-50 flex items-center gap-3 px-6 py-3 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
+      <header className="relative z-50 flex items-center gap-3 px-4 py-2 md:px-6 md:py-3 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
         <button onClick={() => nav.switchTab("files")} className="cursor-pointer" aria-label="Go to Files">
-          <Logo className="h-10" />
+          <Logo className="h-8 md:h-10" />
         </button>
-        <nav className="flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5">
+        <nav className="hidden md:flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -72,13 +73,15 @@ export function AppShell() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle />
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
           <UserMenu />
         </div>
       </header>
 
       {/* Tab content — lazy-mount: tabs mount on first activation, stay mounted (hidden via CSS) */}
-      <main className="flex-1 overflow-auto bg-[var(--color-surface-secondary)]">
+      <main className="flex-1 overflow-auto bg-[var(--color-surface-secondary)] pb-16 md:pb-0">
         <div className={state.activeTab === "files" ? "h-full" : "hidden"}>
           {state.mountedTabs.has("files") && (
             <FilesTab
@@ -115,6 +118,8 @@ export function AppShell() {
           {state.mountedTabs.has("settings") && <SettingsTab />}
         </div>
       </main>
+
+      <BottomTabBar tabs={TABS} activeTab={state.activeTab} onSelect={nav.switchTab} />
     </>
   );
 }

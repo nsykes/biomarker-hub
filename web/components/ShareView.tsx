@@ -187,7 +187,7 @@ function SharedBiomarkerBrowser({
   return (
     <div className="min-h-screen bg-[var(--color-surface-secondary)]">
       {/* Header */}
-      <div className="bg-[var(--color-surface)] border-b border-[var(--color-border-light)] px-5 py-4">
+      <div className="bg-[var(--color-surface)] border-b border-[var(--color-border-light)] px-4 md:px-5 py-3 md:py-4">
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">
           {userName}&apos;s Biomarkers
         </h1>
@@ -197,7 +197,7 @@ function SharedBiomarkerBrowser({
       </div>
 
       {/* Search */}
-      <div className="px-5 py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] flex-shrink-0">
+      <div className="px-3 md:px-5 py-2 md:py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] flex-shrink-0">
         <div className="relative max-w-md">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-tertiary)]"
@@ -221,7 +221,7 @@ function SharedBiomarkerBrowser({
             style={{ boxShadow: "var(--shadow-sm)" }}
           />
         </div>
-        <div className="flex items-center gap-3 mt-1.5">
+        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
           <p className="text-xs text-[var(--color-text-tertiary)]">
             {biomarkerCount} biomarkers across {groupedRegistry.size} categories
           </p>
@@ -246,7 +246,7 @@ function SharedBiomarkerBrowser({
           <div key={category}>
             <button
               onClick={() => toggleCategory(category)}
-              className="w-full flex items-center gap-2 px-5 py-2.5 bg-[var(--color-surface-tertiary)]/80 backdrop-blur-sm border-b border-[var(--color-border-light)] text-left hover:bg-[var(--color-surface-tertiary)] transition-colors sticky top-0 z-10"
+              className="w-full flex items-center gap-2 px-4 md:px-5 py-2.5 bg-[var(--color-surface-tertiary)]/80 backdrop-blur-sm border-b border-[var(--color-border-light)] text-left hover:bg-[var(--color-surface-tertiary)] transition-colors sticky top-0 z-10"
             >
               <svg
                 className={`w-3 h-3 text-[var(--color-text-tertiary)] transition-transform duration-200 ${isCollapsed(category) ? "" : "rotate-90"}`}
@@ -277,12 +277,12 @@ function SharedBiomarkerBrowser({
                     <button
                       key={entry.slug}
                       onClick={() => setActiveSlug(entry.slug)}
-                      className="w-full flex items-center gap-4 px-5 py-2.5 text-left hover:bg-[var(--color-primary-light)] transition-colors duration-150"
+                      className="w-full flex items-center gap-2 md:gap-4 px-4 md:px-5 py-2.5 text-left hover:bg-[var(--color-primary-light)] transition-colors duration-150"
                     >
-                      <span className="text-sm text-[var(--color-text-primary)] flex-1 min-w-0">
+                      <span className="text-sm text-[var(--color-text-primary)] flex-1 min-w-0 truncate">
                         {entry.displayName}
                         {entry.fullName !== entry.displayName && (
-                          <span className="text-xs text-[var(--color-text-tertiary)] ml-1.5">
+                          <span className="hidden md:inline text-xs text-[var(--color-text-tertiary)] ml-1.5">
                             {entry.fullName}
                           </span>
                         )}
@@ -292,7 +292,7 @@ function SharedBiomarkerBrowser({
                           </span>
                         )}
                       </span>
-                      <span className="text-sm text-[var(--color-text-secondary)] w-24 text-right flex-shrink-0 tabular-nums">
+                      <span className="text-sm text-[var(--color-text-secondary)] w-16 md:w-24 text-right flex-shrink-0 tabular-nums truncate">
                         {summary
                           ? summary.latestValueText ??
                             (summary.latestValue !== null
@@ -300,10 +300,10 @@ function SharedBiomarkerBrowser({
                               : "\u2014")
                           : "\u2014"}
                       </span>
-                      <span className="text-xs text-[var(--color-text-tertiary)] w-16 text-right flex-shrink-0">
+                      <span className="hidden sm:inline text-xs text-[var(--color-text-tertiary)] w-16 text-right flex-shrink-0 truncate">
                         {entry.defaultUnit || ""}
                       </span>
-                      <span className="flex-shrink-0 w-24 text-right">
+                      <span className="flex-shrink-0 w-auto md:w-24 text-right">
                         {summary && (
                           <FlagBadge flag={summary.latestFlag as import("@/lib/types").BiomarkerFlag} />
                         )}
@@ -365,7 +365,7 @@ function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewPro
   return (
     <div className="min-h-screen bg-[var(--color-surface-secondary)]">
       {/* Sub-header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-10">
+      <div className="flex items-center gap-2 md:gap-3 px-3 md:px-5 py-3 md:py-4 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-10">
         <button
           onClick={onBack}
           className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] transition-colors text-[var(--color-text-tertiary)] flex-shrink-0"
@@ -382,11 +382,11 @@ function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewPro
         </span>
       </div>
 
-      <div className="max-w-4xl mx-auto px-5 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-4 md:px-5 md:py-6 space-y-4 md:space-y-6">
         {/* Title */}
         <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+          <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
               {data.displayName}
             </h1>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] font-medium">
@@ -417,7 +417,7 @@ function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewPro
 
         {/* Summary */}
         {data.summary && (
-          <section className="card p-5">
+          <section className="card p-4 md:p-5">
             <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
               {data.summary}
             </p>
@@ -425,7 +425,7 @@ function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewPro
         )}
 
         {/* Chart */}
-        <section className="card p-5">
+        <section className="card p-4 md:p-5">
           <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
             History
           </h2>
@@ -433,7 +433,7 @@ function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewPro
         </section>
 
         {/* Table */}
-        <section className="card p-5">
+        <section className="card p-4 md:p-5">
           <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
             All Results ({data.history.length})
           </h2>
@@ -453,7 +453,7 @@ function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewPro
 
         {/* Reference range (read-only) */}
         {data.referenceRange && (
-          <section className="card p-5">
+          <section className="card p-4 md:p-5">
             <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
               Reference Range
             </h2>

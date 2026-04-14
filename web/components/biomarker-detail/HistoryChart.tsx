@@ -275,7 +275,7 @@ export function HistoryChart({
           tickFormatter={(v: number) => v.toFixed(yDecimals)}
           width={60}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip />} wrapperStyle={{ maxWidth: "calc(100vw - 32px)" }} />
         {data.referenceRange && buildRangeZones(data.referenceRange, yMin, yMax)}
         {goalValue !== undefined && (
           <ReferenceLine

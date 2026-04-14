@@ -5,6 +5,7 @@ import { BiomarkerCombobox } from "./BiomarkerCombobox";
 import { CanonicalBiomarker, REGISTRY } from "@/lib/biomarker-registry";
 import { Spinner } from "./Spinner";
 import { DASHBOARD_TEMPLATES, DashboardTemplate } from "@/lib/constants";
+import { MobileSheet } from "./MobileSheet";
 
 interface CreateDashboardModalProps {
   onSubmit: (name: string, slugs: string[], groups?: string[][]) => Promise<void>;
@@ -122,11 +123,7 @@ export function CreateDashboardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div
-        className="bg-[var(--color-surface)] rounded-2xl shadow-2xl max-w-lg w-full mx-4 flex flex-col max-h-[80vh]"
-        style={{ boxShadow: "var(--color-modal-shadow)" }}
-      >
+    <MobileSheet onClose={onClose} desktopMaxWidth="max-w-lg">
         {/* Header */}
         <div className="px-5 py-4 border-b border-[var(--color-border-light)] flex items-center justify-between flex-shrink-0">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
@@ -326,7 +323,6 @@ export function CreateDashboardModal({
                 : "Create Dashboard"}
           </button>
         </div>
-      </div>
-    </div>
+    </MobileSheet>
   );
 }

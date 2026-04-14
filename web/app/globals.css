@@ -168,6 +168,14 @@ a[href] {
   cursor: pointer;
 }
 
+/* ——— Safe-area helpers for iOS notch / home indicator ——— */
+.safe-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-pt {
+  padding-top: env(safe-area-inset-top);
+}
+
 /* ——— Base utility classes ——— */
 
 .card {

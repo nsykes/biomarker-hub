@@ -50,9 +50,9 @@ export function AppShell() {
   return (
     <>
       {/* Header — frosted glass */}
-      <header className="relative z-50 flex items-center gap-3 safe-pt px-4 py-2 md:px-6 md:py-3 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
+      <header className="relative z-50 flex items-center gap-3 safe-pt px-4 pb-2 md:px-6 md:pb-3 border-b border-[var(--color-border-light)] backdrop-blur-lg flex-shrink-0" style={{ background: 'var(--color-header-bg)', boxShadow: 'var(--color-header-shadow)' }}>
         <button onClick={() => nav.switchTab("files")} className="cursor-pointer" aria-label="Go to Files">
-          <Logo className="h-8 md:h-10" />
+          <Logo className="h-7 md:h-10" />
         </button>
         <nav className="hidden md:flex gap-1 bg-[var(--color-surface-tertiary)] rounded-full p-0.5">
           {TABS.map((tab) => (

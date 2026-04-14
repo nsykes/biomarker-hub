@@ -187,7 +187,7 @@ function SharedBiomarkerBrowser({
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[var(--color-surface-secondary)]">
       {/* Header */}
-      <div className="bg-[var(--color-surface)] border-b border-[var(--color-border-light)] safe-pt px-4 md:px-5 py-3 md:py-4">
+      <div className="bg-[var(--color-surface)] border-b border-[var(--color-border-light)] safe-pt px-4 md:px-5 pb-3 md:pb-4">
         <h1 className="text-lg font-semibold text-[var(--color-text-primary)]">
           {userName}&apos;s Biomarkers
         </h1>
@@ -365,7 +365,7 @@ function SharedDetailView({ token, password, slug, onBack }: SharedDetailViewPro
   return (
     <div className="min-h-screen min-h-[100dvh] bg-[var(--color-surface-secondary)]">
       {/* Sub-header */}
-      <div className="flex items-center gap-2 md:gap-3 safe-pt px-3 md:px-5 py-3 md:py-4 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-10">
+      <div className="flex items-center gap-2 md:gap-3 safe-pt px-3 md:px-5 pb-3 md:pb-4 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] sticky top-0 z-10">
         <button
           onClick={onBack}
           className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] transition-colors text-[var(--color-text-tertiary)] flex-shrink-0"

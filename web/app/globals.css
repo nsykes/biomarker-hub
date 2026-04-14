@@ -172,8 +172,14 @@ a[href] {
 .safe-pb {
   padding-bottom: env(safe-area-inset-bottom);
 }
+/*
+ * safe-pt reserves space for the iOS status bar / Dynamic Island.
+ * env(safe-area-inset-top) only accounts for the *resting* DI; live-activity
+ * expansions (e.g. delivery trackers) can extend ~15px further. The extra
+ * 1rem buffer absorbs that without looking over-padded at rest.
+ */
 .safe-pt {
-  padding-top: env(safe-area-inset-top);
+  padding-top: calc(env(safe-area-inset-top) + 1rem);
 }
 
 /* Bottom-tab-bar reservation: content = ~56px + safe-area inset */

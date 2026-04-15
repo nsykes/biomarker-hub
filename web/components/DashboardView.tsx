@@ -96,7 +96,7 @@ export function DashboardView({ dashboardId, onBack, onNavigateToBiomarker }: Da
       )}
 
       {/* Chart grid */}
-      <div className="p-3 md:p-4">
+      <div className="p-3 md:p-4 pb-tab-bar">
         {items.length === 0 ? (
           <DashboardEmptyState onAddClick={() => setShowCombobox(true)} />
         ) : (

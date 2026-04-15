@@ -209,7 +209,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
         )}
 
         {/* Desktop: table. Mobile: card list */}
-        <div className="m-3 md:m-4">
+        <div className="m-3 md:m-4 pb-tab-bar">
           {/* Desktop table */}
           <div className="hidden md:block card overflow-hidden">
             <table className="w-full text-left">

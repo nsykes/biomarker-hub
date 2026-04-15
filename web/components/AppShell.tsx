@@ -81,7 +81,7 @@ export function AppShell() {
       </header>
 
       {/* Tab content — lazy-mount: tabs mount on first activation, stay mounted (hidden via CSS) */}
-      <main className="flex-1 overflow-auto bg-[var(--color-surface-secondary)] pb-tab-bar">
+      <main className="flex-1 overflow-auto bg-[var(--color-surface-secondary)]">
         <div className={state.activeTab === "files" ? "h-full" : "hidden"}>
           {state.mountedTabs.has("files") && (
             <FilesTab

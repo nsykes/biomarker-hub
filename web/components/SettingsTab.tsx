@@ -45,7 +45,7 @@ export function SettingsTab() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+    <div className="max-w-2xl mx-auto p-4 md:p-6 pb-tab-bar space-y-4 md:space-y-6">
       {loadError && (
         <div className="card px-4 py-3 text-sm text-[var(--color-error-text)] bg-[var(--color-error-bg)] border-[var(--color-error-bg)] flex items-center justify-between">
           <span>{loadError}</span>

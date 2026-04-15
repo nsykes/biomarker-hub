@@ -88,7 +88,7 @@ export function GoalsTab({ onNavigateToBiomarker }: GoalsTabProps) {
   return (
     <div className="relative h-full">
       <div className="overflow-auto h-full">
-        <div className="p-3 md:p-4">
+        <div className="p-3 md:p-4 pb-tab-bar">
           <GoalGrid
             cardEntries={cardEntries}
             onDragEnd={handleDragEnd}

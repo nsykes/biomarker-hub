@@ -21,7 +21,7 @@ function DetailContent({ data }: { data: BiomarkerDetailData }) {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-4 py-4 md:px-5 md:py-6 space-y-4 md:space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-4 md:px-5 md:py-6 pb-tab-bar space-y-4 md:space-y-6">
         {/* Title section */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 md:gap-3 flex-wrap">

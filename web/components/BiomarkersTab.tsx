@@ -162,6 +162,7 @@ export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: 
 
       {/* Registry browser */}
       <div className="flex-1 overflow-auto">
+        <div className="pb-tab-bar">
         {Array.from(filteredGroups.entries()).map(([category, entries]) => (
           <div key={category}>
             {/* Category header */}
@@ -234,6 +235,7 @@ export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: 
             )}
           </div>
         ))}
+        </div>
       </div>
     </div>
   );

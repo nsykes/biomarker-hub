@@ -117,7 +117,7 @@ export function DashboardsTab({
   return (
     <div className="relative h-full">
       <div className="overflow-auto h-full">
-        <div className="p-3 md:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+        <div className="p-3 md:p-4 pb-tab-bar grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {dashboards.map((d) => (
             <button
               key={d.id}

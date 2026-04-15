@@ -190,19 +190,18 @@ a[href] {
 }
 
 /*
- * Bottom-tab-bar scroll reservation. The tab bar is ~56px tall plus the
- * safe-area inset; matching it exactly leaves the last scrollable element
- * flush against the tab bar's top edge. Reserve 5rem (80px) of content-area
- * space so there's ~24px of visual breathing room between the end of the
- * scroll content and the top of the tab bar (matches iOS system apps, and
- * matches the 5rem offset used by .bottom-above-tab-bar for FABs).
+ * Mobile-only reservation above the fixed bottom tab bar. MUST be applied to
+ * the scrollable CONTENT wrapper, never to the scroll container itself —
+ * Safari does not include a scroll container's padding-bottom in its
+ * scrollHeight (WebKit bug #124691, still open as of 2026), so any
+ * padding-bottom on e.g. <main overflow-auto> is silently dropped on iOS.
+ * Padding on regular descendants IS included, so applying it one level in
+ * works on every browser. Width: ~56px tab bar + env(safe-area-inset-bottom)
+ * + 24px breathing room = 5rem + env.
  */
-.pb-tab-bar {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
-}
-@media (min-width: 768px) {
+@media (max-width: 767px) {
   .pb-tab-bar {
-    padding-bottom: 0;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
   }
 }
 /* FAB bottom offset: clears the tab bar + 16px gap on mobile */

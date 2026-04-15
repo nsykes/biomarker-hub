@@ -189,9 +189,16 @@ a[href] {
   }
 }
 
-/* Bottom-tab-bar reservation: content = ~56px + safe-area inset */
+/*
+ * Bottom-tab-bar scroll reservation. The tab bar is ~56px tall plus the
+ * safe-area inset; matching it exactly leaves the last scrollable element
+ * flush against the tab bar's top edge. Reserve 5rem (80px) of content-area
+ * space so there's ~24px of visual breathing room between the end of the
+ * scroll content and the top of the tab bar (matches iOS system apps, and
+ * matches the 5rem offset used by .bottom-above-tab-bar for FABs).
+ */
 .pb-tab-bar {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 3.5rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
 }
 @media (min-width: 768px) {
   .pb-tab-bar {

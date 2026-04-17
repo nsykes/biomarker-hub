@@ -33,9 +33,22 @@ export function ApiKeySection({
 }: ApiKeySectionProps) {
   return (
     <section className="card p-4 md:p-5">
-      <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-3">
-        API Key
+      <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">
+        OpenRouter API Key
       </h2>
+      <p className="text-xs text-[var(--color-text-tertiary)] mb-3">
+        Used to send lab report PDFs to an LLM for biomarker extraction. Get a
+        key at{" "}
+        <a
+          href="https://openrouter.ai/keys"
+          target="_blank"
+          rel="noreferrer"
+          className="text-[var(--color-primary)] hover:underline font-medium"
+        >
+          openrouter.ai/keys
+        </a>
+        .
+      </p>
       <div className="space-y-2.5">
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -79,8 +92,44 @@ export function ApiKeySection({
           <p className="text-xs text-[var(--color-success)] font-medium">Key saved</p>
         )}
         <p className="text-xs text-[var(--color-text-tertiary)]">
-          Your OpenRouter API key. Stored as plaintext in your Neon database
-          (encrypted at rest by Neon).
+          Stored as plaintext in your Neon database (encrypted at rest by Neon).
+        </p>
+      </div>
+
+      {/* Zero Data Retention setup */}
+      <div className="mt-4 pt-4 border-t border-[var(--color-border-light)]">
+        <p className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
+          Turn on Zero Data Retention
+        </p>
+        <p className="text-xs text-[var(--color-text-tertiary)] mb-2">
+          By default, some LLM providers may retain or train on the prompts
+          they see. Lab reports contain sensitive health data, so you should
+          route only to providers that promise not to retain inputs.
+        </p>
+        <ol className="text-xs text-[var(--color-text-secondary)] list-decimal pl-5 space-y-1 mb-2">
+          <li>
+            Open{" "}
+            <a
+              href="https://openrouter.ai/settings/guardrails"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[var(--color-primary)] hover:underline font-medium"
+            >
+              openrouter.ai/settings/guardrails
+            </a>
+          </li>
+          <li>
+            Under <span className="font-medium">Privacy Settings</span>, turn
+            on <span className="font-medium">ZDR Endpoints Only</span>.
+          </li>
+          <li>
+            Leave the &ldquo;train on inputs&rdquo; and &ldquo;publish
+            prompts&rdquo; toggles off.
+          </li>
+        </ol>
+        <p className="text-xs text-[var(--color-text-tertiary)]">
+          These settings apply to your OpenRouter account, not this app. You
+          only need to do it once.
         </p>
       </div>
     </section>

@@ -26,10 +26,12 @@ export function ApiKeysSection({ apiKeysList, setApiKeysList }: ApiKeysSectionPr
   return (
     <section className="card p-4 md:p-5">
       <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">
-        API Keys
+        MCP
       </h2>
       <p className="text-xs text-[var(--color-text-tertiary)] mb-3">
-        For MCP server and external integrations.
+        Keys for connecting MCP clients (Claude Desktop, Claude.ai) or other
+        external integrations. Create one key per client so you can revoke
+        individually.
       </p>
 
       {/* Create new key */}

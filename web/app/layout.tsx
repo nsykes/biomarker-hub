@@ -19,12 +19,21 @@ export const metadata: Metadata = {
   title: "Biomarker Hub",
   description: "Track and visualize your biomarker data from lab report PDFs",
   icons: { icon: "/icon.svg" },
+  appleWebApp: {
+    capable: true,
+    title: "Biomarker Hub",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
+    { media: "(prefers-color-scheme: dark)", color: "#1C1C1E" },
+  ],
 };
 
 export default function RootLayout({

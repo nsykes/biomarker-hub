@@ -7,6 +7,7 @@ import { useNavigationState } from "@/hooks/useNavigationState";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
 import { UserMenu } from "./UserMenu";
+import { StandaloneRefreshButton } from "./StandaloneRefreshButton";
 import { FilesTab } from "./FilesTab";
 import { BiomarkersTab } from "./BiomarkersTab";
 import { DashboardsTab } from "./DashboardsTab";
@@ -76,6 +77,7 @@ export function AppShell() {
           <div className="hidden md:block">
             <ThemeToggle />
           </div>
+          <StandaloneRefreshButton />
           <UserMenu />
         </div>
       </header>

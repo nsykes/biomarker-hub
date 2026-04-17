@@ -1,8 +1,13 @@
+// The viewBox has extra right-side padding (width extended from 252 to 272
+// beyond the tight content bounds) so the SVG bounding-box center sits
+// ~10 units to the right of the content's center. The text "Biomarker Hub"
+// carries more visual weight than the icon, so without this nudge a
+// math-centered SVG reads as right-shifted.
 export function Logo({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="5 4 252 48"
+      viewBox="5 4 272 48"
       role="img"
       aria-label="Biomarker Hub"
       className={className}

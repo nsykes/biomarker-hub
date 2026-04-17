@@ -28,8 +28,9 @@ example-pdfs/
 docs/audit/
 
 
-# Local Claude settings
-.claude/settings.local.json
+# Claude Code / Codex CLI local state (hooks, settings, logs)
+.claude/
+.codex/
 
 # One-off scripts
 web/scripts/

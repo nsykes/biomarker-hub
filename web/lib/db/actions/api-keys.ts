@@ -67,22 +67,34 @@ export async function revokeApiKey(id: string): Promise<void> {
     .where(and(eq(apiKeys.id, id), eq(apiKeys.userId, userId)));
 }
 
-/** Validate an API key from a request. Returns userId or null. */
+/** Validate an API key from a request. Returns userId or null.
+ *  Narrows by keyPrefix (a deterministic 11-char slice), then constant-time
+ *  compares the full hash to avoid timing oracles on the lookup. */
 export async function validateApiKey(key: string): Promise<string | null> {
+  if (key.length < 11) return null;
+  const prefix = key.slice(0, 11);
   const hash = hashKey(key);
+  const hashBuf = Buffer.from(hash, "hex");
+
   const rows = await db
-    .select({ userId: apiKeys.userId, id: apiKeys.id })
+    .select({ userId: apiKeys.userId, id: apiKeys.id, keyHash: apiKeys.keyHash })
     .from(apiKeys)
-    .where(and(eq(apiKeys.keyHash, hash), isNull(apiKeys.revokedAt)));
+    .where(and(eq(apiKeys.keyPrefix, prefix), isNull(apiKeys.revokedAt)));
 
-  if (rows.length === 0) return null;
-
-  // Update lastUsedAt (fire-and-forget)
-  db.update(apiKeys)
-    .set({ lastUsedAt: new Date() })
-    .where(eq(apiKeys.id, rows[0].id))
-    .then(() => {})
-    .catch(() => {});
-
-  return rows[0].userId;
+  for (const row of rows) {
+    const rowBuf = Buffer.from(row.keyHash, "hex");
+    if (
+      hashBuf.length === rowBuf.length &&
+      crypto.timingSafeEqual(hashBuf, rowBuf)
+    ) {
+      // Update lastUsedAt (fire-and-forget)
+      db.update(apiKeys)
+        .set({ lastUsedAt: new Date() })
+        .where(eq(apiKeys.id, row.id))
+        .then(() => {})
+        .catch(() => {});
+      return row.userId;
+    }
+  }
+  return null;
 }

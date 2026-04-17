@@ -6,6 +6,7 @@ import { CanonicalBiomarker } from "@/lib/biomarker-registry";
 import { Spinner } from "./Spinner";
 import { GoalRow } from "@/lib/types";
 import { MobileSheet } from "./MobileSheet";
+import { useModalForm } from "@/hooks/useModalForm";
 
 interface CreateGoalModalProps {
   onSubmit: (canonicalSlug: string, targetValue: number) => Promise<void>;
@@ -36,8 +37,10 @@ export function CreateGoalModal({
     editGoal ? String(editGoal.targetValue) : ""
   );
   const [showCombobox, setShowCombobox] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { saving, error, setError, wrapSubmit } = useModalForm({
+    onClose,
+    defaultError: "Failed to save goal",
+  });
 
   const isEdit = !!editGoal;
 
@@ -50,23 +53,14 @@ export function CreateGoalModal({
     setShowCombobox(false);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!selected) return;
     const val = parseFloat(targetValue);
     if (isNaN(val)) {
       setError("Please enter a valid number");
       return;
     }
-    setError(null);
-    setSaving(true);
-    try {
-      await onSubmit(selected.slug, val);
-      onClose();
-    } catch {
-      setError("Failed to save goal");
-    } finally {
-      setSaving(false);
-    }
+    wrapSubmit(() => onSubmit(selected.slug, val))();
   };
 
   return (

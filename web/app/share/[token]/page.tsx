@@ -1,5 +1,5 @@
 import { getShareByToken } from "@/lib/db/actions/doctor-shares";
-import { ShareView } from "@/components/ShareView";
+import { ShareView } from "@/components/views/share/ShareView";
 
 export default async function SharePage({
   params,

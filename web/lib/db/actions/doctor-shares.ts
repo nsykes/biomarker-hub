@@ -1,6 +1,7 @@
 "use server";
 
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 import { db } from "../index";
 import { doctorShares } from "../schema";
 import { eq, and, isNull } from "drizzle-orm";
@@ -10,6 +11,9 @@ import {
   getUserBiomarkerSlugs,
   getBiomarkerHistoryByUser,
 } from "../queries/biomarkers";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const BCRYPT_COST = 12;
 
 function generateToken(): string {
   return crypto.randomBytes(16).toString("hex");
@@ -19,8 +23,8 @@ function generatePassword(): string {
   return crypto.randomBytes(4).toString("hex");
 }
 
-function hashPassword(password: string): string {
-  return crypto.createHash("sha256").update(password).digest("hex");
+function sha256Hex(value: string): string {
+  return crypto.createHash("sha256").update(value).digest("hex");
 }
 
 /** Create a new doctor share. Returns the token, password (shown once), + metadata. */
@@ -32,7 +36,7 @@ export async function createDoctorShare(
   const userId = await requireUser();
   const token = generateToken();
   const password = generatePassword();
-  const hash = hashPassword(password);
+  const passwordHashV2 = await bcrypt.hash(password, BCRYPT_COST);
 
   const [row] = await db
     .insert(doctorShares)
@@ -41,8 +45,9 @@ export async function createDoctorShare(
       label,
       userName,
       token,
-      password,
-      passwordHash: hash,
+      password: "",
+      passwordHash: "",
+      passwordHashV2,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
     })
     .returning();
@@ -54,7 +59,6 @@ export async function createDoctorShare(
       id: row.id,
       label: row.label,
       token: row.token,
-      password: row.password,
       expiresAt: row.expiresAt?.toISOString() ?? null,
       lastAccessedAt: null,
       createdAt: row.createdAt.toISOString(),
@@ -74,7 +78,6 @@ export async function listDoctorShares(): Promise<DoctorShareInfo[]> {
     id: r.id,
     label: r.label,
     token: r.token,
-    password: r.password,
     expiresAt: r.expiresAt?.toISOString() ?? null,
     lastAccessedAt: r.lastAccessedAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),
@@ -90,11 +93,17 @@ export async function revokeDoctorShare(id: string): Promise<void> {
     .where(and(eq(doctorShares.id, id), eq(doctorShares.userId, userId)));
 }
 
-/** Validate share token + password. Returns share info or null. NO auth required. */
+/** Validate share token + password. Returns share info or null. NO auth required.
+ *  Prefers bcrypt (v2); falls back to the legacy SHA256 column and
+ *  opportunistically upgrades the row on success. Rate-limited by token to
+ *  cap brute-force attempts (bcrypt alone slows but doesn't stop them). */
 export async function validateShareAccess(
   token: string,
   password: string
 ): Promise<{ userId: string; userName: string; label: string } | null> {
+  const limit = await checkRateLimit("doctorShareValidate", token);
+  if (!limit.success) return null;
+
   const rows = await db
     .select()
     .from(doctorShares)
@@ -106,16 +115,37 @@ export async function validateShareAccess(
   // Check expiration
   if (share.expiresAt && share.expiresAt < new Date()) return null;
 
-  // Check password
-  const hash = hashPassword(password);
-  if (hash !== share.passwordHash) return null;
+  let valid = false;
+  let needsUpgrade = false;
 
-  // Fire-and-forget lastAccessedAt update
-  db.update(doctorShares)
-    .set({ lastAccessedAt: new Date() })
-    .where(eq(doctorShares.id, share.id))
-    .then(() => {})
-    .catch(() => {});
+  if (share.passwordHashV2) {
+    valid = await bcrypt.compare(password, share.passwordHashV2);
+  } else if (share.passwordHash) {
+    // Legacy v1 row: constant-time SHA256 compare
+    const input = Buffer.from(sha256Hex(password), "hex");
+    const stored = Buffer.from(share.passwordHash, "hex");
+    valid =
+      input.length === stored.length && crypto.timingSafeEqual(input, stored);
+    needsUpgrade = valid;
+  }
+
+  if (!valid) return null;
+
+  // Fire-and-forget lastAccessedAt update + opportunistic bcrypt upgrade
+  (async () => {
+    const patch: Partial<typeof doctorShares.$inferInsert> = {
+      lastAccessedAt: new Date(),
+    };
+    if (needsUpgrade) {
+      patch.passwordHashV2 = await bcrypt.hash(password, BCRYPT_COST);
+      patch.passwordHash = "";
+      patch.password = "";
+    }
+    await db
+      .update(doctorShares)
+      .set(patch)
+      .where(eq(doctorShares.id, share.id));
+  })().catch(() => {});
 
   return { userId: share.userId, userName: share.userName, label: share.label };
 }

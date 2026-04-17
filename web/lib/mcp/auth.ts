@@ -7,13 +7,17 @@ function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-/** Validate an OAuth access token. Returns userId or null. */
+/** Validate an OAuth access token. Returns userId or null.
+ *  Uses DB index for lookup, then constant-time hash comparison for
+ *  defense-in-depth (consistent with the API key validation pattern). */
 export async function validateOAuthToken(
   token: string
 ): Promise<string | null> {
   const hash = hashToken(token);
+  const hashBuf = Buffer.from(hash, "hex");
+
   const rows = await db
-    .select({ userId: oauthTokens.userId })
+    .select({ userId: oauthTokens.userId, tokenHash: oauthTokens.tokenHash })
     .from(oauthTokens)
     .where(
       and(
@@ -22,6 +26,14 @@ export async function validateOAuthToken(
       )
     );
 
-  if (rows.length === 0) return null;
-  return rows[0].userId;
+  for (const row of rows) {
+    const rowBuf = Buffer.from(row.tokenHash, "hex");
+    if (
+      hashBuf.length === rowBuf.length &&
+      crypto.timingSafeEqual(hashBuf, rowBuf)
+    ) {
+      return row.userId;
+    }
+  }
+  return null;
 }

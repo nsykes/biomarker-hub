@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
-import { authenticateApiKey, unauthorized } from "@/lib/api-auth";
+import { authAndLimit } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { referenceRanges } from "@/lib/db/schema";
+import { jsonResponse } from "@/lib/http";
 
 export async function GET(request: NextRequest) {
-  const userId = await authenticateApiKey(request);
-  if (!userId) return unauthorized();
+  const auth = await authAndLimit(request);
+  if (auth instanceof Response) return auth;
 
   const rows = await db.select().from(referenceRanges);
 
@@ -17,5 +18,5 @@ export async function GET(request: NextRequest) {
     unit: r.unit,
   }));
 
-  return Response.json({ ranges });
+  return jsonResponse({ ranges });
 }

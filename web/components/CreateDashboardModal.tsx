@@ -6,6 +6,7 @@ import { CanonicalBiomarker, REGISTRY } from "@/lib/biomarker-registry";
 import { Spinner } from "./Spinner";
 import { DASHBOARD_TEMPLATES, DashboardTemplate } from "@/lib/constants";
 import { MobileSheet } from "./MobileSheet";
+import { useModalForm } from "@/hooks/useModalForm";
 
 interface CreateDashboardModalProps {
   onSubmit: (name: string, slugs: string[], groups?: string[][]) => Promise<void>;
@@ -30,8 +31,11 @@ export function CreateDashboardModal({
       }))
   );
   const [showCombobox, setShowCombobox] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { saving, error, wrapSubmit } = useModalForm({
+    onClose,
+    closeOnSuccess: false, // parent handles closing via setShowCreate(false) after onSubmit resolves
+    defaultError: "Failed to save dashboard",
+  });
   // Groups: each sub-array is a set of slugs that will share one chart
   const [groups, setGroups] = useState<string[][]>([]);
   const [selectedForGroup, setSelectedForGroup] = useState<Set<string>>(new Set());
@@ -106,20 +110,15 @@ export function CreateDashboardModal({
     "#FF2D55",
   ];
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!name.trim()) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await onSubmit(
+    wrapSubmit(() =>
+      onSubmit(
         name.trim(),
         slugs.map((s) => s.slug),
         groups.length > 0 ? groups : undefined
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save dashboard");
-      setSaving(false);
-    }
+      )
+    )();
   };
 
   return (

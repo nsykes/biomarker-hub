@@ -190,17 +190,11 @@ export function DoctorSharesSection({
                   >
                     {copiedField === `link-${s.id}` ? "Copied!" : "Copy link"}
                   </button>
-                  <span className="text-[var(--color-border)]">|</span>
-                  <code className="px-2 py-1 rounded text-xs font-mono bg-[var(--color-surface-secondary)] text-[var(--color-text-tertiary)]">
-                    {s.password}
-                  </code>
-                  <button
-                    onClick={() => copyToClipboard(s.password, `pw-${s.id}`)}
-                    className="text-xs text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] font-medium flex-shrink-0"
-                  >
-                    {copiedField === `pw-${s.id}` ? "Copied!" : "Copy pw"}
-                  </button>
                 </div>
+                <p className="text-[11px] text-[var(--color-text-tertiary)]">
+                  Password is only shown once at creation. Revoke and create a
+                  new share if the password is lost.
+                </p>
               </div>
             );
           })}

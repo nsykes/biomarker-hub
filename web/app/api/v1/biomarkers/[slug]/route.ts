@@ -1,15 +1,17 @@
 import { NextRequest } from "next/server";
-import { authenticateApiKey, unauthorized } from "@/lib/api-auth";
+import { authAndLimit } from "@/lib/api-auth";
 import { getBiomarkerHistoryByUser } from "@/lib/db/queries/biomarkers";
 import { computeTrend } from "@/lib/trend";
 import { REGISTRY } from "@/lib/biomarker-registry";
+import { jsonResponse } from "@/lib/http";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const userId = await authenticateApiKey(request);
-  if (!userId) return unauthorized();
+  const auth = await authAndLimit(request);
+  if (auth instanceof Response) return auth;
+  const { userId } = auth;
 
   const { slug } = await params;
   const entry = REGISTRY.find((e) => e.slug === slug);
@@ -19,7 +21,7 @@ export async function GET(
   );
 
   if (history.length === 0 && !entry) {
-    return Response.json(
+    return jsonResponse(
       { error: `No data found for biomarker "${slug}"` },
       { status: 404 }
     );
@@ -27,7 +29,7 @@ export async function GET(
 
   const trend = computeTrend(slug, history, referenceRange);
 
-  return Response.json({
+  return jsonResponse({
     slug,
     displayName: entry?.displayName ?? slug,
     fullName: entry?.fullName ?? slug,

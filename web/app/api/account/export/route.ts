@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { reports, biomarkerResults } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { auth } from "@/lib/auth/server";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
 function csvEscape(value: string | null | undefined): string {
   if (value == null) return "";
@@ -16,6 +17,14 @@ export async function GET() {
   const { data: session } = await auth.getSession();
   if (!session?.user?.id) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  const limit = await checkRateLimit("sessionApi", session.user.id);
+  if (!limit.success) {
+    return new Response("Rate limit exceeded", {
+      status: 429,
+      headers: rateLimitHeaders(limit, true),
+    });
   }
 
   const rows = await db

@@ -2,21 +2,27 @@ import crypto from "crypto";
 import { db } from "@/lib/db";
 import { oauthCodes, oauthTokens } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import {
+  checkRateLimit,
+  clientIp,
+  rateLimitHeaders,
+} from "@/lib/rate-limit";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Content-Type": "application/json",
-};
-
 /** Build a JSON response using new Response() — Response.json() silently
  *  fails in Next.js 16 Turbopack route handlers. */
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: corsHeaders });
+function json(
+  body: unknown,
+  status = 200,
+  extraHeaders: Record<string, string> = {}
+): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...extraHeaders },
+  });
 }
 
 function base64url(buf: Buffer): string {
@@ -24,6 +30,15 @@ function base64url(buf: Buffer): string {
 }
 
 export async function POST(request: Request) {
+  const limit = await checkRateLimit("oauthToken", clientIp(request));
+  if (!limit.success) {
+    return json(
+      { error: "rate_limited", error_description: "Too many token requests" },
+      429,
+      rateLimitHeaders(limit, true)
+    );
+  }
+
   try {
     const contentType = request.headers.get("content-type") ?? "";
     const rawBody = await request.text();
@@ -145,11 +160,10 @@ export async function POST(request: Request) {
       expires_in: expiresIn,
     });
   } catch (err) {
-    console.error(`[token] ERROR: ${String(err)}`);
-    return json({ error: "server_error", error_description: String(err) }, 500);
+    log.error("oauth.token.failed", err);
+    return json(
+      { error: "server_error", error_description: "internal_server_error" },
+      500
+    );
   }
-}
-
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
 }

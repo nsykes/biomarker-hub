@@ -4,16 +4,22 @@ import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { oauthClients, oauthCodes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { log } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Build a JSON response using new Response() — Response.json() silently
  *  fails in Next.js 16 Turbopack route handlers. */
-function json(body: unknown, status = 200): Response {
+function json(
+  body: unknown,
+  status = 200,
+  extraHeaders: Record<string, string> = {}
+): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...extraHeaders },
   });
 }
 
@@ -57,6 +63,18 @@ export async function POST(request: Request) {
     const session = await auth.getSession();
     if (!session?.data?.user) {
       return json({ error: "Not authenticated" }, 401);
+    }
+
+    const limit = await checkRateLimit(
+      "oauthAuthorize",
+      session.data.user.id
+    );
+    if (!limit.success) {
+      return json(
+        { error: "rate_limited", error_description: "Too many authorize requests" },
+        429,
+        rateLimitHeaders(limit, true)
+      );
     }
 
     const rawBody = await request.text();
@@ -109,7 +127,10 @@ export async function POST(request: Request) {
 
     return json({ redirect_to: url.toString() });
   } catch (err) {
-    console.error(`[authorize] ERROR: ${String(err)}`);
-    return json({ error: "server_error", error_description: String(err) }, 500);
+    log.error("oauth.authorize.failed", err);
+    return json(
+      { error: "server_error", error_description: "internal_server_error" },
+      500
+    );
   }
 }

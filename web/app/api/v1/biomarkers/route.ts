@@ -1,14 +1,16 @@
 import { NextRequest } from "next/server";
-import { authenticateApiKey, unauthorized } from "@/lib/api-auth";
+import { authAndLimit } from "@/lib/api-auth";
 import {
   getUserBiomarkerSlugs,
   getBiomarkerSlugsByReport,
 } from "@/lib/db/queries/biomarkers";
 import { REGISTRY } from "@/lib/biomarker-registry";
+import { jsonResponse } from "@/lib/http";
 
 export async function GET(request: NextRequest) {
-  const userId = await authenticateApiKey(request);
-  if (!userId) return unauthorized();
+  const auth = await authAndLimit(request);
+  if (auth instanceof Response) return auth;
+  const { userId } = auth;
 
   const reportId = request.nextUrl.searchParams.get("report_id");
   const slugs = reportId
@@ -34,5 +36,5 @@ export async function GET(request: NextRequest) {
         b.category.toLowerCase() === category.toLowerCase()
     );
 
-  return Response.json({ biomarkers });
+  return jsonResponse({ biomarkers });
 }

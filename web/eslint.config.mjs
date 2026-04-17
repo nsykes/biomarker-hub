@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored PDF.js worker — auto-generated, not maintained here.
+    "public/pdf.worker.min.mjs",
+    // Drizzle migrations — raw SQL wrapped in JS strings.
+    "drizzle/**",
   ]),
 ]);
 

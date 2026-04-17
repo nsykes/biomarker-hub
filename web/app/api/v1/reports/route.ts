@@ -1,12 +1,14 @@
 import { NextRequest } from "next/server";
-import { authenticateApiKey, unauthorized } from "@/lib/api-auth";
+import { authAndLimit } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { reports, biomarkerResults } from "@/lib/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
+import { jsonResponse } from "@/lib/http";
 
 export async function GET(request: NextRequest) {
-  const userId = await authenticateApiKey(request);
-  if (!userId) return unauthorized();
+  const auth = await authAndLimit(request);
+  if (auth instanceof Response) return auth;
+  const { userId } = auth;
 
   const rows = await db
     .select({
@@ -36,5 +38,5 @@ export async function GET(request: NextRequest) {
     biomarkerCount: r.biomarkerCount,
   }));
 
-  return Response.json({ reports: result });
+  return jsonResponse({ reports: result });
 }

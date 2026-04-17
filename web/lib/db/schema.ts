@@ -230,8 +230,13 @@ export const doctorShares = pgTable(
     label: text("label").notNull(),
     userName: text("user_name").notNull(),
     token: text("token").notNull().unique(),
+    // `password` and `passwordHash` (SHA256) are v1 columns kept only to
+    // support opportunistic upgrade of existing rows. New rows write empty
+    // strings into them and store the bcrypt hash in `passwordHashV2`.
+    // These columns will be dropped once all active rows have migrated.
     password: text("password").notNull(),
     passwordHash: text("password_hash").notNull(),
+    passwordHashV2: text("password_hash_v2"),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     lastAccessedAt: timestamp("last_accessed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })

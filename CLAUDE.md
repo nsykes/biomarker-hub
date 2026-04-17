@@ -7,6 +7,7 @@ Next.js 16 app for biomarker extraction and health data tracking, with a remote 
 - `web/` — Next.js 16 app (App Router)
 
 ### MCP Server (embedded in web app)
+
 - `web/app/api/mcp/[transport]/route.ts` — Streamable HTTP MCP endpoint (3 tools + 4 prompts, calls DB directly). Uses `mcp-handler` package.
 - `web/lib/mcp/` — MCP helpers: `auth.ts` (OAuth token validation), `format.ts` (toCompact/toFull formatters), `prompts.ts` (prompt registration), `url.ts` (base URL helper)
 - `web/app/api/oauth/` — OAuth 2.1 endpoints: `register/` (DCR), `authorize/` (code generation), `token/` (token exchange)
@@ -25,7 +26,12 @@ Next.js 16 app for biomarker extraction and health data tracking, with a remote 
 - `web/lib/derivative-calc.ts` — Auto-calculation of derivative biomarkers (ratios, sums) from extracted components
 - `web/lib/utils.ts` — Shared utilities (formatDate)
 - `web/lib/biomarker-registry/` — Biomarker registry directory (types, data, matching logic). Barrel re-exports from `index.ts`.
-- `web/app/api/extract/route.ts` — OpenRouter API route
+- `web/app/api/extract/route.ts` — OpenRouter API route (streams ExtractionResponse; defers to `lib/extraction/*` for pure logic)
+- `web/lib/extraction/` — Extraction pipeline modules: `extract-chunk.ts` (OpenRouter call), `chunk-pdf.ts` (pdf-lib splitting), `post-process.ts` (match/dedup/derivatives), `errors.ts` (UserError)
+- `web/lib/env.ts` — Zod-validated env (imported from next.config + layout to fail build on misconfig)
+- `web/lib/logger.ts` — Structured logger (JSON in prod, pretty in dev). Use `log.error/warn/info` instead of `console.*`
+- `web/lib/rate-limit.ts` — Upstash-backed rate limiters. Named buckets: `oauthToken`, `oauthAuthorize`, `extraction`, `doctorShareValidate`, `apiV1`, `mcpTool`
+- `web/lib/api-auth.ts` — `authAndLimit(request)` combines API key validation + per-user rate limit in one call
 - `web/lib/db/actions.ts` — Barrel re-export for all server actions (do not add code here — add to sub-modules)
 - `web/lib/db/actions/` — Server action sub-modules (auth, reports, settings, biomarkers, account, dashboards, goals, api-keys, doctor-shares)
 - `web/lib/db/queries/biomarkers.ts` — Shared query functions (accept userId param, used by both server actions and API routes)
@@ -39,7 +45,8 @@ Next.js 16 app for biomarker extraction and health data tracking, with a remote 
 - `web/lib/mcp/format.ts` — MCP response formatters (toCompact/toFull, works with web app types)
 - `web/lib/mcp/prompts.ts` — MCP prompt registration (shared by remote MCP route)
 - `web/lib/mcp/url.ts` — App base URL helper (NEXT_PUBLIC_APP_URL → VERCEL_PROJECT_PRODUCTION_URL → localhost)
-- `web/app/api/mcp/[transport]/route.ts` — MCP route handler (3 tools: get-biomarkers, list-reports, search-registry + 4 prompts)
+- `web/app/api/mcp/[transport]/route.ts` — MCP route handler (slim wiring; tools live in `lib/mcp/tools/`)
+- `web/lib/mcp/tools/` — One module per MCP tool: `get-biomarkers.ts`, `list-reports.ts`, `search-registry.ts`, plus `shared.ts` (rate limit gate + auth helpers)
 - `web/components/BiomarkerDetailPage.tsx` — BiomarkerDetailView (inline, self-fetching) + BiomarkerDetailPage (standalone wrapper)
 - `web/components/biomarker-detail/` — Detail subcomponents (HistoryChart, HistoryTable, ReferenceRangeSection, helpers)
 - `web/components/BiomarkerCombobox.tsx` — Registry-backed biomarker search/select for adding biomarkers after extraction
@@ -47,7 +54,7 @@ Next.js 16 app for biomarker extraction and health data tracking, with a remote 
 - `web/components/DatePickerInput.tsx` — Custom calendar popover date picker (no external deps), used in FilesTab filters
 - `web/components/PdfPreviewModal.tsx` — Modal for previewing source PDF from history table rows
 - `web/components/RangeConflictModal.tsx` — Modal for resolving reference range conflicts between PDF and stored ranges
-- `web/components/ShareView.tsx` — Password auth + shared biomarker browser for doctor share pages
+- `web/components/views/share/` — Doctor share flow split: `ShareView.tsx` (orchestrator), `ShareAuthForm.tsx` (password entry), `ShareBiomarkerList.tsx` (browser), `ShareBiomarkerDetail.tsx` (detail view)
 - `web/components/SharedPdfPreviewModal.tsx` — PDF preview modal for share pages
 - `web/components/DeleteAccountModal.tsx` — Confirmation modal for account deletion (type "DELETE" to confirm)
 - `web/components/ThemeToggle.tsx` — Light/dark/system theme toggle (cycles light→dark→system)
@@ -88,8 +95,11 @@ Next.js 16 app for biomarker extraction and health data tracking, with a remote 
 
 ```bash
 cd web
-npm run dev      # localhost:3000
-npx tsc --noEmit # type-check
+npm run dev        # localhost:3000
+npm run typecheck  # tsc --noEmit
+npm run lint       # eslint .
+npm run test       # vitest run (pure-logic smoke tests)
+npm run build      # next build (validates env + compiles)
 ```
 
 ## Conventions
@@ -102,11 +112,16 @@ npx tsc --noEmit # type-check
 - MCP server returns raw factual data only — no sentiment/good/bad judgments. Flags (HIGH/LOW/NORMAL), direction (up/down/flat), goalDirection, and reference ranges are factual and stay. The consuming LLM interprets meaning.
 - MCP transport: Streamable HTTP (`web/app/api/mcp/`) for remote access (Claude.ai web/mobile, any MCP client). Endpoint: `https://biomarker-hub.vercel.app/api/mcp/mcp`
 - MCP auth: OAuth 2.1 with DCR for Claude.ai, plus `bh_` API key fallback. OAuth tables: `oauthClients`, `oauthCodes`, `oauthTokens` (all in main DB).
-- Next.js 16 Turbopack quirk: `Response.json()` and `NextResponse.json()` silently fail in async route handlers. Use `new Response(JSON.stringify(...))` instead. All OAuth routes use this pattern.
+- Next.js 16 Turbopack quirk: `Response.json()` and `NextResponse.json()` silently fail in async route handlers. Use `jsonResponse` from `@/lib/http` (wraps `new Response(JSON.stringify(...))`) for all JSON responses. All OAuth routes, v1 routes, and extract route use this helper.
+- **Rate limiting** — every externally reachable endpoint (OAuth, extract, v1 API, MCP tools, doctor-share validate) goes through `checkRateLimit` / `authAndLimit`. When adding a new public endpoint, wire it to an appropriate `ratelimiters` bucket (or add a new one in `lib/rate-limit.ts`).
+- **Secrets & errors** — never echo `err.message` / `String(err)` to clients. Use `log.error("event.name", err)` server-side and return a static description (`"internal_server_error"`). For user-facing extraction errors, throw `UserError` — the route catches it and passes the message through; anything else is treated as unexpected and genericized.
+- **Password hashing** — bcrypt (cost 12) for new doctor-share rows. Legacy SHA256 rows are auto-upgraded on successful validation; plaintext `password` column stays nullable until the backfill window closes (see `drizzle/migrations/0001_doctor_share_password_v2.sql`).
+- **API key lookup** — fetch by `keyPrefix` (11 chars), then `crypto.timingSafeEqual` on full hash. Never `eq(keyHash, hash)` directly.
+- **Env discipline** — import from `@/lib/env`, not `process.env`, anywhere in app/server code. Zod validates at build + cold start.
 
 ## Keeping Docs Current
 
-- **`CLAUDE.md` (this file)** — Update when project structure changes (new dirs, key files added/removed), conventions change, or dev commands change. Never ask whether to update — just do it.
+- `CLAUDE.md` **(this file)** — Update when project structure changes (new dirs, key files added/removed), conventions change, or dev commands change. Never ask whether to update — just do it.
 - **Infrastructure IDs and project context** — Stored in Claude memory (not in repo). Update memory when infrastructure changes or new decisions are made.
 
 **NEVER store personal health information (PHI), real biomarker values, patient names, dates of birth, or any real health data in any file in this repo.** This includes `CLAUDE.md`, comments in code, test fixtures, etc. The repo is public on GitHub. Use fake/placeholder data for examples.

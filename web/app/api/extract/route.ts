@@ -1,125 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth/server";
-import { EXTRACTION_PROMPT } from "@/lib/prompt";
-import { ExtractionResult, ExtractionResponse } from "@/lib/types";
-import { extractionResultSchema } from "@/lib/extraction-schema";
-import { matchBiomarker } from "@/lib/biomarker-registry";
-import { computeDerivatives } from "@/lib/derivative-calc";
+import { NextRequest } from "next/server";
 import { PDFDocument } from "pdf-lib";
-import {
-  OPENROUTER_API_URL,
-  DEFAULT_MODEL,
-  EXTRACTION_MAX_TOKENS,
-  EXTRACTION_TEMPERATURE,
-  CHUNK_PAGE_THRESHOLD,
-  CHUNK_SIZE,
-  FETCH_TIMEOUT_MS,
-} from "@/lib/constants";
+import { auth } from "@/lib/auth/server";
+import { ExtractionResult, ExtractionResponse } from "@/lib/types";
+import { DEFAULT_MODEL, CHUNK_PAGE_THRESHOLD, FETCH_TIMEOUT_MS } from "@/lib/constants";
 import { validatePdfBytes, classifyPdfLoadError } from "@/lib/pdf-validation";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { log } from "@/lib/logger";
+import { extractChunk } from "@/lib/extraction/extract-chunk";
+import { chunkPdf } from "@/lib/extraction/chunk-pdf";
+import { postProcessExtraction } from "@/lib/extraction/post-process";
+import { UserError } from "@/lib/extraction/errors";
+import { jsonResponse } from "@/lib/http";
 
 export const maxDuration = 300;
-
-async function extractChunk(
-  pdfBuffer: Buffer,
-  filename: string,
-  model: string,
-  apiKey: string,
-  signal: AbortSignal
-): Promise<{ extraction: ExtractionResult; usage: any }> {
-  const base64Pdf = pdfBuffer.toString("base64");
-
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "X-Title": "Biomarker Hub",
-    },
-    body: JSON.stringify({
-      model,
-      provider: { data_collection: "deny" },
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: EXTRACTION_PROMPT },
-            {
-              type: "file",
-              file: {
-                filename,
-                file_data: `data:application/pdf;base64,${base64Pdf}`,
-              },
-            },
-          ],
-        },
-      ],
-      response_format: { type: "json_object" },
-      temperature: EXTRACTION_TEMPERATURE,
-      max_tokens: EXTRACTION_MAX_TOKENS,
-    }),
-    signal,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("OpenRouter error:", response.status, errorText);
-    throw new Error(`OpenRouter API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  if (!data.choices?.[0]?.message?.content) {
-    console.error(
-      "Empty LLM content — raw response:",
-      JSON.stringify({
-        id: data.id,
-        model: data.model,
-        choices: data.choices?.map((c: any) => ({
-          finish_reason: c.finish_reason,
-          message: {
-            role: c.message?.role,
-            content: c.message?.content,
-            refusal: c.message?.refusal,
-          },
-        })),
-        error: data.error,
-      })
-    );
-    throw new Error("No content in LLM response");
-  }
-
-  const finishReason = data.choices[0].finish_reason;
-  if (finishReason === "length") {
-    console.error("Extraction truncated: output hit max_tokens limit");
-    throw new Error(
-      "The extraction output was truncated because the report contains too many results. Please try a shorter report."
-    );
-  }
-
-  let extraction: ExtractionResult;
-  try {
-    const raw = JSON.parse(data.choices[0].message.content);
-    extraction = extractionResultSchema.parse(raw) as ExtractionResult;
-  } catch (e) {
-    const contentLength = data.choices[0].message.content?.length ?? 0;
-    console.error(
-      "JSON parse/validation failed — finish_reason:",
-      finishReason,
-      "content length:",
-      contentLength,
-      "error:",
-      e instanceof Error ? e.message : e
-    );
-    throw new Error("Failed to parse LLM response as JSON");
-  }
-
-  return { extraction, usage: data.usage };
-}
 
 export async function POST(request: NextRequest) {
   const { data: session } = await auth.getSession();
   if (!session) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  const limit = await checkRateLimit("extraction", session.user.id);
+  if (!limit.success) {
+    return jsonResponse(
+      { error: "Rate limit exceeded. Try again shortly." },
+      { status: 429, headers: rateLimitHeaders(limit, true) }
+    );
   }
 
   const startTime = Date.now();
@@ -130,15 +36,12 @@ export async function POST(request: NextRequest) {
     const model = (formData.get("model") as string) || DEFAULT_MODEL;
 
     if (!file) {
-      return NextResponse.json(
-        { error: "No PDF file provided" },
-        { status: 400 }
-      );
+      return jsonResponse({ error: "No PDF file provided" }, { status: 400 });
     }
 
     const apiKey = formData.get("apiKey") as string;
     if (!apiKey) {
-      return NextResponse.json(
+      return jsonResponse(
         {
           error:
             "No API key configured. Add your OpenRouter API key in Settings.",
@@ -150,10 +53,9 @@ export async function POST(request: NextRequest) {
     const pdfBuffer = Buffer.from(await file.arrayBuffer());
     const filename = file.name || "lab-report.pdf";
 
-    // Validate PDF bytes (size + magic header) before streaming starts
     const pdfError = validatePdfBytes(pdfBuffer);
     if (pdfError) {
-      return NextResponse.json({ error: pdfError.message }, { status: 400 });
+      return jsonResponse({ error: pdfError.message }, { status: 400 });
     }
 
     // Stream response with keep-alive to prevent browser timeout
@@ -166,24 +68,24 @@ export async function POST(request: NextRequest) {
         }, 15_000);
 
         try {
-          // Determine if we need to chunk
           let pdfDoc;
           try {
             pdfDoc = await PDFDocument.load(pdfBuffer);
           } catch (loadErr) {
-            const classified = classifyPdfLoadError(loadErr);
-            throw new Error(classified.message);
+            throw new UserError(classifyPdfLoadError(loadErr).message);
           }
           const pageCount = pdfDoc.getPageCount();
 
           let extraction: ExtractionResult;
           let totalTokens: number | null = null;
 
-          if (pageCount <= CHUNK_PAGE_THRESHOLD) {
-            // Small PDF — single extraction call
-            const abortController = new AbortController();
-            const timeout = setTimeout(() => abortController.abort(), FETCH_TIMEOUT_MS);
-            try {
+          const abortController = new AbortController();
+          const timeout = setTimeout(
+            () => abortController.abort(),
+            FETCH_TIMEOUT_MS
+          );
+          try {
+            if (pageCount <= CHUNK_PAGE_THRESHOLD) {
               const result = await extractChunk(
                 pdfBuffer,
                 filename,
@@ -193,58 +95,24 @@ export async function POST(request: NextRequest) {
               );
               extraction = result.extraction;
               totalTokens = result.usage?.total_tokens ?? null;
-            } finally {
-              clearTimeout(timeout);
-            }
-          } else {
-            // Large PDF — split into chunks and extract in parallel
-            const chunks: { buffer: Buffer; startPage: number }[] = [];
-            for (let i = 0; i < pageCount; i += CHUNK_SIZE) {
-              const chunkDoc = await PDFDocument.create();
-              const end = Math.min(i + CHUNK_SIZE, pageCount);
-              const pageIndices = Array.from(
-                { length: end - i },
-                (_, idx) => i + idx
-              );
-              const copiedPages = await chunkDoc.copyPages(pdfDoc, pageIndices);
-              copiedPages.forEach((page) => chunkDoc.addPage(page));
-              const chunkBytes = await chunkDoc.save();
-              chunks.push({
-                buffer: Buffer.from(chunkBytes),
-                startPage: i + 1, // 1-indexed
-              });
-            }
-
-            console.log(
-              `Chunked extraction: ${pageCount} pages → ${chunks.length} chunks`
-            );
-
-            const abortController = new AbortController();
-            const timeout = setTimeout(() => abortController.abort(), FETCH_TIMEOUT_MS);
-            try {
+            } else {
+              const chunks = await chunkPdf(pdfDoc, pageCount);
               const results = await Promise.all(
-                chunks.map(async (chunk, idx) => {
-                  const chunkStart = Date.now();
-                  const result = await extractChunk(
+                chunks.map((chunk, idx) =>
+                  extractChunk(
                     chunk.buffer,
                     `${filename} (chunk ${idx + 1}/${chunks.length})`,
                     model,
                     apiKey,
                     abortController.signal
-                  );
-                  console.log(
-                    `Chunk ${idx + 1}/${chunks.length} completed in ${((Date.now() - chunkStart) / 1000).toFixed(1)}s`
-                  );
-                  return result;
-                })
+                  )
+                )
               );
 
-              // Merge: reportInfo from first chunk, concatenate biomarkers with page offset (no dedup yet)
               extraction = {
                 reportInfo: results[0].extraction.reportInfo,
                 biomarkers: [],
               };
-
               for (let i = 0; i < results.length; i++) {
                 const offset = chunks[i].startPage - 1;
                 for (const b of results[i].extraction.biomarkers) {
@@ -252,78 +120,40 @@ export async function POST(request: NextRequest) {
                 }
               }
 
-              // Aggregate tokens
               totalTokens = results.reduce(
                 (sum, r) => sum + (r.usage?.total_tokens ?? 0),
                 0
               );
-            } finally {
-              clearTimeout(timeout);
             }
+          } finally {
+            clearTimeout(timeout);
           }
 
-          // Match against canonical biomarker registry (before dedup so slugs are available)
-          extraction.biomarkers = extraction.biomarkers.map((b) => {
-            const specimen =
-              b.category === "Urinalysis"
-                ? "urine"
-                : ["Body Composition", "Bone", "Muscle Balance"].includes(b.category)
-                  ? "body_composition"
-                  : "blood";
-            const canonical = matchBiomarker(
-              b.rawName,
-              specimen as "blood" | "urine" | "body_composition",
-              b.region,
-              b.metricName
-            );
-            return {
-              ...b,
-              canonicalSlug: canonical?.slug ?? null,
-              metricName: canonical?.displayName ?? b.metricName,
-              category: canonical?.category ?? b.category,
-            };
-          });
-
-          // Dedup: by canonicalSlug for matched entries, rawName|value fallback for unmatched.
-          // Keeps first occurrence (lowest page number). Applies to ALL extractions
-          // (not just chunked) to handle summary/appendix pages that repeat results.
-          {
-            const seen = new Set<string>();
-            extraction.biomarkers = extraction.biomarkers.filter((b) => {
-              const key = b.canonicalSlug ?? `${b.rawName}|${b.value}`;
-              if (seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            });
-          }
-
-          // Add UUIDs to each biomarker
-          extraction.biomarkers = extraction.biomarkers.map((b) => ({
-            ...b,
-            id: crypto.randomUUID(),
-          }));
-
-          // Compute derivative biomarkers from extracted components
-          const derivatives = computeDerivatives(extraction.biomarkers);
-          extraction.biomarkers = [...extraction.biomarkers, ...derivatives];
-
-          const duration = Date.now() - startTime;
+          extraction = postProcessExtraction(extraction);
 
           const result: ExtractionResponse = {
             extraction,
             meta: {
-              model: model,
+              model,
               tokensUsed: totalTokens,
-              duration,
+              duration: Date.now() - startTime,
             },
           };
 
           controller.enqueue(encoder.encode(JSON.stringify(result)));
-        } catch (err: any) {
-          const errorBody = err?.name === "AbortError"
-            ? { error: "Extraction timed out. Please try a shorter report." }
-            : { error: err?.message || "Internal extraction error" };
-          if (err?.name !== "AbortError") console.error("Extraction error:", err);
+        } catch (err: unknown) {
+          const e = err as { name?: string; message?: string } | undefined;
+          let errorBody: { error: string };
+          if (e?.name === "AbortError") {
+            errorBody = {
+              error: "Extraction timed out. Please try a shorter report.",
+            };
+          } else if (err instanceof UserError) {
+            errorBody = { error: err.message };
+          } else {
+            log.error("extract.failed", err);
+            errorBody = { error: "Internal extraction error" };
+          }
           controller.enqueue(encoder.encode(JSON.stringify(errorBody)));
         } finally {
           clearInterval(keepAlive);
@@ -335,12 +165,9 @@ export async function POST(request: NextRequest) {
     return new Response(stream, {
       headers: { "Content-Type": "application/json" },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     // This catch only handles errors before streaming starts (formData parsing)
-    console.error("Pre-extraction error:", err);
-    return NextResponse.json(
-      { error: err?.message || "Internal error" },
-      { status: 500 }
-    );
+    log.error("extract.pre_failed", err);
+    return jsonResponse({ error: "Internal error" }, { status: 500 });
   }
 }

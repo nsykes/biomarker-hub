@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { REGISTRY } from "@/lib/biomarker-registry";
+import { jsonResponse } from "@/lib/http";
 
 export async function GET(request: NextRequest) {
   const search = request.nextUrl.searchParams.get("search");
@@ -36,5 +37,5 @@ export async function GET(request: NextRequest) {
     specimenType: e.specimenType,
   }));
 
-  return Response.json({ registry: entries });
+  return jsonResponse({ registry: entries });
 }

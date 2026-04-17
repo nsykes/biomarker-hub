@@ -39,3 +39,6 @@ sample-report.pdf
 
 # Misc
 *.pem
+
+# roro workspace
+.roro/

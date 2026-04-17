@@ -110,12 +110,12 @@ export function ApiKeySection({
           <li>
             Open{" "}
             <a
-              href="https://openrouter.ai/settings/guardrails"
+              href="https://openrouter.ai/workspaces/default/guardrails"
               target="_blank"
               rel="noreferrer"
               className="text-[var(--color-primary)] hover:underline font-medium"
             >
-              openrouter.ai/settings/guardrails
+              openrouter.ai/workspaces/default/guardrails
             </a>
           </li>
           <li>

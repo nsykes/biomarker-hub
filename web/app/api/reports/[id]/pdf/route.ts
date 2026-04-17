@@ -82,10 +82,13 @@ export async function PUT(
     return new Response("Payload too large", { status: 413 });
   }
 
+  // Defense-in-depth: the ownership SELECT above already blocks cross-user
+  // writes, but keep the userId in this WHERE so a future refactor that
+  // removes the SELECT can't silently regress isolation.
   await db
     .update(reports)
     .set({ pdfData: buffer, pdfSizeBytes: buffer.length })
-    .where(eq(reports.id, id));
+    .where(and(eq(reports.id, id), eq(reports.userId, session.user.id)));
 
   return new Response(null, { status: 204 });
 }

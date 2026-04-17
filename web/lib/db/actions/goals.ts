@@ -90,14 +90,13 @@ export async function reorderGoals(
 
   if (orderedGoalIds.length === 0) return;
 
-  await db.transaction(async (tx) => {
-    for (let i = 0; i < orderedGoalIds.length; i++) {
-      await tx
-        .update(goals)
-        .set({ sortOrder: i })
-        .where(and(eq(goals.id, orderedGoalIds[i]), eq(goals.userId, userId)));
-    }
-  });
+  const updates = orderedGoalIds.map((id, i) =>
+    db
+      .update(goals)
+      .set({ sortOrder: i })
+      .where(and(eq(goals.id, id), eq(goals.userId, userId)))
+  );
+  await db.batch([updates[0], ...updates.slice(1)]);
 }
 
 export async function getGoalChartData(

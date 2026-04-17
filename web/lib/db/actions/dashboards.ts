@@ -198,23 +198,22 @@ export async function reorderDashboardItems(
   if (rows.length === 0) throw new Error("Dashboard not found");
 
   if (orderedItemIds.length > 0) {
-    await db.transaction(async (tx) => {
-      for (let i = 0; i < orderedItemIds.length; i++) {
-        await tx
-          .update(dashboardItems)
-          .set({ sortOrder: i })
-          .where(
-            and(
-              eq(dashboardItems.id, orderedItemIds[i]),
-              eq(dashboardItems.dashboardId, dashboardId)
-            )
-          );
-      }
-      await tx
-        .update(dashboards)
-        .set({ updatedAt: new Date() })
-        .where(eq(dashboards.id, dashboardId));
-    });
+    const updates = orderedItemIds.map((id, i) =>
+      db
+        .update(dashboardItems)
+        .set({ sortOrder: i })
+        .where(
+          and(
+            eq(dashboardItems.id, id),
+            eq(dashboardItems.dashboardId, dashboardId)
+          )
+        )
+    );
+    const touch = db
+      .update(dashboards)
+      .set({ updatedAt: new Date() })
+      .where(eq(dashboards.id, dashboardId));
+    await db.batch([updates[0], ...updates.slice(1), touch]);
   } else {
     await db
       .update(dashboards)

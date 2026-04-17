@@ -111,13 +111,19 @@ export function useGoalData() {
       const newIndex = goals.findIndex((g) => g.id === over.id);
       if (oldIndex === -1 || newIndex === -1) return;
 
+      const prevGoals = goals;
       const reordered = arrayMove(goals, oldIndex, newIndex).map((g, i) => ({
         ...g,
         sortOrder: i,
       }));
       setGoals(reordered);
 
-      await reorderGoals(reordered.map((g) => g.id));
+      try {
+        await reorderGoals(reordered.map((g) => g.id));
+      } catch (err) {
+        console.error("Failed to persist goal reorder:", err);
+        setGoals(prevGoals);
+      }
     },
     [goals]
   );

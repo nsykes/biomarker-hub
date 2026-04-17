@@ -2,7 +2,7 @@
 
 import { db } from "../index";
 import { goals } from "../schema";
-import { eq, asc, and, inArray, sql } from "drizzle-orm";
+import { eq, asc, and, sql } from "drizzle-orm";
 import { GoalRow, BiomarkerDetailData } from "@/lib/types";
 import { requireUser } from "./auth";
 import { getBatchChartDataByUser } from "../queries/biomarkers";
@@ -90,17 +90,14 @@ export async function reorderGoals(
 
   if (orderedGoalIds.length === 0) return;
 
-  const sqlChunks = orderedGoalIds.map(
-    (id, i) => sql`WHEN ${id} THEN ${i}`
-  );
-  await db
-    .update(goals)
-    .set({
-      sortOrder: sql`CASE id ${sql.join(sqlChunks, sql` `)} END`,
-    })
-    .where(
-      and(eq(goals.userId, userId), inArray(goals.id, orderedGoalIds))
-    );
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < orderedGoalIds.length; i++) {
+      await tx
+        .update(goals)
+        .set({ sortOrder: i })
+        .where(and(eq(goals.id, orderedGoalIds[i]), eq(goals.userId, userId)));
+    }
+  });
 }
 
 export async function getGoalChartData(

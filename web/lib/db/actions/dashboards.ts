@@ -197,23 +197,30 @@ export async function reorderDashboardItems(
     );
   if (rows.length === 0) throw new Error("Dashboard not found");
 
-  // Update all items' sort order in a single query
   if (orderedItemIds.length > 0) {
-    const sqlChunks = orderedItemIds.map(
-      (id, i) => sql`WHEN ${id} THEN ${i}`
-    );
+    await db.transaction(async (tx) => {
+      for (let i = 0; i < orderedItemIds.length; i++) {
+        await tx
+          .update(dashboardItems)
+          .set({ sortOrder: i })
+          .where(
+            and(
+              eq(dashboardItems.id, orderedItemIds[i]),
+              eq(dashboardItems.dashboardId, dashboardId)
+            )
+          );
+      }
+      await tx
+        .update(dashboards)
+        .set({ updatedAt: new Date() })
+        .where(eq(dashboards.id, dashboardId));
+    });
+  } else {
     await db
-      .update(dashboardItems)
-      .set({
-        sortOrder: sql`CASE id ${sql.join(sqlChunks, sql` `)} END`,
-      })
-      .where(inArray(dashboardItems.id, orderedItemIds));
+      .update(dashboards)
+      .set({ updatedAt: new Date() })
+      .where(eq(dashboards.id, dashboardId));
   }
-
-  await db
-    .update(dashboards)
-    .set({ updatedAt: new Date() })
-    .where(eq(dashboards.id, dashboardId));
 }
 
 /**

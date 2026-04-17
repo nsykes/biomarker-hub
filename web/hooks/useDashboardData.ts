@@ -174,6 +174,7 @@ export function useDashboardData(dashboardId: string, onBack: () => void) {
       );
       if (oldIndex === -1 || newIndex === -1) return;
 
+      const prevItems = items;
       const reordered = arrayMove(cardEntries, oldIndex, newIndex);
       const newItems: DashboardItem[] = [];
       let sortIdx = 0;
@@ -190,10 +191,15 @@ export function useDashboardData(dashboardId: string, onBack: () => void) {
       }
       setItems(newItems);
 
-      await reorderDashboardItems(
-        dashboardId,
-        newItems.map((i) => i.id)
-      );
+      try {
+        await reorderDashboardItems(
+          dashboardId,
+          newItems.map((i) => i.id)
+        );
+      } catch (err) {
+        console.error("Failed to persist dashboard reorder:", err);
+        setItems(prevItems);
+      }
     },
     [cardEntries, items, dashboardId]
   );

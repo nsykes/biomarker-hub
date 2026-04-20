@@ -1,13 +1,38 @@
 import crypto from "crypto";
 import { db } from "@/lib/db";
-import { oauthCodes, oauthTokens } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { oauthClients, oauthCodes, oauthTokens } from "@/lib/db/schema";
+import { and, eq, lt, notExists, sql } from "drizzle-orm";
 import {
   checkRateLimit,
   clientIp,
   rateLimitHeaders,
 } from "@/lib/rate-limit";
 import { log } from "@/lib/logger";
+
+/** Opportunistic sweep of expired OAuth rows on every token exchange. Keeps
+ *  the three oauth_* tables from growing unbounded — there's no other GC. */
+async function sweepExpiredOauth(): Promise<void> {
+  try {
+    await db.delete(oauthCodes).where(lt(oauthCodes.expiresAt, new Date()));
+    await db.delete(oauthTokens).where(lt(oauthTokens.expiresAt, new Date()));
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    await db
+      .delete(oauthClients)
+      .where(
+        and(
+          lt(oauthClients.createdAt, cutoff),
+          notExists(
+            db
+              .select({ one: sql`1` })
+              .from(oauthTokens)
+              .where(eq(oauthTokens.clientId, oauthClients.clientId))
+          )
+        )
+      );
+  } catch (err) {
+    log.error("oauth.sweep.failed", err);
+  }
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,6 +63,8 @@ export async function POST(request: Request) {
       rateLimitHeaders(limit, true)
     );
   }
+
+  await sweepExpiredOauth();
 
   try {
     const contentType = request.headers.get("content-type") ?? "";

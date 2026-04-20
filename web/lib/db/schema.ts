@@ -38,7 +38,7 @@ export const reports = pgTable(
   "reports",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id"), // FK to neon_auth.user.id (managed externally)
+    userId: uuid("user_id").notNull(), // FK to neon_auth.user.id (managed externally)
     filename: text("filename").notNull(),
     source: text("source"),
     labName: text("lab_name"),
@@ -105,7 +105,7 @@ export const biomarkerResults = pgTable(
   ]
 );
 
-// 4. Reference ranges — global per-biomarker reference ranges (empty for now, populated later)
+// 4. Reference ranges — global per-biomarker reference ranges.
 export const referenceRanges = pgTable("reference_ranges", {
   id: uuid("id").primaryKey().defaultRandom(),
   canonicalSlug: text("canonical_slug").notNull().unique(),
@@ -230,13 +230,7 @@ export const doctorShares = pgTable(
     label: text("label").notNull(),
     userName: text("user_name").notNull(),
     token: text("token").notNull().unique(),
-    // `password` and `passwordHash` (SHA256) are v1 columns kept only to
-    // support opportunistic upgrade of existing rows. New rows write empty
-    // strings into them and store the bcrypt hash in `passwordHashV2`.
-    // These columns will be dropped once all active rows have migrated.
-    password: text("password").notNull(),
-    passwordHash: text("password_hash").notNull(),
-    passwordHashV2: text("password_hash_v2"),
+    passwordHashV2: text("password_hash_v2").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     lastAccessedAt: timestamp("last_accessed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })

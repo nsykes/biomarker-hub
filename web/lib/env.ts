@@ -25,9 +25,6 @@ const schema = z.object({
     .string()
     .min(32, "NEON_AUTH_COOKIE_SECRET must be at least 32 chars"),
 
-  // Optional — per-user keys are stored in settings; this is a fallback.
-  OPENROUTER_API_KEY: optionalString,
-
   // Optional — rate limiting is a no-op without these, with a warning in dev.
   UPSTASH_REDIS_REST_URL: optionalUrl,
   UPSTASH_REDIS_REST_TOKEN: optionalString,

@@ -237,6 +237,7 @@ export function MultiMetricChart({
               dot={{ r: 4, fill: CHART_COLORS[i % CHART_COLORS.length], stroke: "#fff", strokeWidth: 2 }}
               activeDot={{ r: 6, stroke: CHART_COLORS[i % CHART_COLORS.length], strokeWidth: 2, fill: "#fff" }}
               connectNulls
+              isAnimationActive={false}
             />
           ))}
         </LineChart>

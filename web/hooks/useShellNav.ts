@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ModuleDef } from "@/modules/types";
 
 const SENTINEL = "_hubNav";
+const SIDEBAR_PIN_STORAGE_KEY = "baseline.sidebar.pinned";
 export const SETTINGS_VIEW_ID = "settings";
 
 export type ShellViewId = string;
@@ -89,6 +90,8 @@ export interface ShellNav {
   mobileDrawerOpen: boolean;
   openMobileDrawer: () => void;
   closeMobileDrawer: () => void;
+  sidebarPinned: boolean;
+  toggleSidebarPin: () => void;
 }
 
 export function useShellNav(
@@ -130,6 +133,10 @@ export function useShellNav(
     () => new Set<string>([initial.activeViewId])
   );
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [sidebarPinned, setSidebarPinned] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(SIDEBAR_PIN_STORAGE_KEY) === "true";
+  });
 
   const latest = useRef({ activeViewId, moduleStates });
   latest.current = { activeViewId, moduleStates };
@@ -214,6 +221,16 @@ export function useShellNav(
     [activeViewId, modules]
   );
 
+  const toggleSidebarPin = useCallback(() => {
+    setSidebarPinned((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(SIDEBAR_PIN_STORAGE_KEY, String(next));
+      }
+      return next;
+    });
+  }, []);
+
   return {
     activeViewId,
     moduleStates,
@@ -224,5 +241,7 @@ export function useShellNav(
     mobileDrawerOpen,
     openMobileDrawer: useCallback(() => setMobileDrawerOpen(true), []),
     closeMobileDrawer: useCallback(() => setMobileDrawerOpen(false), []),
+    sidebarPinned,
+    toggleSidebarPin,
   };
 }

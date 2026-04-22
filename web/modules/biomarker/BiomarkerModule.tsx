@@ -32,7 +32,7 @@ export function BiomarkerModule({
     <>
       {/* Desktop tab strip — mobile uses BottomTabBar */}
       <nav
-        className="hidden md:flex items-center justify-center px-6 py-3 border-b border-[var(--color-border-light)] flex-shrink-0"
+        className="hidden md:flex items-center justify-center h-16 px-6 border-b border-[var(--color-border-light)] flex-shrink-0"
         style={{ background: "var(--color-header-bg)", boxShadow: "var(--color-header-shadow)" }}
         aria-label="Biomarker views"
       >

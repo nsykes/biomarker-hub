@@ -1,6 +1,6 @@
 {
-  "name": "Biomarker Hub",
-  "short_name": "Biomarker Hub",
+  "name": "Baseline",
+  "short_name": "Baseline",
   "description": "Track and visualize your biomarker data from lab report PDFs",
   "start_url": "/",
   "display": "standalone",

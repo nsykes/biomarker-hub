@@ -1,12 +1,12 @@
 "use client";
 
 import { Suspense } from "react";
-import { AppShell } from "@/components/AppShell";
+import { ShellFrame } from "@/components/shell/ShellFrame";
 
 export default function HomePage() {
   return (
     <Suspense>
-      <AppShell />
+      <ShellFrame />
     </Suspense>
   );
 }

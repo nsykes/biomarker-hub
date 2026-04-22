@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { BiomarkerDetailData } from "@/lib/types";
 import { HistoryChart } from "./biomarker-detail/HistoryChart";
 import { InfoTooltip } from "./InfoTooltip";
+import { CopyChartButton } from "./CopyChartButton";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { computeTrend } from "@/lib/trend";
@@ -43,6 +44,12 @@ export function DashboardChartCard({
     isDragging,
   } = useSortable({ id: itemId });
 
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const setRefs = (node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    cardRef.current = node;
+  };
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -51,7 +58,7 @@ export function DashboardChartCard({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       style={style}
       className={`card overflow-hidden ${mergeMode ? "cursor-pointer" : ""}`}
       onClick={mergeMode ? onToggleSelect : undefined}
@@ -78,6 +85,7 @@ export function DashboardChartCard({
           <button
             {...attributes}
             {...listeners}
+            data-export-hide="true"
             className="p-1 rounded hover:bg-[var(--color-surface-tertiary)] cursor-grab active:cursor-grabbing text-[var(--color-text-tertiary)] flex-shrink-0 touch-none"
             title="Drag to reorder"
           >
@@ -112,10 +120,14 @@ export function DashboardChartCard({
           </InfoTooltip>
         )}
 
+        {/* Copy chart as image */}
+        <CopyChartButton targetRef={cardRef} className="ml-auto" />
+
         {/* Remove button */}
         <button
           onClick={onRemove}
-          className="ml-auto p-1.5 rounded-lg hover:bg-[var(--color-error-bg)] text-[var(--color-text-tertiary)] hover:text-[var(--color-error)] transition-colors flex-shrink-0"
+          data-export-hide="true"
+          className="p-1.5 rounded-lg hover:bg-[var(--color-error-bg)] text-[var(--color-text-tertiary)] hover:text-[var(--color-error)] transition-colors flex-shrink-0"
           title="Remove from dashboard"
         >
           <svg

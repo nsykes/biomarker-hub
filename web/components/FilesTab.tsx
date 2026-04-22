@@ -6,17 +6,12 @@ import { getFiles, deleteFile } from "@/lib/db/actions";
 import { formatDate } from "@/lib/utils";
 import { PageSpinner } from "./Spinner";
 import { DatePickerInput } from "./DatePickerInput";
+import { REPORT_TYPES, REPORT_TYPE_META, isReportType } from "@/lib/report-types";
 
 interface FilesTabProps {
   onNewExtraction: () => void;
   onViewFile: (file: StoredFile) => void;
 }
-
-const REPORT_TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  blood_panel: { label: "Blood", color: "bg-[var(--color-badge-blood-bg)] text-[var(--color-badge-blood-text)]" },
-  dexa_scan: { label: "DEXA", color: "bg-[var(--color-badge-dexa-bg)] text-[var(--color-badge-dexa-text)]" },
-  other: { label: "Other", color: "bg-[var(--color-surface-tertiary)] text-[var(--color-text-secondary)]" },
-};
 
 export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
   const [files, setFiles] = useState<StoredFile[]>([]);
@@ -144,9 +139,9 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
               className="input-base !py-1.5 !px-2 !rounded-lg !w-auto"
             >
               <option value="all">All</option>
-              <option value="blood_panel">Blood</option>
-              <option value="dexa_scan">DEXA</option>
-              <option value="other">Other</option>
+              {REPORT_TYPES.map((t) => (
+                <option key={t} value={t}>{REPORT_TYPE_META[t].label}</option>
+              ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
@@ -232,7 +227,8 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
                   </tr>
                 ) : null}
                 {filteredFiles.map((f) => {
-                  const badge = REPORT_TYPE_LABELS[f.reportType ?? "other"] ?? REPORT_TYPE_LABELS.other;
+                  const typeKey = isReportType(f.reportType) ? f.reportType : "other";
+                  const badge = REPORT_TYPE_META[typeKey];
                   return (
                     <tr
                       key={f.id}
@@ -250,7 +246,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.badgeClass}`}>
                           {badge.label}
                         </span>
                       </td>
@@ -290,7 +286,8 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
               </li>
             )}
             {filteredFiles.map((f) => {
-              const badge = REPORT_TYPE_LABELS[f.reportType ?? "other"] ?? REPORT_TYPE_LABELS.other;
+              const typeKey = isReportType(f.reportType) ? f.reportType : "other";
+              const badge = REPORT_TYPE_META[typeKey];
               return (
                 <li key={f.id} className="relative">
                   <button
@@ -302,7 +299,7 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
                       <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
                         {f.collectionDate ? formatDate(f.collectionDate) : "No date"}
                       </span>
-                      <span className={`flex-shrink-0 inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
+                      <span className={`flex-shrink-0 inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badge.badgeClass}`}>
                         {badge.label}
                       </span>
                     </div>

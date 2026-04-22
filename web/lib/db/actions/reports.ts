@@ -9,6 +9,7 @@ import {
   StoredFile,
 } from "@/lib/types";
 import { requireUser } from "./auth";
+import { isReportType, type ReportType } from "@/lib/report-types";
 
 // --- helpers (internal) ---
 
@@ -243,7 +244,7 @@ export async function deleteFile(id: string): Promise<void> {
 
 export async function updateReportInfo(
   id: string,
-  fields: { source?: string; labName?: string; collectionDate?: string }
+  fields: { source?: string; labName?: string; collectionDate?: string; reportType?: ReportType }
 ): Promise<void> {
   const userId = await requireUser();
 
@@ -258,6 +259,10 @@ export async function updateReportInfo(
   if (fields.source !== undefined) updates.source = fields.source;
   if (fields.labName !== undefined) updates.labName = fields.labName;
   if (fields.collectionDate !== undefined) updates.collectionDate = fields.collectionDate;
+  if (fields.reportType !== undefined) {
+    if (!isReportType(fields.reportType)) throw new Error("Invalid report type");
+    updates.reportType = fields.reportType;
+  }
 
   if (Object.keys(updates).length > 0) {
     await db.update(reports).set(updates).where(eq(reports.id, id));

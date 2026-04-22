@@ -6,6 +6,14 @@ import "./lib/env";
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  experimental: {
+    optimizePackageImports: [
+      "recharts",
+      "lucide-react",
+      "@dnd-kit/core",
+      "@dnd-kit/sortable",
+    ],
+  },
 };
 
 export default nextConfig;

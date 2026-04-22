@@ -3,7 +3,7 @@ import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { GoalRow, GoalCardEntry, BiomarkerDetailData } from "@/lib/types";
 import {
-  getGoals,
+  getGoalsWithChartData,
   createGoal,
   updateGoalTarget,
   deleteGoal,
@@ -38,18 +38,13 @@ export function useGoalData() {
 
   const loadData = useCallback(async () => {
     try {
-      const rows = await getGoals();
+      const { goals: rows, chartData: data } = await getGoalsWithChartData();
       setGoals(rows);
-
-      const slugs = rows.map((g) => g.canonicalSlug);
-      if (slugs.length > 0) {
-        const data = await getGoalChartData(slugs);
-        const map = new Map<string, BiomarkerDetailData>();
-        for (const d of data) {
-          map.set(d.slug, d);
-        }
-        setChartData(map);
+      const map = new Map<string, BiomarkerDetailData>();
+      for (const d of data) {
+        map.set(d.slug, d);
       }
+      setChartData(map);
     } catch (err) {
       console.error("Failed to load goals:", err);
     } finally {

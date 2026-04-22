@@ -5,7 +5,7 @@ import { GoalRow } from "@/lib/types";
 import { useGoalData } from "@/hooks/useGoalData";
 import { GoalGrid } from "./goals/GoalGrid";
 import { CreateGoalModal } from "./CreateGoalModal";
-import { PageSpinner } from "./Spinner";
+import { Skeleton } from "./Skeleton";
 import { REGISTRY } from "@/lib/biomarker-registry";
 
 interface GoalsTabProps {
@@ -37,7 +37,21 @@ export function GoalsTab({ onNavigateToBiomarker }: GoalsTabProps) {
   };
 
   if (loading) {
-    return <PageSpinner />;
+    return (
+      <div className="relative h-full">
+        <div className="overflow-auto h-full">
+          <div className="p-3 md:p-4 pb-tab-bar grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="card p-4">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-40 w-full mt-3" />
+                <Skeleton className="h-3 w-20 mt-3" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (cardEntries.length === 0 && !showCreate) {

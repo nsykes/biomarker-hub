@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BiomarkerCombobox } from "./BiomarkerCombobox";
-import { PageSpinner } from "./Spinner";
+import { Skeleton } from "./Skeleton";
 import { DashboardHeader } from "./dashboard/DashboardHeader";
 import { DashboardGrid } from "./dashboard/DashboardGrid";
 import { DashboardEmptyState } from "./dashboard/DashboardEmptyState";
@@ -54,7 +54,24 @@ export function DashboardView({ dashboardId, onBack, onNavigateToBiomarker }: Da
   };
 
   if (loading) {
-    return <PageSpinner />;
+    return (
+      <div className="overflow-auto h-full">
+        <div className="flex items-center gap-3 px-3 md:px-5 py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
+          <Skeleton className="h-6 w-6 rounded-full" />
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-8 w-8 rounded-full ml-auto" />
+        </div>
+        <div className="p-3 md:p-4 pb-tab-bar grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="card p-4">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-40 w-full mt-3" />
+              <Skeleton className="h-3 w-20 mt-3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!dashboard) return null;

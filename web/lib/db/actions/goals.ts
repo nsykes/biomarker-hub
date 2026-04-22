@@ -7,9 +7,7 @@ import { GoalRow, BiomarkerDetailData } from "@/lib/types";
 import { requireUser } from "./auth";
 import { getBatchChartDataByUser } from "../queries/biomarkers";
 
-export async function getGoals(): Promise<GoalRow[]> {
-  const userId = await requireUser();
-
+async function fetchGoalsForUser(userId: string): Promise<GoalRow[]> {
   const rows = await db
     .select({
       id: goals.id,
@@ -25,6 +23,23 @@ export async function getGoals(): Promise<GoalRow[]> {
     ...r,
     targetValue: Number(r.targetValue),
   }));
+}
+
+export async function getGoals(): Promise<GoalRow[]> {
+  const userId = await requireUser();
+  return fetchGoalsForUser(userId);
+}
+
+export async function getGoalsWithChartData(): Promise<{
+  goals: GoalRow[];
+  chartData: BiomarkerDetailData[];
+}> {
+  const userId = await requireUser();
+  const goalRows = await fetchGoalsForUser(userId);
+  const slugs = goalRows.map((g) => g.canonicalSlug);
+  const chartData =
+    slugs.length > 0 ? await getBatchChartDataByUser(userId, slugs) : [];
+  return { goals: goalRows, chartData };
 }
 
 export async function createGoal(

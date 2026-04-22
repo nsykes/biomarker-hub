@@ -25,6 +25,8 @@ export function ShellFrame() {
             modules={MODULES}
             activeViewId={nav.activeViewId}
             onSelect={nav.switchView}
+            pinned={nav.sidebarPinned}
+            onTogglePin={nav.toggleSidebarPin}
           />
         )}
 

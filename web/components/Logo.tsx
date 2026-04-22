@@ -1,15 +1,14 @@
-// The viewBox has extra right-side padding (width extended from 252 to 272
-// beyond the tight content bounds) so the SVG bounding-box center sits
-// ~10 units to the right of the content's center. The text "Biomarker Hub"
-// carries more visual weight than the icon, so without this nudge a
-// math-centered SVG reads as right-shifted.
+// The viewBox has a small amount of right-side padding so the wordmark
+// ("Baseline") never clips at the right edge when rendered in narrow containers.
+// The two weights are rendered in a single <text> with <tspan>s so kerning
+// flows naturally across the weight change.
 export function Logo({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="5 4 272 48"
+      viewBox="5 4 192 48"
       role="img"
-      aria-label="Biomarker Hub"
+      aria-label="Baseline"
       className={className}
     >
       <style>{`
@@ -47,8 +46,16 @@ export function Logo({ className }: { className?: string }) {
         </g>
       </g>
       <g id="wordmark" transform="translate(74, 0)">
-        <text x="0" y="36" fontFamily="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" fontSize="26" fontWeight="600" fill="currentColor" letterSpacing="-0.5">Biomarker</text>
-        <text x="130" y="36" fontFamily="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" fontSize="26" fontWeight="400" fill="#0A84FF" letterSpacing="-0.5">Hub</text>
+        <text
+          x="0"
+          y="36"
+          fontFamily="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+          fontSize="26"
+          letterSpacing="-0.5"
+        >
+          <tspan fontWeight="600" fill="currentColor">Base</tspan>
+          <tspan fontWeight="400" fill="#0A84FF">line</tspan>
+        </text>
       </g>
     </svg>
   );

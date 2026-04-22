@@ -4,7 +4,14 @@ import { useState, useRef, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { authClient } from "@/lib/auth/client";
 
-export function UserMenu() {
+type UserMenuAlign = "bottom-right" | "top-left";
+
+const ALIGN_CLASSES: Record<UserMenuAlign, string> = {
+  "bottom-right": "right-0 top-full mt-2",
+  "top-left": "left-0 bottom-full mb-2",
+};
+
+export function UserMenu({ align = "bottom-right" }: { align?: UserMenuAlign } = {}) {
   const { data: session } = authClient.useSession();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -44,7 +51,7 @@ export function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] shadow-lg z-50" style={{ boxShadow: 'var(--color-modal-shadow, 0 8px 30px rgba(0,0,0,.12))' }}>
+        <div className={`absolute ${ALIGN_CLASSES[align]} w-64 rounded-xl border border-[var(--color-border-light)] bg-[var(--color-surface)] shadow-lg z-50`} style={{ boxShadow: 'var(--color-modal-shadow, 0 8px 30px rgba(0,0,0,.12))' }}>
           <div className="px-4 py-3">
             <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
               {session?.user?.name || "User"}

@@ -16,13 +16,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Biomarker Hub",
+  title: "Baseline",
   description: "Track and visualize your biomarker data from lab report PDFs",
   icons: { icon: "/icon.svg" },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Biomarker Hub",
+    title: "Baseline",
     statusBarStyle: "default",
   },
 };

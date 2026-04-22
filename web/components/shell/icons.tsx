@@ -36,3 +36,27 @@ export function HamburgerIcon({ size = 22 }: IconProps) {
     </svg>
   );
 }
+
+export function PinIcon({
+  filled = false,
+  size = 16,
+}: {
+  filled?: boolean;
+  size?: number;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M15.5 3 L21 8.5 L17 10.5 L17.5 16.5 L7.5 6.5 L13.5 7 Z" />
+      <line x1="11" y1="11" x2="4" y2="18" />
+    </svg>
+  );
+}

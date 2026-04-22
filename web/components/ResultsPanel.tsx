@@ -5,6 +5,7 @@ import { Biomarker, ExtractionResult, ExtractionMeta } from "@/lib/types";
 import { BiomarkerRow } from "./BiomarkerRow";
 import { BiomarkerCombobox } from "./BiomarkerCombobox";
 import { ReportInfoField } from "./ReportInfoField";
+import { ReportTypeField } from "./ReportTypeField";
 import { Spinner } from "./Spinner";
 import { useCategoryCollapse } from "@/hooks/useCategoryCollapse";
 
@@ -121,6 +122,10 @@ export function ResultsPanel({
             value={extraction.reportInfo.collectionDate || ""}
             type="date"
             onSave={(v) => onUpdateReportInfo("collectionDate", v)}
+          />
+          <ReportTypeField
+            value={extraction.reportInfo.reportType ?? "other"}
+            onSave={(v) => onUpdateReportInfo("reportType", v)}
           />
           <ReportInfoField
             label="Source"

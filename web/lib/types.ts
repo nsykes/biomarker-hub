@@ -82,15 +82,6 @@ export interface AppSettings {
   defaultModel: string;
 }
 
-export type TabId = "files" | "biomarkers" | "dashboards" | "goals" | "settings";
-
-export interface ViewState {
-  tab: TabId;
-  biomarkerSlug: string | null;
-  dashboardId: string | null;
-  extraction: { type: "new" } | { type: "view" } | null;
-}
-
 export interface DashboardSummary {
   id: string;
   name: string;

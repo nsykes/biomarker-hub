@@ -47,6 +47,7 @@ export {
 
 export {
   getGoals,
+  getGoalsWithChartData,
   createGoal,
   updateGoalTarget,
   deleteGoal,
@@ -57,11 +58,13 @@ export {
 export {
   getDashboards,
   getDashboard,
+  getDashboardWithChartData,
   createDashboard,
   updateDashboard,
   deleteDashboard,
   addDashboardItem,
   removeDashboardItem,
+  reorderDashboards,
   reorderDashboardItems,
   getDashboardChartData,
   groupDashboardItems,

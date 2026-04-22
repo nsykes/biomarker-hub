@@ -28,7 +28,7 @@ export async function getDashboards(): Promise<DashboardSummary[]> {
     .leftJoin(dashboardItems, eq(dashboardItems.dashboardId, dashboards.id))
     .where(eq(dashboards.userId, userId))
     .groupBy(dashboards.id, dashboards.name, dashboards.updatedAt)
-    .orderBy(asc(dashboards.createdAt));
+    .orderBy(asc(dashboards.sortOrder), asc(dashboards.createdAt));
 
   return rows.map((r) => ({
     id: r.id,
@@ -38,11 +38,10 @@ export async function getDashboards(): Promise<DashboardSummary[]> {
   }));
 }
 
-export async function getDashboard(
+async function fetchDashboardForUser(
+  userId: string,
   id: string
 ): Promise<DashboardDetail | null> {
-  const userId = await requireUser();
-
   const rows = await db
     .select()
     .from(dashboards)
@@ -68,6 +67,26 @@ export async function getDashboard(
   };
 }
 
+export async function getDashboard(
+  id: string
+): Promise<DashboardDetail | null> {
+  const userId = await requireUser();
+  return fetchDashboardForUser(userId, id);
+}
+
+export async function getDashboardWithChartData(id: string): Promise<{
+  dashboard: DashboardDetail | null;
+  chartData: BiomarkerDetailData[];
+}> {
+  const userId = await requireUser();
+  const dashboard = await fetchDashboardForUser(userId, id);
+  if (!dashboard) return { dashboard: null, chartData: [] };
+  const slugs = dashboard.items.map((i) => i.canonicalSlug);
+  const chartData =
+    slugs.length > 0 ? await getBatchChartDataByUser(userId, slugs) : [];
+  return { dashboard, chartData };
+}
+
 export async function createDashboard(
   name: string,
   slugs: string[],
@@ -75,9 +94,16 @@ export async function createDashboard(
 ): Promise<string> {
   const userId = await requireUser();
 
+  const [{ nextOrder }] = await db
+    .select({
+      nextOrder: sql<number>`coalesce(max(${dashboards.sortOrder}), -1) + 1`,
+    })
+    .from(dashboards)
+    .where(eq(dashboards.userId, userId));
+
   const [row] = await db
     .insert(dashboards)
-    .values({ userId, name })
+    .values({ userId, name, sortOrder: nextOrder })
     .returning({ id: dashboards.id });
 
   if (slugs.length > 0) {
@@ -180,6 +206,22 @@ export async function removeDashboardItem(
     .update(dashboards)
     .set({ updatedAt: new Date() })
     .where(eq(dashboards.id, dashboardId));
+}
+
+export async function reorderDashboards(
+  orderedDashboardIds: string[]
+): Promise<void> {
+  const userId = await requireUser();
+
+  if (orderedDashboardIds.length === 0) return;
+
+  const updates = orderedDashboardIds.map((id, i) =>
+    db
+      .update(dashboards)
+      .set({ sortOrder: i })
+      .where(and(eq(dashboards.id, id), eq(dashboards.userId, userId)))
+  );
+  await db.batch([updates[0], ...updates.slice(1)]);
 }
 
 export async function reorderDashboardItems(

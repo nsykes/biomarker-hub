@@ -197,17 +197,17 @@ a[href] {
  * padding-bottom on e.g. <main overflow-auto> is silently dropped on iOS.
  * Padding on regular descendants IS included, so applying it one level in
  * works on every browser. Width: ~56px tab bar + env(safe-area-inset-bottom)
- * + 40px breathing room = 6rem + env.
+ * + ~72px breathing room = 8rem + env.
  */
 @media (max-width: 767px) {
   .pb-tab-bar {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 6rem);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 8rem);
   }
 }
 /* FAB bottom offset: same envelope as pb-tab-bar so the FAB clears the
  * tab bar by the same breathing room the page content uses. */
 .bottom-above-tab-bar {
-  bottom: calc(env(safe-area-inset-bottom) + 6rem);
+  bottom: calc(env(safe-area-inset-bottom) + 8rem);
 }
 @media (min-width: 768px) {
   .bottom-above-tab-bar {

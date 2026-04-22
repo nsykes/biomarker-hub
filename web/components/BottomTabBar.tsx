@@ -12,12 +12,14 @@ interface BottomTabBarProps<T extends string> {
   tabs: ReadonlyArray<BottomTabDef<T>>;
   activeTabId: T;
   onSelect: (id: T) => void;
+  onPrefetch?: (id: T) => void;
 }
 
 export function BottomTabBar<T extends string>({
   tabs,
   activeTabId,
   onSelect,
+  onPrefetch,
 }: BottomTabBarProps<T>) {
   return (
     <nav
@@ -32,6 +34,8 @@ export function BottomTabBar<T extends string>({
             <li key={tab.id} className="flex-1">
               <button
                 onClick={() => onSelect(tab.id)}
+                onTouchStart={() => onPrefetch?.(tab.id)}
+                onFocus={() => onPrefetch?.(tab.id)}
                 className={`w-full flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors ${
                   active
                     ? "text-[var(--color-primary)]"

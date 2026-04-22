@@ -15,6 +15,7 @@ interface BiomarkerNavActions {
   openDashboard: (id: string) => void;
   openExtraction: (mode: ExtractionMode) => void;
   closeExtraction: () => void;
+  ensureMounted: (tab: BiomarkerTabId) => void;
 }
 
 interface BiomarkerNav {
@@ -124,6 +125,7 @@ export function useBiomarkerNav(
       openDashboard,
       openExtraction,
       closeExtraction,
+      ensureMounted,
     },
   };
 }

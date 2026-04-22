@@ -294,6 +294,7 @@ export function HistoryChart({
           dot={<CustomDot />}
           activeDot={{ r: 8, stroke: chartColors.primary, strokeWidth: 2.5, fill: chartColors.surface }}
           connectNulls
+          isAnimationActive={false}
         />
       </LineChart>
     </ResponsiveContainer>

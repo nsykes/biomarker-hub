@@ -4,7 +4,6 @@ import React, { useState, useMemo } from "react";
 import { Biomarker, ExtractionResult, ExtractionMeta } from "@/lib/types";
 import { BiomarkerRow } from "./BiomarkerRow";
 import { BiomarkerCombobox } from "./BiomarkerCombobox";
-import { ReportInfoField } from "./ReportInfoField";
 import { Spinner } from "./Spinner";
 import { useCategoryCollapse } from "@/hooks/useCategoryCollapse";
 
@@ -18,7 +17,6 @@ interface ResultsPanelProps {
   onExtract: () => void;
   onSelectBiomarker: (biomarker: Biomarker) => void;
   onUpdateBiomarker: (id: string, field: keyof Biomarker, value: unknown) => void;
-  onUpdateReportInfo: (field: string, value: string) => void;
   onDeleteBiomarker: (id: string) => void;
   onAddBiomarker: (biomarker: Biomarker) => void;
 }
@@ -33,7 +31,6 @@ export function ResultsPanel({
   onExtract,
   onSelectBiomarker,
   onUpdateBiomarker,
-  onUpdateReportInfo,
   onDeleteBiomarker,
   onAddBiomarker,
 }: ResultsPanelProps) {
@@ -112,30 +109,6 @@ export function ResultsPanel({
           </button>
         )}
       </div>
-
-      {/* Report info bar */}
-      {extraction && (
-        <div className="flex items-center gap-4 px-3 py-2 border-b border-[var(--color-border-light)] bg-[var(--color-primary-light)] flex-shrink-0 flex-wrap">
-          <ReportInfoField
-            label="Date"
-            value={extraction.reportInfo.collectionDate || ""}
-            type="date"
-            onSave={(v) => onUpdateReportInfo("collectionDate", v)}
-          />
-          <ReportInfoField
-            label="Source"
-            value={extraction.reportInfo.source || ""}
-            type="text"
-            onSave={(v) => onUpdateReportInfo("source", v)}
-          />
-          <ReportInfoField
-            label="Lab"
-            value={extraction.reportInfo.labName || ""}
-            type="text"
-            onSave={(v) => onUpdateReportInfo("labName", v)}
-          />
-        </div>
-      )}
 
       {/* Results table or empty state */}
       <div className="flex-1 overflow-auto">

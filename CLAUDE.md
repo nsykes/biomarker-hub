@@ -71,6 +71,8 @@ Next.js 16 app for biomarker extraction and health data tracking, with a remote 
 - `web/components/DashboardChartCard.tsx` — Sortable chart card wrapping HistoryChart, with trend indicator
 - `web/components/MultiMetricChart.tsx` — Multi-line Recharts chart for overlaid biomarker comparison
 - `web/components/MultiMetricChartCard.tsx` — Sortable card wrapper for MultiMetricChart with split/ungroup
+- `web/components/CopyChartButton.tsx` — Reusable "copy chart as image" button (used in dashboard, goal, and multi-metric cards)
+- `web/lib/copy-chart-image.ts` — `copyElementAsPng` utility (html-to-image + Clipboard API; skips elements with `data-export-hide="true"`)
 - `web/components/CreateDashboardModal.tsx` — Modal for creating/editing dashboards with templates and biomarker grouping
 - `web/lib/db/actions/dashboards.ts` — Dashboard CRUD + batch chart data + group/ungroup server actions
 - `web/lib/trend.ts` — Trend computation (latest value, direction, sentiment) for dashboard cards

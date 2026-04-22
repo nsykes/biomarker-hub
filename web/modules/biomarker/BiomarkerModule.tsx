@@ -41,6 +41,8 @@ export function BiomarkerModule({
             <button
               key={tab.id}
               onClick={() => actions.switchTab(tab.id)}
+              onMouseEnter={() => actions.ensureMounted(tab.id)}
+              onFocus={() => actions.ensureMounted(tab.id)}
               className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${
                 state.activeTab === tab.id
                   ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] shadow-sm"
@@ -92,6 +94,7 @@ export function BiomarkerModule({
         tabs={BIOMARKER_TABS}
         activeTabId={state.activeTab}
         onSelect={actions.switchTab}
+        onPrefetch={actions.ensureMounted}
       />
     </>
   );

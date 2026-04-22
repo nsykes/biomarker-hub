@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { GoalRow, BiomarkerDetailData } from "@/lib/types";
 import { HistoryChart } from "./biomarker-detail/HistoryChart";
 import { InfoTooltip } from "./InfoTooltip";
+import { CopyChartButton } from "./CopyChartButton";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { computeTrend } from "@/lib/trend";
@@ -39,6 +40,12 @@ export function GoalChartCard({
     isDragging,
   } = useSortable({ id: goal.id });
 
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const setRefs = (node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    cardRef.current = node;
+  };
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -55,13 +62,14 @@ export function GoalChartCard({
   }, [trend, goal.targetValue]);
 
   return (
-    <div ref={setNodeRef} style={style} className="card overflow-hidden">
+    <div ref={setRefs} style={style} className="card overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-border-light)]">
         {/* Drag handle */}
         <button
           {...attributes}
           {...listeners}
+          data-export-hide="true"
           className="p-1 rounded hover:bg-[var(--color-surface-tertiary)] cursor-grab active:cursor-grabbing text-[var(--color-text-tertiary)] flex-shrink-0 touch-none"
           title="Drag to reorder"
         >
@@ -95,10 +103,14 @@ export function GoalChartCard({
           </InfoTooltip>
         )}
 
+        {/* Copy chart as image */}
+        <CopyChartButton targetRef={cardRef} className="ml-auto" />
+
         {/* Edit button */}
         <button
           onClick={onEdit}
-          className="ml-auto p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors flex-shrink-0"
+          data-export-hide="true"
+          className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors flex-shrink-0"
           title="Edit goal target"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -109,6 +121,7 @@ export function GoalChartCard({
         {/* Remove button */}
         <button
           onClick={onRemove}
+          data-export-hide="true"
           className="p-1.5 rounded-lg hover:bg-[var(--color-error-bg)] text-[var(--color-text-tertiary)] hover:text-[var(--color-error)] transition-colors flex-shrink-0"
           title="Remove goal"
         >

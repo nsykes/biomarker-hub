@@ -1,8 +1,10 @@
 "use client";
 
+import { useRef } from "react";
 import { BiomarkerDetailData } from "@/lib/types";
 import { MultiMetricChart } from "./MultiMetricChart";
 import { InfoTooltip } from "./InfoTooltip";
+import { CopyChartButton } from "./CopyChartButton";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -28,6 +30,12 @@ export function MultiMetricChartCard({
     isDragging,
   } = useSortable({ id: groupId });
 
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const setRefs = (node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    cardRef.current = node;
+  };
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -36,7 +44,7 @@ export function MultiMetricChartCard({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       style={style}
       className="card overflow-hidden"
     >
@@ -46,6 +54,7 @@ export function MultiMetricChartCard({
         <button
           {...attributes}
           {...listeners}
+          data-export-hide="true"
           className="p-1 rounded hover:bg-[var(--color-surface-tertiary)] cursor-grab active:cursor-grabbing text-[var(--color-text-tertiary)] flex-shrink-0 touch-none"
           title="Drag to reorder"
         >
@@ -90,10 +99,14 @@ export function MultiMetricChartCard({
           )}
         </div>
 
+        {/* Copy chart as image */}
+        <CopyChartButton targetRef={cardRef} className="ml-auto" />
+
         {/* Split button */}
         <button
           onClick={onUngroup}
-          className="ml-auto p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors flex-shrink-0"
+          data-export-hide="true"
+          className="p-1.5 rounded-lg hover:bg-[var(--color-surface-tertiary)] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors flex-shrink-0"
           title="Split into separate charts"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

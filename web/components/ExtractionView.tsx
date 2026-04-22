@@ -5,9 +5,10 @@ import dynamic from "next/dynamic";
 import { SplitPane } from "@/components/SplitPane";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { UploadZone } from "@/components/UploadZone";
+import { ReportInfoField } from "@/components/ReportInfoField";
+import { ReportTypeField } from "@/components/ReportTypeField";
 import { Biomarker, HighlightTarget, StoredFile } from "@/lib/types";
 import { buildHighlightTarget } from "@/lib/highlight";
-import { formatDate } from "@/lib/utils";
 import { RangeConflictModal } from "@/components/RangeConflictModal";
 import { UndoToast } from "@/components/UndoToast";
 import { validatePdfFile } from "@/lib/pdf-validation";
@@ -153,7 +154,6 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
       onExtract={onExtract}
       onSelectBiomarker={handleSelectBiomarker}
       onUpdateBiomarker={handleUpdateBiomarker}
-      onUpdateReportInfo={handleUpdateReportInfo}
       onDeleteBiomarker={handleDeleteBiomarker}
       onAddBiomarker={handleAddBiomarker}
     />
@@ -180,17 +180,36 @@ export function ExtractionView({ mode, onBack }: ExtractionViewProps) {
           Back
         </button>
         <div className="w-px h-5 bg-[var(--color-border)]" />
-        <h1 className="text-base md:text-lg font-bold text-[var(--color-text-primary)] truncate max-w-[50vw] md:max-w-none">
-          {mode.type === "view"
-            ? mode.file.collectionDate
-              ? formatDate(mode.file.collectionDate)
-              : mode.file.filename
-            : "New Extraction"}
-        </h1>
-        {mode.type === "view" && mode.file.collectionDate && (mode.file.labName || mode.file.source) && (
-          <span className="hidden sm:inline text-sm text-[var(--color-text-tertiary)]">
-            {[mode.file.labName, mode.file.source].filter(Boolean).join(" · ")}
-          </span>
+        {extraction ? (
+          <>
+            <ReportInfoField
+              label="Date"
+              size="lg"
+              value={extraction.reportInfo.collectionDate || ""}
+              type="date"
+              onSave={(v) => handleUpdateReportInfo("collectionDate", v)}
+            />
+            <ReportTypeField
+              value={extraction.reportInfo.reportType ?? "other"}
+              onSave={(v) => handleUpdateReportInfo("reportType", v)}
+            />
+            <ReportInfoField
+              label="Source"
+              value={extraction.reportInfo.source || ""}
+              type="text"
+              onSave={(v) => handleUpdateReportInfo("source", v)}
+            />
+            <ReportInfoField
+              label="Lab"
+              value={extraction.reportInfo.labName || ""}
+              type="text"
+              onSave={(v) => handleUpdateReportInfo("labName", v)}
+            />
+          </>
+        ) : (
+          <h1 className="text-base md:text-lg font-bold text-[var(--color-text-primary)] truncate max-w-[50vw] md:max-w-none">
+            {mode.type === "view" ? mode.file.filename : "New Extraction"}
+          </h1>
         )}
         {file && mode.type === "new" && (
           <UploadZone onFileSelect={handleFileSelect} currentFile={file} onError={setError} />

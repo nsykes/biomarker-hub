@@ -2,9 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { DashboardSummary } from "@/lib/types";
-import { getDashboards, createDashboard } from "@/lib/db/actions";
+import {
+  getDashboards,
+  createDashboard,
+  reorderDashboards,
+} from "@/lib/db/actions";
+import { DragEndEvent } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { CreateDashboardModal } from "./CreateDashboardModal";
 import { DashboardView } from "./DashboardView";
+import { DashboardsGrid } from "./dashboards/DashboardsGrid";
 import { PageSpinner } from "./Spinner";
 
 interface DashboardsTabProps {
@@ -53,6 +60,23 @@ export function DashboardsTab({
     setShowCreate(false);
     await loadDashboards();
     onOpenDashboard(id);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = dashboards.findIndex((d) => d.id === active.id);
+    const newIndex = dashboards.findIndex((d) => d.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const prev = dashboards;
+    const next = arrayMove(dashboards, oldIndex, newIndex);
+    setDashboards(next);
+    try {
+      await reorderDashboards(next.map((d) => d.id));
+    } catch (err) {
+      console.error("Failed to persist dashboard reorder:", err);
+      setDashboards(prev);
+    }
   };
 
   if (activeDashboardId) {
@@ -117,39 +141,12 @@ export function DashboardsTab({
   return (
     <div className="relative h-full">
       <div className="overflow-auto h-full">
-        <div className="p-3 md:p-4 pb-tab-bar grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-          {dashboards.map((d) => (
-            <button
-              key={d.id}
-              onClick={() => onOpenDashboard(d.id)}
-              className="card px-5 py-4 text-left hover:shadow-md transition-all duration-200 hover:border-[var(--color-primary)] group"
-            >
-              <div className="flex items-start justify-between">
-                <div className="min-w-0">
-                  <h3 className="text-base font-semibold text-[var(--color-text-primary)] truncate group-hover:text-[var(--color-primary)] transition-colors">
-                    {d.name}
-                  </h3>
-                  <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
-                    {d.biomarkerCount}{" "}
-                    {d.biomarkerCount === 1 ? "biomarker" : "biomarkers"}
-                  </p>
-                </div>
-                <svg
-                  className="w-5 h-5 text-[var(--color-text-tertiary)] group-hover:text-[var(--color-primary)] transition-colors flex-shrink-0 mt-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                  />
-                </svg>
-              </div>
-            </button>
-          ))}
+        <div className="p-3 md:p-4 pb-tab-bar">
+          <DashboardsGrid
+            dashboards={dashboards}
+            onDragEnd={handleDragEnd}
+            onOpenDashboard={onOpenDashboard}
+          />
         </div>
       </div>
 

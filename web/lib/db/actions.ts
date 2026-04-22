@@ -62,6 +62,7 @@ export {
   deleteDashboard,
   addDashboardItem,
   removeDashboardItem,
+  reorderDashboards,
   reorderDashboardItems,
   getDashboardChartData,
   groupDashboardItems,

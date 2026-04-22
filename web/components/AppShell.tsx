@@ -60,6 +60,8 @@ export function AppShell() {
             <button
               key={tab.id}
               onClick={() => nav.switchTab(tab.id)}
+              onMouseEnter={() => nav.ensureMounted(tab.id)}
+              onFocus={() => nav.ensureMounted(tab.id)}
               className={`
                 px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200
                 ${
@@ -121,7 +123,12 @@ export function AppShell() {
         </div>
       </main>
 
-      <BottomTabBar tabs={TABS} activeTab={state.activeTab} onSelect={nav.switchTab} />
+      <BottomTabBar
+        tabs={TABS}
+        activeTab={state.activeTab}
+        onSelect={nav.switchTab}
+        onPrefetch={nav.ensureMounted}
+      />
     </>
   );
 }

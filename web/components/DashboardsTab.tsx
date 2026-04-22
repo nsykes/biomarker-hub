@@ -12,7 +12,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { CreateDashboardModal } from "./CreateDashboardModal";
 import { DashboardView } from "./DashboardView";
 import { DashboardsGrid } from "./dashboards/DashboardsGrid";
-import { PageSpinner } from "./Spinner";
+import { Skeleton } from "./Skeleton";
 
 interface DashboardsTabProps {
   activeDashboardId: string | null;
@@ -90,7 +90,20 @@ export function DashboardsTab({
   }
 
   if (loading) {
-    return <PageSpinner />;
+    return (
+      <div className="relative h-full">
+        <div className="overflow-auto h-full">
+          <div className="p-3 md:p-4 pb-tab-bar grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="card px-5 py-4">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-3 w-24 mt-2" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (dashboards.length === 0) {

@@ -8,7 +8,7 @@ import {
   BiomarkerDetailData,
 } from "@/lib/types";
 import {
-  getDashboard,
+  getDashboardWithChartData,
   getDashboardChartData,
   updateDashboard,
   deleteDashboard,
@@ -83,7 +83,8 @@ export function useDashboardData(dashboardId: string, onBack: () => void) {
 
   const loadData = useCallback(async () => {
     try {
-      const detail = await getDashboard(dashboardId);
+      const { dashboard: detail, chartData: data } =
+        await getDashboardWithChartData(dashboardId);
       if (!detail) {
         onBack();
         return;
@@ -91,15 +92,11 @@ export function useDashboardData(dashboardId: string, onBack: () => void) {
       setDashboard(detail);
       setItems(detail.items);
 
-      const slugs = detail.items.map((i) => i.canonicalSlug);
-      if (slugs.length > 0) {
-        const data = await getDashboardChartData(slugs);
-        const map = new Map<string, BiomarkerDetailData>();
-        for (const d of data) {
-          map.set(d.slug, d);
-        }
-        setChartData(map);
+      const map = new Map<string, BiomarkerDetailData>();
+      for (const d of data) {
+        map.set(d.slug, d);
       }
+      setChartData(map);
     } catch (err) {
       console.error("Failed to load dashboard:", err);
       onBack();

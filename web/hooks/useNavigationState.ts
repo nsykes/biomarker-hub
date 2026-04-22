@@ -10,6 +10,7 @@ interface NavigationActions {
   openBiomarker: (slug: string) => void;
   openDashboard: (id: string) => void;
   openExtraction: (mode: { type: "new" } | { type: "view"; file: StoredFile }) => void;
+  ensureMounted: (tab: TabId) => void;
 }
 
 interface NavigationState {
@@ -175,6 +176,6 @@ export function useNavigationState(
 
   return [
     { activeTab, biomarkerSlug, dashboardId, extractionMode, mountedTabs },
-    { switchTab, openBiomarker, openDashboard, openExtraction },
+    { switchTab, openBiomarker, openDashboard, openExtraction, ensureMounted },
   ];
 }

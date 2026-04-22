@@ -11,6 +11,7 @@ interface BottomTabBarProps {
   tabs: TabDef[];
   activeTab: TabId;
   onSelect: (tab: TabId) => void;
+  onPrefetch?: (tab: TabId) => void;
 }
 
 function TabIcon({ id, active }: { id: TabId; active: boolean }) {
@@ -66,7 +67,7 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
   }
 }
 
-export function BottomTabBar({ tabs, activeTab, onSelect }: BottomTabBarProps) {
+export function BottomTabBar({ tabs, activeTab, onSelect, onPrefetch }: BottomTabBarProps) {
   return (
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--color-border-light)] backdrop-blur-lg safe-pb"
@@ -80,6 +81,8 @@ export function BottomTabBar({ tabs, activeTab, onSelect }: BottomTabBarProps) {
             <li key={tab.id} className="flex-1">
               <button
                 onClick={() => onSelect(tab.id)}
+                onTouchStart={() => onPrefetch?.(tab.id)}
+                onFocus={() => onPrefetch?.(tab.id)}
                 className={`w-full flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors ${
                   active
                     ? "text-[var(--color-primary)]"

@@ -8,7 +8,7 @@ import {
   BiomarkerCategory,
 } from "@/lib/biomarker-registry";
 import { FlagBadge } from "./FlagBadge";
-import { PageSpinner } from "./Spinner";
+import { Skeleton } from "./Skeleton";
 import { useCategoryCollapse } from "@/hooks/useCategoryCollapse";
 import { getFiles } from "@/lib/db/actions";
 import { BiomarkerDetailView } from "./BiomarkerDetailPage";
@@ -111,7 +111,34 @@ export function BiomarkersTab({ activeBiomarkerSlug, onOpenBiomarker, onBack }: 
   }
 
   if (loading) {
-    return <PageSpinner />;
+    return (
+      <div className="flex flex-col h-full">
+        <div className="px-3 md:px-5 py-2 md:py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)] flex-shrink-0">
+          <Skeleton className="h-10 w-full max-w-md rounded-xl" />
+          <Skeleton className="h-3 w-52 mt-2" />
+        </div>
+        <div className="flex-1 overflow-auto">
+          <div className="pb-tab-bar">
+            {Array.from({ length: 3 }).map((_, c) => (
+              <div key={c}>
+                <div className="px-4 md:px-5 py-2.5 bg-[var(--color-surface-tertiary)]/80 border-b border-[var(--color-border-light)]">
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <div className="divide-y divide-[var(--color-border-light)]">
+                  {Array.from({ length: 4 }).map((_, r) => (
+                    <div key={r} className="flex items-center gap-3 px-4 md:px-5 py-3">
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-4 w-16 ml-auto" />
+                      <Skeleton className="h-5 w-12 rounded-full" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

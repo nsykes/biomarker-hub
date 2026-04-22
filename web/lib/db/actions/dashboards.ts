@@ -38,11 +38,10 @@ export async function getDashboards(): Promise<DashboardSummary[]> {
   }));
 }
 
-export async function getDashboard(
+async function fetchDashboardForUser(
+  userId: string,
   id: string
 ): Promise<DashboardDetail | null> {
-  const userId = await requireUser();
-
   const rows = await db
     .select()
     .from(dashboards)
@@ -66,6 +65,26 @@ export async function getDashboard(
     name: rows[0].name,
     items,
   };
+}
+
+export async function getDashboard(
+  id: string
+): Promise<DashboardDetail | null> {
+  const userId = await requireUser();
+  return fetchDashboardForUser(userId, id);
+}
+
+export async function getDashboardWithChartData(id: string): Promise<{
+  dashboard: DashboardDetail | null;
+  chartData: BiomarkerDetailData[];
+}> {
+  const userId = await requireUser();
+  const dashboard = await fetchDashboardForUser(userId, id);
+  if (!dashboard) return { dashboard: null, chartData: [] };
+  const slugs = dashboard.items.map((i) => i.canonicalSlug);
+  const chartData =
+    slugs.length > 0 ? await getBatchChartDataByUser(userId, slugs) : [];
+  return { dashboard, chartData };
 }
 
 export async function createDashboard(

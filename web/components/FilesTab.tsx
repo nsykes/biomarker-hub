@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { StoredFile } from "@/lib/types";
 import { getFiles, deleteFile } from "@/lib/db/actions";
 import { formatDate } from "@/lib/utils";
-import { PageSpinner } from "./Spinner";
+import { Skeleton } from "./Skeleton";
 import { DatePickerInput } from "./DatePickerInput";
 import { REPORT_TYPES, REPORT_TYPE_META, isReportType } from "@/lib/report-types";
 
@@ -94,7 +94,28 @@ export function FilesTab({ onNewExtraction, onViewFile }: FilesTabProps) {
   };
 
   if (loading) {
-    return <PageSpinner />;
+    return (
+      <div className="relative h-full">
+        <div className="overflow-auto h-full">
+          <div className="flex flex-wrap gap-2 md:gap-4 items-end px-3 md:px-5 py-2 md:py-3 border-b border-[var(--color-border-light)] bg-[var(--color-surface)]">
+            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-36" />
+          </div>
+          <div className="divide-y divide-[var(--color-border-light)]">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 md:px-5 py-3">
+                <Skeleton className="h-4 w-48 flex-shrink-0" />
+                <Skeleton className="h-5 w-14 rounded-full" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-16 ml-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (files.length === 0) {
